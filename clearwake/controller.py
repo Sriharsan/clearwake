@@ -28,7 +28,8 @@ class RefundCase:
 
 
 def validate_capture(record, case):
-    if not isinstance(record, dict) or record.get("id") != case.capture or record.get("status") != "COMPLETED":
+    # A capture that already had another partial refund reports PARTIALLY_REFUNDED; PayPal still enforces the remainder.
+    if not isinstance(record, dict) or record.get("id") != case.capture or record.get("status") not in ("COMPLETED", "PARTIALLY_REFUNDED"):
         raise Rejected("The current capture must be the configured, completed sandbox capture.", 409)
     money = record.get("amount")
     try:

@@ -45,7 +45,8 @@ def transport(request, timeout=15):
     parsed = urlsplit(request.full_url)
     if (parsed.scheme != "https" or parsed.netloc != "api-m.sandbox.paypal.com"
             or parsed.query or parsed.fragment or parsed.username or parsed.password
-            or not re.fullmatch(r"/v1/oauth2/token|/v2/payments/captures/[A-Za-z0-9_-]{1,64}(?:/refund)?|/v2/payments/refunds/[A-Za-z0-9_-]{1,64}", parsed.path)):
+            or not re.fullmatch(r"/v1/oauth2/token|/v2/payments/captures/[A-Za-z0-9_-]{1,64}(?:/refund)?|/v2/payments/refunds/[A-Za-z0-9_-]{1,64}"
+                                r"|/v2/checkout/orders(?:/[A-Za-z0-9_-]{1,64}(?:/capture)?)?", parsed.path)):
         raise GatewayError("Only reviewed PayPal sandbox routes are allowed.")
     try:
         with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=timeout) as response:
@@ -122,6 +123,26 @@ class SandboxGateway:
 
     def refund_record(self, refund_id):
         return self._request(f"/v2/payments/refunds/{identifier(refund_id)}")
+
+    def create_order(self, value, request_id, return_url):
+        """One-time setup: a sandbox order the operator approves as the sandbox buyer."""
+        amount(value, maximum=Decimal("50.00"))
+        if not re.fullmatch(r"[0-9a-f-]{36}", request_id) or not re.fullmatch(r"http://127\.0\.0\.1:\d{1,5}/[a-z-]*", return_url):
+            raise ValueError("The setup request identity or loopback return URL is invalid.")
+        self._access_token()
+        return self._request("/v2/checkout/orders", {"intent": "CAPTURE",
+            "purchase_units": [{"amount": {"currency_code": "USD", "value": value}, "description": "Clearwake sandbox setup order"}],
+            "payment_source": {"paypal": {"experience_context": {"user_action": "PAY_NOW", "shipping_preference": "NO_SHIPPING",
+                "return_url": return_url, "cancel_url": return_url}}}}, request_id)
+
+    def order(self, order_id):
+        return self._request(f"/v2/checkout/orders/{identifier(order_id)}")
+
+    def capture_order(self, order_id, request_id):
+        if not re.fullmatch(r"[0-9a-f-]{36}", request_id):
+            raise ValueError("The capture request identity is invalid.")
+        self._access_token()
+        return self._request(f"/v2/checkout/orders/{identifier(order_id)}/capture", {}, request_id)
 
 
 class RehearsalGateway:

@@ -226,6 +226,17 @@ class RefundTests(unittest.TestCase):
         with self.assertRaises(Rejected): self.action("refund", **body)
         self.assertEqual(self.operation()["state"], "BLOCKED")
 
+    def test_partially_refunded_capture_still_passes_preflight_but_other_statuses_do_not(self):
+        body = self.grant()
+        for status in ("PENDING", "REFUNDED", "DECLINED"):
+            self.gateway.capture = lambda _, s=status: {"id": "DEMO-CAPTURE-0001", "status": s, "amount": {"value": "10.00", "currency_code": "USD"}}
+            with self.assertRaises(Rejected): self.action("refund", **body)
+            with self.controller.db() as db:
+                db.execute("DELETE FROM cw_refunds")
+        self.gateway.capture = lambda _: {"id": "DEMO-CAPTURE-0001", "status": "PARTIALLY_REFUNDED", "amount": {"value": "10.00", "currency_code": "USD"}}
+        self.action("refund", **body)
+        self.assertEqual(self.operation()["state"], "AWAITING_VERIFICATION")
+
     def test_session_revocation_while_preflight_waits_stops_dispatch(self):
         body = self.grant(); started, release = threading.Event(), threading.Event()
         capture = self.gateway.capture
@@ -276,6 +287,26 @@ class TransportTests(unittest.TestCase):
         self.assertEqual(refund.get_header("Paypal-request-id"), "12345678-1234-4234-8234-123456789abc")
         self.assertEqual(json.loads(refund.data)["custom_id"], "12345678-1234-4234-8234-123456789abc")
         self.assertEqual(json.loads(refund.data)["amount"], {"value": "1.00", "currency_code": "USD"})
+
+    def test_setup_order_and_capture_use_only_sandbox_routes(self):
+        calls = []
+        def send(request, timeout):
+            calls.append(request)
+            if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
+            return {"id": "ORDER1"}
+        gateway = SandboxGateway("synthetic-client", "synthetic-secret", send=send)
+        request_id = "12345678-1234-4234-8234-123456789abc"
+        gateway.create_order("20.00", request_id, "http://127.0.0.1:8810/sandbox-approved")
+        gateway.order("ORDER1")
+        gateway.capture_order("ORDER1", request_id)
+        self.assertEqual([c.full_url for c in calls[1:]], [BASE + "/v2/checkout/orders", BASE + "/v2/checkout/orders/ORDER1",
+                                                           BASE + "/v2/checkout/orders/ORDER1/capture"])
+        self.assertEqual(json.loads(calls[1].data)["purchase_units"][0]["amount"], {"currency_code": "USD", "value": "20.00"})
+        for bad in (("50.01", request_id, "http://127.0.0.1:8810/x"), ("20.00", "not-a-uuid", "http://127.0.0.1:8810/x"),
+                    ("20.00", request_id, "https://example.invalid/return")):
+            with self.assertRaises(ValueError): gateway.create_order(*bad)
+        from urllib.request import Request
+        with self.assertRaises(GatewayError): transport(Request("https://api-m.paypal.com/v2/checkout/orders"))
 
     def test_production_destination_and_identifier_injection_are_refused(self):
         from urllib.request import Request

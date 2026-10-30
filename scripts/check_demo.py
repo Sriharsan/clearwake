@@ -18,9 +18,10 @@ from relayloom.controller import Rejected  # noqa: E402
 
 
 class Case:
-    def __init__(self, folder, outcome):
-        self.gateway = RehearsalGateway(Path(folder) / "rehearsal-provider.sqlite3", outcome)
-        self.controller = RefundController(Path(folder) / "case.sqlite3", gateway=self.gateway)
+    def __init__(self, folder, outcome, *, gateway=None, case=None, worker=None):
+        self.gateway = gateway or RehearsalGateway(Path(folder) / "rehearsal-provider.sqlite3", outcome)
+        options = {"worker": worker} if worker else {}
+        self.controller = RefundController(Path(folder) / "case.sqlite3", gateway=self.gateway, case=case, **options)
         self.owner = self.controller.create({"name": "Synthetic refund review", "display_name": "Owner", "brief": "Review a fictional refund policy."})
 
     def action(self, name, **body):
