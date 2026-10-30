@@ -10,6 +10,7 @@ import uuid
 
 from relayloom.controller import Controller, Rejected, ROLES, digest, packed, task_input, validate_output
 from .paypal import BASE, RehearsalGateway, amount, identifier
+from . import policy as autonomy
 
 
 @dataclass(frozen=True)
@@ -75,15 +76,21 @@ def validate_receipt(record, operation, expected_id=None):
 
 
 class RefundController(Controller):
-    def __init__(self, path, *, case=None, gateway=None, worker=None):
+    def __init__(self, path, *, case=None, gateway=None, worker=None, policy=None):
         self.case = case or RefundCase()
+        self.policy = policy or autonomy.load()
+        refund_policy = self.policy["operations"]["refund"]
+        self.limit = Decimal(refund_policy["limit"]["max"])
+        self.approval_seconds = refund_policy["approval_expires_seconds"]
+        if Decimal(self.case.amount) > self.limit:
+            raise ValueError(f"This case amount is above the policy limit of USD {self.limit}.")
         if worker is None:
             super().__init__(path)
         else:
             super().__init__(path, worker=worker)
         self.gateway = gateway or RehearsalGateway(self.path.with_name("rehearsal-provider.sqlite3"))
         self.case_fingerprint = digest({**self.case.fields(), "gateway": self.gateway.mode,
-            "merchant": self.gateway.client_id, "policy": "clearwake-single-capture-v1"})
+            "merchant": self.gateway.client_id, "policy": "clearwake-single-capture-v1", "autonomy": self.policy["operations"]})
         with self.db() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS cw_config(id INTEGER PRIMARY KEY CHECK(id=1),fingerprint TEXT NOT NULL);
@@ -95,6 +102,11 @@ class RefundController(Controller):
                   request_id TEXT NOT NULL UNIQUE,payload_hash TEXT NOT NULL,state TEXT NOT NULL,
                   provider_id TEXT,receipt TEXT,created REAL NOT NULL,updated REAL NOT NULL,reason TEXT NOT NULL);
             """)
+            # Approval record: who approved, against which limit and level. Added columns keep older local databases readable.
+            columns = {row[1] for row in db.execute("PRAGMA table_info(cw_grants)")}
+            for column in ("approver_id", "approver_name", "limit_max", "level"):
+                if column not in columns:
+                    db.execute(f"ALTER TABLE cw_grants ADD COLUMN {column} TEXT")
             old = db.execute("SELECT fingerprint FROM cw_config WHERE id=1").fetchone()
             if old and old[0] != self.case_fingerprint:
                 raise ValueError("This database belongs to another immutable payment case/merchant/mode.")
@@ -166,9 +178,12 @@ class RefundController(Controller):
             grant_id, now = str(uuid.uuid4()), time.time()
             if existing:
                 db.execute("DELETE FROM cw_grants WHERE id=?", (existing["id"],))
-            db.execute("INSERT INTO cw_grants VALUES(?,?,?,?,?,?,?,?,?,?)", (grant_id, member["room"], room["revision"], self.case.capture,
-                self.case.amount, self.case.currency, now + 300, 1, artifact_hash, now))
-            self.event(db, member["room"], "refund_granted", f"Owner granted exactly USD {self.case.amount} for the configured sandbox capture on revision {room['revision']}; expires in five minutes.")
+            level = self.policy["operations"]["refund"]["level"]
+            db.execute("""INSERT INTO cw_grants(id,room,revision,capture,amount,currency,expires,active,artifact_hash,created,approver_id,approver_name,limit_max,level)
+                VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (grant_id, member["room"], room["revision"], self.case.capture, self.case.amount, self.case.currency,
+                now + self.approval_seconds, 1, artifact_hash, now, member["id"], member["name"], f"{self.limit:.2f}", level))
+            self.event(db, member["room"], "refund_granted", f"{member['name']} approved exactly USD {self.case.amount} for capture {self.case.capture} on revision {room['revision']}, "
+                f"against the USD {self.limit:.2f} limit ({level}); expires in {self.approval_seconds // 60} minutes.")
             return {"ok": True, "grant_id": grant_id}
 
     def _blocked(self, operation_id, reason):
@@ -272,7 +287,11 @@ class RefundController(Controller):
             grant = db.execute("SELECT * FROM cw_grants WHERE room=? AND revision=?", (member["room"], room["revision"])).fetchone()
             operation = db.execute("SELECT * FROM cw_refunds WHERE room=? ORDER BY created DESC LIMIT 1", (member["room"],)).fetchone()
             grant_status = "NOT_GRANTED" if not grant else "REVOKED" if not grant["active"] else "EXPIRED" if grant["expires"] <= time.time() else "ACTIVE"
-            state["payment"] = {"mode": self.gateway.mode, "case": self.case.fields(), "grant": {"id": grant["id"], "status": grant_status, "expires": grant["expires"]} if grant else {"id": None, "status": grant_status},
+            record = {"approver": grant["approver_name"], "approved_at": grant["created"], "limit": grant["limit_max"], "level": grant["level"],
+                      "amount": grant["amount"], "currency": grant["currency"], "capture": grant["capture"]} if grant else None
+            state["payment"] = {"mode": self.gateway.mode, "case": self.case.fields(), "limit": f"{self.limit:.2f}",
+                "autonomy": [{"operation": name, "level": entry["level"], "means": entry.get("means", "")} for name, entry in self.policy["operations"].items()],
+                "grant": {"id": grant["id"], "status": grant_status, "expires": grant["expires"], "record": record} if grant else {"id": None, "status": grant_status, "record": None},
                 "operation": {**dict(operation), "receipt": json.loads(operation["receipt"]) if operation["receipt"] else None} if operation else None,
                 "scope": "one configured sandbox capture; at most USD5; one durable operation per capture; no production endpoints"}
         return state

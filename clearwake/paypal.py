@@ -29,7 +29,10 @@ def identifier(value):
     return value
 
 
-def amount(value, maximum=Decimal("5.00")):
+LIMIT = Decimal("5.00")  # The hard per refund cap for this bounded case.
+
+
+def amount(value, maximum=LIMIT):
     if not isinstance(value, str) or not MONEY.fullmatch(value) or not Decimal("0") < Decimal(value) <= maximum:
         raise ValueError("The amount must be a positive USD value with two decimals, at most 5.00 for this case.")
     return value

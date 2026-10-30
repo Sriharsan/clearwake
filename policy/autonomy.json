@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "about": "Autonomy policy. Read by the server at start, never by the model. Changing it needs a file edit and a new case database; no prompt, brief or chat message can change it.",
+  "operations": {
+    "specialist_review": {
+      "level": "Draft",
+      "means": "Specialists prepare a plan. They cannot approve, send, revoke or reconcile money."
+    },
+    "publish_plan": {
+      "level": "Execute with Approval",
+      "means": "The owner must allow publication of the current plan. Publishing never grants payment permission."
+    },
+    "refund": {
+      "level": "Execute with Approval",
+      "means": "One exact refund, approved by the owner, for one capture and amount, within the limit.",
+      "limit": {"currency": "USD", "max": "5.00"},
+      "approval_expires_seconds": 300,
+      "retry": "never"
+    },
+    "reconcile": {
+      "level": "Execute within Limits",
+      "means": "A read only check of a known provider record. It runs without new approval and never sends money."
+    }
+  }
+}
