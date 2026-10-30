@@ -1,0 +1,12 @@
+<section id="payment-panel" class="payment-panel" aria-labelledby="payment-title" hidden>
+  <div class="payment-heading"><div><div class="eyebrow">PAYMENT OPERATIONS</div><h2 id="payment-title">One refund. A verified result.</h2></div><span id="payment-mode" class="payment-mode"></span></div>
+  <p class="payment-intro">Complete and publish the specialist plan below. The owner then grants a separate, exact refund permission. Publishing an artifact never authorizes a payment.</p>
+  <dl class="payment-facts"><div><dt>Refund amount</dt><dd id="payment-amount"></dd></div><div><dt>Configured capture</dt><dd id="payment-capture"></dd></div><div><dt>Owner grant</dt><dd id="payment-grant"></dd></div><div><dt>Provider outcome</dt><dd id="payment-state"></dd></div></dl>
+  <ol id="payment-progress" class="payment-progress" aria-label="Refund progress"></ol>
+  <div id="payment-owner" class="payment-owner" hidden><label class="payment-ack"><input type="checkbox" id="payment-ack"><span id="payment-effect"></span></label><div class="payment-actions"><button id="payment-grant-button" class="button">Grant exact refund</button><button id="payment-revoke" class="button">Revoke grant</button><button id="payment-send" class="button primary">Send one refund</button></div><p class="payment-help">Revocation stops work before dispatch. It cannot undo a request already sent; an uncertain effect stays held for reconciliation.</p></div>
+  <div id="payment-notice" class="payment-notice" role="status" aria-live="polite" hidden></div>
+  <p id="payment-reason" class="payment-reason"></p>
+  <form id="payment-reconcile" hidden><label for="payment-refund-id">Known provider refund ID</label><div class="payment-reconcile-row"><input id="payment-refund-id" name="refund_id" maxlength="64" pattern="[A-Za-z0-9_-]{1,64}" required autocomplete="off" placeholder="From the sandbox merchant record"><button class="button" type="submit">Check provider record</button></div><p class="payment-help">Read-only reconciliation. It checks amount, USD currency, capture, request correlation and status; it never resends the refund.</p><div class="form-error" role="alert"></div></form>
+  <ul id="payment-checks" class="payment-checks"></ul>
+  <details id="payment-technical" class="payment-technical"><summary>Technical payment evidence</summary><pre id="payment-evidence"></pre></details>
+</section>
