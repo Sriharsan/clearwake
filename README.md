@@ -1,16 +1,40 @@
 # Clearwake
 
-### Send once. Resolve uncertainty. Verify the refund.
+Clearwake lets AI agents prepare refunds while a person approves one exact amount, and PayPal's own record decides whether the refund really happened. A lost response is held as UNKNOWN and never retried blindly; a refund above the limit is refused before any money moves.
 
-Clearwake is a shared refund workroom for finance operations teams. People and
-specialists prepare the case together; the owner approves one exact effect;
-uncertain provider responses stay held until a known payment record verifies
-what happened. An agent saying “done” is not a payment receipt.
+```sh
+git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git && cd clearwake && python -m clearwake --port 8810
+```
 
-**Current build:** runnable local prototype with a durable fake gateway,
-sandbox-only PayPal adapter and a pinned public multi-agent workroom. Default
-mode makes zero network/model calls. Real PayPal sandbox and live AI acceptance
-are separate gates; see [the contribution and verification record](docs/PROVENANCE.md).
+Open http://127.0.0.1:8810. Python 3.11 or newer, nothing to install. Windows: `.\demo.ps1`. macOS or Linux: `./demo.sh`.
+
+![Clearwake payment view in rehearsal: limit gauge at USD 1.00 of a USD 5.00 cap, autonomy levels, and a timeline holding a lost response as UNKNOWN](docs/screenshot-unknown-1440.png)
+
+*Screenshot: rehearsal mode, invented records, fake provider.*
+
+**License:** MIT. **Status:** a working local app with 39 offline tests (35 Python, 4 UI). Default mode is a rehearsal with a fake provider and invented records. A real PayPal sandbox adapter is built in; what has actually run against the sandbox is listed in [SUBMISSION_PAYPAL.md](SUBMISSION_PAYPAL.md). Built during the PayPal AI Hackathon submission period; see [docs/HACKATHON_UPDATES.md](docs/HACKATHON_UPDATES.md).
+
+### Autonomy where it is safe, approval where it matters, proof after every action
+
+| Operation | Autonomy level | What that means |
+| --- | --- | --- |
+| Specialist review | Draft | AI specialists prepare the plan. They cannot approve, send, revoke or reconcile money. |
+| Publish plan | Execute with Approval | The owner allows publication. Publishing never grants payment permission. |
+| Refund | Execute with Approval | The owner approves one exact amount on one capture, within the USD 5.00 limit, for five minutes. Never retried automatically. |
+| Reconcile | Execute within Limits | A read only check of the provider record runs on its own and never sends money. |
+
+The levels live in [policy/autonomy.json](policy/autonomy.json), read by the server, never by the model, and bound to each case database. A prompt cannot change them. Every refund has an approval record (who, exact amount and capture, when, against which limit), shown on screen and in the activity log. A refund is shown as settled only when the provider record matches.
+
+### Four cases, one command each
+
+| Case | Rehearsal (no network) | PayPal sandbox (needs keys in `.env`) |
+| --- | --- | --- |
+| a. Refund under the limit, checked against the record | `scripts/check_demo.ps1` | `scripts/check_sandbox.ps1` |
+| b. Lost response goes to UNKNOWN, no blind retry | same | same (injected fault in sandbox) |
+| c. Reconciliation resolves UNKNOWN | same | same |
+| d. Over limit refund refused before money moves | same | same |
+
+Each prints PASS or FAIL per case. Shell versions: `scripts/check_demo.sh`, `scripts/check_sandbox.sh`. Sandbox setup: copy `.env.example` to `.env`, add your own sandbox app keys, then run `scripts/sandbox_setup.ps1` once.
 
 ## Run a clean checkout
 

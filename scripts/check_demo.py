@@ -22,7 +22,8 @@ class Case:
         self.gateway = gateway or RehearsalGateway(Path(folder) / "rehearsal-provider.sqlite3", outcome)
         options = {"worker": worker} if worker else {}
         self.controller = RefundController(Path(folder) / "case.sqlite3", gateway=self.gateway, case=case, **options)
-        self.owner = self.controller.create({"name": "Synthetic refund review", "display_name": "Owner", "brief": "Review a fictional refund policy."})
+        # Model modes accept only this bundled fictional brief, so no real data can reach a model.
+        self.owner = self.controller.create({"name": "Synthetic refund review", "display_name": "Owner", "brief": "Draft a fictional refund policy for the Relayloom demo store."})
 
     def action(self, name, **body):
         return self.controller.mutate(self.owner, self.controller.session(self.owner)["csrf"], name, body)
@@ -33,10 +34,11 @@ class Case:
     def grant(self):
         revision = self.state()["room"]["revision"]
         self.action("run", revision=revision)
-        deadline = time.monotonic() + 10
+        deadline = time.monotonic() + (300 if self.controller.mode == "local-ai" else 10)
         while not all(row["state"] in ("COMPLETE", "REUSED") for row in self.state()["tasks"]):
-            if time.monotonic() > deadline:
-                raise RuntimeError("specialists did not settle")
+            tasks = self.state()["tasks"]
+            if any(row["state"] == "FAILED" for row in tasks) or time.monotonic() > deadline:
+                raise RuntimeError("specialists did not settle: " + ", ".join(f"{row['role']}={row['state']}" for row in tasks))
             time.sleep(.05)
         self.action("permission", revision=revision, publish=True)
         self.action("publish", revision=revision)
@@ -118,11 +120,16 @@ CASES = [
 
 
 def main():
-    print("Clearwake demo check. REHEARSAL ONLY: fake provider, synthetic records, no network.")
+    worker = None
+    if "--local-ai" in sys.argv:
+        from check_sandbox import local_ai_worker  # free local model on loopback; no provider calls
+        worker = local_ai_worker()
+    print("Clearwake demo check. REHEARSAL ONLY: fake provider, synthetic records. Specialists:",
+          "local AI (qwen2.5-coder:3b on this machine)" if worker else "deterministic, no model calls")
     failed = 0
     for title, outcome, check in CASES:
         with tempfile.TemporaryDirectory() as folder:
-            case = Case(folder, outcome)
+            case = Case(folder, outcome, worker=worker)
             try:
                 ok, detail = check(case)
             except Exception as error:  # report, do not hide, an unexpected failure
