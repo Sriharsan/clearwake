@@ -33,7 +33,7 @@ def workroom_page():
     page = page.replace('aria-label="Relayloom home"', 'aria-label="Clearwake home"')
     page = page.replace('relayloom<span class="brand-dot">', 'clearwake<span class="brand-dot">')
     page = page.replace('<span class="brand-mark" aria-hidden="true">r</span>', '<span class="brand-mark" aria-hidden="true">c</span>')
-    page = page.replace('<link rel="stylesheet" href="/style.css">', '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/payment.css">')
+    page = page.replace('<link rel="stylesheet" href="/style.css">', '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css"><link rel="stylesheet" href="/payment.css">')
     page = page.replace('<script src="/app.js" defer></script>', '<script src="/app.js" defer></script><script src="/payment.js" defer></script>')
     page = page.replace("Change direction.<br>Keep the useful work.", "Resolve the refund.<br>Keep the evidence.")
     page = page.replace("Give your team a goal. Let specialists work together, revise what changes, and check the result before taking action.",
@@ -68,7 +68,8 @@ class ClearwakeHandler(Handler):
         path = urlsplit(self.path).path
         asset = {"/": (workroom_page, "text/html"), "/app.js": (core_script, "text/javascript"),
             "/payment.js": (lambda: (ASSETS / "payment.js").read_bytes(), "text/javascript"),
-            "/payment.css": (lambda: (ASSETS / "payment.css").read_bytes(), "text/css")}.get(path)
+            "/payment.css": (lambda: (ASSETS / "payment.css").read_bytes(), "text/css"),
+            "/theme.css": (lambda: (ASSETS / "theme.css").read_bytes(), "text/css")}.get(path)
         if asset is None:
             return super().do_GET()
         try:

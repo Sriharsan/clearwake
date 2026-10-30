@@ -9,12 +9,44 @@
   function clear() {
     epoch += 1; state = null; csrf = ''; busy = false; approvalKey = null; pendingActions.clear();
     $('payment-panel').hidden = true; $('payment-owner').hidden = true; $('payment-reconcile').hidden = true;
-    for (const id of ['payment-mode', 'payment-amount', 'payment-capture', 'payment-grant', 'payment-state', 'payment-effect', 'payment-notice', 'payment-reason', 'payment-evidence']) $(id).textContent = '';
+    for (const id of ['payment-mode', 'payment-amount', 'payment-capture', 'payment-grant', 'payment-state', 'payment-effect', 'payment-notice', 'payment-reason', 'payment-evidence', 'payment-approval']) $(id).textContent = '';
+    $('payment-autonomy').replaceChildren();
     $('payment-refund-id').value = ''; $('payment-ack').checked = false;
-    $('payment-progress').replaceChildren(); $('payment-checks').replaceChildren(); $('payment-technical').open = false;
+    $('payment-progress').replaceChildren(); $('payment-checks').replaceChildren(); $('payment-technical').open = false; gauge(null);
     for (const id of ['payment-grant-button', 'payment-revoke', 'payment-send']) $(id).disabled = true;
   }
   function message(text) { $('payment-notice').textContent = text; $('payment-notice').hidden = !text; }
+  // Limit gauge: the arc uses pathLength 100, so the dash length is the share of the cap.
+  function gauge(payment) {
+    const amount = Number(payment?.case.amount || 0), limit = Number(payment?.limit || 5);
+    const share = limit > 0 ? Math.max(0, Math.min(100, amount / limit * 100)) : 0;
+    $('gauge-fill').setAttribute?.('stroke-dasharray', `${share.toFixed(1)} 100`);
+    $('gauge-amount').textContent = `${payment?.case.currency || 'USD'} ${payment?.case.amount || '0.00'}`;
+    $('gauge-limit').textContent = `of the ${payment?.case.currency || 'USD'} ${Number(limit).toFixed(2)} cap`;
+  }
+  // Five nodes. UNKNOWN is its own state until a provider record settles it.
+  function timeline(plan, grant, operation, events) {
+    const sent = !!operation && !['RESERVED', 'BLOCKED'].includes(operation.state);
+    const wasUnknown = (events || []).some(event => event.type === 'refund_unknown');
+    const response = !operation ? ['', 'Provider response', 'Waiting for a send']
+      : operation.state === 'BLOCKED' ? ['', 'Provider response', 'Nothing was sent']
+      : operation.state === 'UNKNOWN' ? ['unknown', 'UNKNOWN', 'Response lost. Held, not retried']
+      : wasUnknown ? ['resolved', 'Response lost', 'Resolved from the provider record']
+      : sent ? ['done', 'Response received', 'One request, one reserved ID'] : ['', 'Provider response', 'Reserved'];
+    const record = operation?.state === 'VERIFIED' ? ['settled', 'Settled', 'Matches the provider record']
+      : operation?.state === 'DECLINED' ? ['reversed', 'Reversed', 'Provider declined. No money moved']
+      : operation?.state === 'PENDING' ? ['current', 'Pending', 'Provider has not completed it yet']
+      : sent ? ['current', 'Record check', 'Read the provider record next'] : ['', 'Record check', 'Not started'];
+    const nodes = [[plan ? 'done' : 'current', 'Evidence ready', plan ? 'Current plan checked' : 'Run and publish the plan'],
+      [grant.status === 'ACTIVE' || operation ? 'done' : plan ? 'current' : '', 'Exact grant', grant.status === 'ACTIVE' || operation ? 'One amount, one capture, five minutes' : 'Owner approves one effect'],
+      [operation?.state === 'BLOCKED' ? 'reversed' : sent ? 'done' : grant.status === 'ACTIVE' ? 'current' : '', operation?.state === 'BLOCKED' ? 'Blocked' : 'Sent once', operation?.state === 'BLOCKED' ? 'Stopped before dispatch' : sent ? 'No automatic retry' : 'At most one request'],
+      response, record];
+    const list = $('payment-progress'); list.replaceChildren();
+    for (const [kind, label, detail] of nodes) {
+      const row = document.createElement('li'), dot = document.createElement('span'), title = document.createElement('strong'), note = document.createElement('small');
+      row.className = kind; dot.className = 'node'; title.textContent = label; note.textContent = detail; row.append(dot, title, note); list.append(row);
+    }
+  }
   function render(next) {
     if (!next?.payment || !csrf) return;
     if (state && state.room.id === next.room.id && next.room.revision < state.room.revision) return;
@@ -22,7 +54,9 @@
     const key = `${state.room.revision}:${grant.id}:${payment.case.capture}`;
     if (key !== approvalKey) { $('payment-ack').checked = false; approvalKey = key; }
     $('payment-panel').hidden = false;
-    $('payment-mode').textContent = payment.mode === 'rehearsal' ? 'Fake gateway · no PayPal calls' : 'PayPal sandbox · no real money';
+    $('payment-mode').textContent = payment.mode === 'rehearsal' ? 'Rehearsal · invented records · no PayPal calls' : 'PayPal sandbox · test money only';
+    $('payment-mode').className = `payment-mode ${payment.mode === 'rehearsal' ? 'rehearsal' : 'sandbox'}`;
+    gauge(payment);
     $('payment-amount').textContent = `${payment.case.currency} ${payment.case.amount}`;
     $('payment-capture').textContent = payment.case.capture;
     $('payment-grant').textContent = readable(grant.status);
@@ -36,10 +70,17 @@
     $('payment-send').disabled = busy || !owner() || !plan || grant.status !== 'ACTIVE' || !!operation;
     $('payment-send').textContent = payment.mode === 'rehearsal' ? 'Simulate one refund' : 'Send one sandbox refund';
     $('payment-reason').textContent = operation?.reason || (plan ? 'Current specialist evidence is ready. The owner can review the exact effect above.' : 'Run the specialists and publish their current checked artifact below before refund approval.');
-    const progress = $('payment-progress'); progress.replaceChildren();
-    for (const [label, complete] of [['Prepare current evidence', plan], ['Grant exact authority', grant.status === 'ACTIVE'], ['Send once; hold uncertainty', !!operation && !['RESERVED', 'BLOCKED'].includes(operation.state)], ['Verify provider record', operation?.state === 'VERIFIED']]) {
-      const row = document.createElement('li'); row.className = complete ? 'done' : ''; row.textContent = `${complete ? '✓' : '○'} ${label}`; progress.append(row);
+    timeline(plan, grant, operation, state.events);
+    const levels = $('payment-autonomy'); levels.replaceChildren();
+    for (const item of payment.autonomy || []) {
+      const row = document.createElement('li'), name = document.createElement('span'), level = document.createElement('strong');
+      row.className = item.level === 'Execute with Approval' ? 'gate' : item.level === 'Execute within Limits' ? 'auto' : 'draft';
+      name.textContent = readable(item.operation); level.textContent = item.level; row.title = item.means || ''; row.append(name, level); levels.append(row);
     }
+    const record = grant.record;
+    $('payment-approval').textContent = record
+      ? `Approval record: ${record.approver} approved exactly ${record.currency} ${record.amount} on capture ${record.capture} at ${new Date(record.approved_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, against the ${record.currency} ${record.limit} limit (${record.level}).`
+      : 'No approval yet. Without an owner approval, nothing is sent.';
     const reconcilable = operation && !['RESERVED', 'BLOCKED'].includes(operation.state);
     $('payment-reconcile').hidden = !owner() || !reconcilable;
     if (operation?.provider_id) { $('payment-refund-id').value = operation.provider_id; $('payment-refund-id').readOnly = true; }
@@ -47,7 +88,7 @@
     $('payment-reconcile').querySelector('button').disabled = busy;
     $('payment-checks').replaceChildren();
     if (operation?.receipt) {
-      for (const [label, value] of [['Amount and currency', `${operation.receipt.amount.currency_code} ${operation.receipt.amount.value} matched`], ['Capture and request', 'Matched reserved identity'], ['Provider status', operation.receipt.status], ['Final outcome', operation.state === 'VERIFIED' ? 'Verified from provider record' : 'Not yet verified complete']]) {
+      for (const [label, value] of [['Amount and currency', `${operation.receipt.amount.currency_code} ${operation.receipt.amount.value} matched`], ['Capture and request', 'Matched reserved identity'], ['Provider status', operation.receipt.status], ['Final outcome', operation.state === 'VERIFIED' ? 'Settled: passed every record check' : 'Not settled yet']]) {
         const item = document.createElement('li'), title = document.createElement('span'), result = document.createElement('strong');
         title.textContent = label; result.textContent = value; item.append(title, result); $('payment-checks').append(item);
       }
