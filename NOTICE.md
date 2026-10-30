@@ -1,7 +1,7 @@
 # Upstream notice
 
 Clearwake uses the public Relayloom project as a Git submodule at
-`vendor/relayloom`, pinned to `3668d316878e578223b8255622300c5d6131e5e3`.
+`vendor/relayloom`, pinned to `e4654fa807182d646f4029835fcfcc7f87f8c2b3`.
 Source: https://github.com/Sriharsan/relayloom
 Copyright 2026 Sriharsan B S. MIT license retained in the submodule.
 

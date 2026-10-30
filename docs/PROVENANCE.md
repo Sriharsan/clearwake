@@ -11,6 +11,8 @@ Reused public work: Relayloom 3668d316878e578223b8255622300c5d6131e5e3, its
 shared controller/scheduler, permission/session/CSRF/SSE, base UI and optional Meta
 adapter. It stays as a pinned MIT submodule with its original history/license.
 No private Verdock implementation, history, credentials or records were imported.
+On 30 October the pin moved to e4654fa807182d646f4029835fcfcc7f87f8c2b3, which
+changes only the Relayloom README; the reused code is the same.
 
 ## New implementation ledger
 
