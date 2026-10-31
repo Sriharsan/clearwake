@@ -11,6 +11,7 @@ import re
 import sqlite3
 import threading
 import time
+import uuid
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
@@ -245,3 +246,56 @@ class RehearsalGateway:
         if not row:
             raise GatewayError("This fake provider record was not found.")
         return json.loads(row[0])
+
+    # Rehearsal disputes, shaped like PayPal's Disputes API. Synthetic data only.
+    def _disputes_db(self):
+        db = sqlite3.connect(self.path)
+        db.execute("CREATE TABLE IF NOT EXISTS disputes(id TEXT PRIMARY KEY,body TEXT NOT NULL)")
+        return db
+
+    def open_dispute(self, capture_id, reason, value, due_iso, message=""):
+        """Rehearsal only: stands in for a buyer opening a dispute in PayPal's Resolution Center."""
+        dispute_id = "PP-D-REH-" + uuid.uuid4().hex[:10].upper()
+        body = {"dispute_id": dispute_id, "status": "WAITING_FOR_SELLER_RESPONSE", "reason": reason,
+                "dispute_amount": {"currency_code": "USD", "value": value}, "seller_response_due_date": due_iso,
+                "disputed_transactions": [{"seller_transaction_id": identifier(capture_id)}],
+                "messages": [{"posted_by": "BUYER", "content": message[:500]}] if message else []}
+        with closing(self._disputes_db()) as db, db:
+            db.execute("INSERT INTO disputes VALUES(?,?)", (dispute_id, json.dumps(body)))
+        return body
+
+    def disputes(self):
+        with closing(self._disputes_db()) as db, db:
+            return [json.loads(row[0]) for row in db.execute("SELECT body FROM disputes")]
+
+    def dispute(self, dispute_id):
+        with closing(self._disputes_db()) as db, db:
+            row = db.execute("SELECT body FROM disputes WHERE id=?", (identifier(dispute_id),)).fetchone()
+        if not row:
+            raise GatewayError("This fake dispute was not found.")
+        return json.loads(row[0])
+
+    def _update_dispute(self, dispute_id, **changes):
+        body = {**self.dispute(dispute_id), **changes}
+        with closing(self._disputes_db()) as db, db:
+            db.execute("UPDATE disputes SET body=? WHERE id=?", (json.dumps(body), dispute_id))
+        return body
+
+    def provide_evidence(self, dispute_id, evidences, request_id):
+        self._update_dispute(dispute_id, status="UNDER_REVIEW", evidences=evidences)
+        if self.outcome == "lost-response":
+            raise GatewayError("The fake provider recorded the evidence but the response was lost.")
+        return {"links": []}
+
+    def accept_claim(self, dispute_id, note, refund_value, currency, request_id):
+        capture_id = self.dispute(dispute_id)["disputed_transactions"][0]["seller_transaction_id"]
+        outcome, self.outcome = self.outcome, "completed"
+        try:
+            self.refund(capture_id, refund_value, currency, request_id)
+        finally:
+            self.outcome = outcome
+        self._update_dispute(dispute_id, status="RESOLVED", dispute_outcome={"outcome_code": "RESOLVED_BUYER_FAVOUR",
+                             "amount_refunded": {"currency_code": currency, "value": refund_value}})
+        if self.outcome == "lost-response":
+            raise GatewayError("The fake provider accepted the claim but the response was lost.")
+        return {"links": []}

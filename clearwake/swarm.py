@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
+import threading
 
 from verdock_core.approvals import ApprovalStore
 from verdock_core.invariants import Invariants
@@ -64,9 +65,11 @@ class MerchantSwarm:
         self.receipts = ReceiptLog(str(data / "merchant-receipts.ndjson"), load_seed(str(seed_path)))
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.held = {}  # UNKNOWN refunds keep their capture reservation until reconciled
+        self._writer = threading.Lock()
 
     def receipt(self, step, action, params, success):
-        return self.receipts.append(step, action, {**params, "policy_hash": self.policy_hash}, success,
+        with self._writer:  # one writer per chain: parallel agents must not fork it
+            return self.receipts.append(step, action, {**params, "policy_hash": self.policy_hash}, success,
                                     actor={"agent": self.agent, "user": "merchant"})
 
     def propose(self, case):
@@ -147,6 +150,93 @@ class MerchantSwarm:
                      "amount_minor": case.amount_minor}, state == VERIFIED)
         return Result(case.id, "refund", state, {VERIFIED: "Matches PayPal's refund record.", MISMATCH: "PayPal's record does not match. Escalated.",
                       PENDING: "PayPal shows it pending.", UNKNOWN: "No readable record yet."}[state], refund_id, approval_id, shown)
+
+    def handle_dispute(self, dispute_id, capture_minor, customer_id, order=None, trackers=(), mandate_receipt=None,
+                       approval_id=None, owner="swarm-1"):
+        """A real PayPal dispute (or its rehearsal twin): Intake, Evidence, Decider, policy, Checker. Deadlines escalate."""
+        from .evidence import DisputeView, deadline, evidence_pack, propose as rule
+        if not self.invariants.lock(f"dispute:{dispute_id}", owner, ttl_seconds=300):
+            return Result(dispute_id, "none", "busy", "Another agent holds this dispute.")
+        try:
+            view = DisputeView.from_paypal(self.gateway.dispute(dispute_id))                       # Intake
+            if view.status != "WAITING_FOR_SELLER_RESPONSE":
+                return Result(dispute_id, "none", "done", f"PayPal shows {view.status}; nothing to answer.")
+            clock = deadline(view, self.clock())
+            evidences, sources = evidence_pack(view, order, trackers, mandate_receipt)              # Evidence
+            limit = self.policy["operations"]["accept_claim"].get("approval_above_minor", 0)
+
+            def scripted():
+                return {"action": rule(view, evidences, limit, clock)[0]}
+            proposal = self.adapter.propose(                                                           # Decider
+                "You answer a PayPal dispute for a small merchant. Choose provide_evidence, accept_and_refund or escalate.",
+                f"Reason {view.reason}, amount {money(view.amount_minor)} {view.currency}, evidence items {len(evidences)}, "
+                f"deadline {clock['state']}.", ["action"], scripted)
+            action = (proposal.value or {}).get("action")
+            action = action if action in ("provide_evidence", "accept_and_refund", "escalate") else "escalate"
+            if action == "provide_evidence" and not evidences:
+                action = "escalate"  # a model may not claim evidence that the records do not hold
+            shown = {"backend": proposal.label, "proposed": action, "deadline": clock, "sources": sources}
+            self.receipt(f"{dispute_id}:proposal", "clearwake.dispute.proposal", {"dispute": dispute_id, "reason": view.reason,
+                         "proposed": action, "evidence_items": len(evidences), "deadline_state": clock["state"], "model": proposal.model}, True)
+            if clock["state"] in ("soon", "lapsed") and approval_id is None:
+                action = "escalate"
+            if action == "escalate":
+                approval_id = self.approvals.request("dispute", f"answer dispute {dispute_id} ({view.reason})", dispute_id, view.amount_minor,
+                                                     view.currency, self.policy["operations"]["accept_claim"]["max_amount_minor"], owner, 3600)
+                self.receipt(f"{dispute_id}:escalated", "clearwake.dispute.escalated", {"dispute": dispute_id, "approval": approval_id,
+                             "seconds_left": clock["seconds_left"] if clock["seconds_left"] is not None else -1}, True)
+                return Result(dispute_id, "escalate", "awaiting approval", f"Escalated to the inbox. Deadline: {clock['state']}.",
+                              approval_id=approval_id, proposal=shown)
+            request_id = self.invariants.request_id(f"dispute:{dispute_id}:{action}")
+            if action == "provide_evidence":
+                if not decide(self.policy, "provide_evidence", 0).allowed:
+                    return Result(dispute_id, action, "refused", "Policy does not allow sending evidence.", proposal=shown)
+                try:
+                    self.gateway.provide_evidence(dispute_id, evidences, request_id)
+                except GatewayError:
+                    self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN)
+                    return Result(dispute_id, action, UNKNOWN, "Evidence response lost. Read the dispute before doing anything else.", proposal=shown)
+                return self.check_dispute(dispute_id, action, ("UNDER_REVIEW", "WAITING_FOR_BUYER_RESPONSE", "RESOLVED"), shown)
+            decision = decide(self.policy, "accept_claim", view.amount_minor, view.currency)            # accept_and_refund
+            if not decision.allowed:
+                return Result(dispute_id, action, "refused", f"Policy refused: {decision.reason}.", proposal=shown)
+            if decision.needs_approval and approval_id is None:
+                approval_id = self.approvals.request("accept_claim", f"accept and refund {money(view.amount_minor)}", dispute_id, view.amount_minor,
+                                                     view.currency, decision.limit_minor, owner, 3600)
+                return Result(dispute_id, action, "awaiting approval", "Above the approval threshold.", approval_id=approval_id, proposal=shown)
+            if decision.needs_approval:
+                try:
+                    self.approvals.require(approval_id, "accept_claim", dispute_id, view.amount_minor, view.currency)
+                except Refused as error:
+                    return Result(dispute_id, action, "refused", f"Approval not valid: {error}", approval_id=approval_id, proposal=shown)
+                self.approvals.consume(approval_id)
+            capture = view.transactions[0] if view.transactions else ""
+            try:
+                reservation = self.invariants.reserve(f"capture:{capture}", capture_minor, view.amount_minor, customer_id,
+                                                      self.clock().date().isoformat(), self.policy.get("caps", {}).get("per_customer_per_day_minor"))
+            except Refused as error:
+                return Result(dispute_id, action, "refused", f"Swarm limit: {error}", proposal=shown)
+            try:
+                self.gateway.accept_claim(dispute_id, "Refund within the merchant's limit.", money(view.amount_minor), view.currency, request_id)
+            except GatewayError:
+                self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN); self.held[f"dispute:{dispute_id}"] = reservation
+                return Result(dispute_id, action, UNKNOWN, "Response lost. Held; read the dispute before anything else.", approval_id=approval_id, proposal=shown)
+            self.invariants.commit(reservation)
+            return self.check_dispute(dispute_id, action, ("RESOLVED",), shown, approval_id)
+        finally:
+            self.invariants.unlock(f"dispute:{dispute_id}", owner)
+
+    def check_dispute(self, dispute_id, action, good_statuses, shown, approval_id=None):
+        """Checker: read the dispute back from PayPal. Only the expected status counts as verified."""
+        try:
+            status = self.gateway.dispute(dispute_id).get("status")
+        except GatewayError:
+            status = None
+        state = VERIFIED if status in good_statuses else UNKNOWN if status is None else MISMATCH
+        if state == UNKNOWN:
+            self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN)
+        self.receipt(f"{dispute_id}:check", "clearwake.dispute.checked", {"dispute": dispute_id, "action": action, "status": status or "", "state": state}, state == VERIFIED)
+        return Result(dispute_id, action, state, f"PayPal now shows {status}." if status else "Could not read the dispute.", approval_id=approval_id, proposal=shown)
 
     def reconcile(self, case, known_refund_id):
         """Resolve an UNKNOWN from PayPal's own record of a known refund id. Reads only; never resends."""
