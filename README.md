@@ -6,6 +6,8 @@ Clearwake settles PayPal disputes before they turn into fees. Agents running ins
 git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git && cd clearwake && python -m clearwake --port 8810
 ```
 
+Public site (static, recorded sandbox run, receipt verifier in your browser): https://clearwake-mu.vercel.app. It is not part of the network isolated system and runs no agents.
+
 Open http://127.0.0.1:8810/console for the three screens (buyer agent, merchant control room with the dispute ledger, receipt verifier), or http://127.0.0.1:8810 for the refund workroom. Python 3.12 or newer, nothing to install. Windows: `.\demo.ps1`. macOS or Linux: `./demo.sh`. The network isolated run (case m) needs Docker: `python scripts/airgap.py`.
 
 ![Clearwake refund workroom in rehearsal: limit gauge at USD 1.00 of a USD 5.00 cap, autonomy levels, and a timeline holding a lost response as UNKNOWN](docs/screenshot-unknown-1440.png)
@@ -66,7 +68,7 @@ A request the gateway refuses before it leaves (403 off the allowlist, 502 when 
 | Cases k, l (real PayPal disputes) | real sandbox | SKIPPED: k needs a dispute close to its deadline, l needs ten real disputes |
 | Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox | 4 of 4 PASS. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED |
 | The console at `/console` | rehearsal, invented records | runs locally, AG Grid dispute ledger and fee leak gauge |
-| Public site (`site/`) | static, recorded sandbox run | verifies the real case m receipts in the browser |
+| Public site, https://clearwake-mu.vercel.app (`site/`) | static on Vercel, recorded sandbox run | verifies the real case m receipts in the browser |
 | Offline tests | fake transports | 94 Python and 12 UI tests pass (31 October) |
 
 Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md), from the run files in `data/runs/` and `data/airgap/`. Sandbox means PayPal's test environment with test money. No live PayPal, no real money.

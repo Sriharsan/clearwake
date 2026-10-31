@@ -2,6 +2,8 @@
 
 Repository: https://github.com/Sriharsan/clearwake (MIT)
 
+Public site: https://clearwake-mu.vercel.app (static, recorded sandbox run, browser receipt verifier; not network isolated, runs no agents)
+
 ## Description
 
 Clearwake settles PayPal disputes before they turn into fees. Agents running inside the merchant's own network resolve each case with the buyer inside the owner's limits, fight only the cases worth fighting, and never call a refund done until PayPal's own record says so.
@@ -87,7 +89,7 @@ Python 3.12 or newer, nothing to install. For the sandbox:
 4. For a real dispute, log in as the sandbox buyer, open one in the Resolution Center, then run `python scripts/cases.py --sandbox --only i --dispute <dispute id>`, or `--only n` for an inquiry to settle.
 5. For case m, with Docker and a local Ollama model folder: `python scripts/airgap.py`.
 
-Public site (static, recorded sandbox run, browser receipt verifier): `site/`, served locally with `python scripts/serve_site.py`.
+Public site (static, recorded sandbox run, browser receipt verifier): https://clearwake-mu.vercel.app, deployed from `site/` only with no environment variables; served locally with `python scripts/serve_site.py`.
 
 ## Updates during the hackathon
 
