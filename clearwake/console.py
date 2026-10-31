@@ -309,15 +309,7 @@ class Console:
                 self.swarm.approvals.approve(approval_id, approver.strip())
             except Exception as error:  # Refused from the approval store: decided, expired or self approval
                 raise ConsoleError(f"The approval store refused: {error}.", 409)
-            if record["operation"] == "dispute":
-                # swarm.handle_dispute has no send path for an approved escalation: rerunning would only escalate again.
-                entry["state"] = "approved, answer by hand"
-                entry["detail"] = "Approved. The swarm does not answer an escalated dispute itself; answer it in PayPal's Resolution Center."
-                entry["history"].append({"at": now_iso(self.clock), "state": entry["state"], "action": "approve", "detail": entry["detail"],
-                                         "note": f"Approved by {approver.strip()}"})
-                self._save()
-                return entry
-            if entry["kind"] == "PayPal dispute":
+            if entry["kind"] == "PayPal dispute":  # an approved escalation lets the swarm take only the step it named
                 result = self.swarm.handle_dispute(entry["dispute_id"], entry["capture_minor"], entry["customer"], {"id": entry["order"]},
                                                    TRACKERS if entry.get("use_trackers") else [], None, approval_id=approval_id)
             else:

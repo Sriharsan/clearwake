@@ -58,6 +58,19 @@ class DisputeTests(unittest.TestCase):
         self.assertLess(result.proposal["deadline"]["seconds_left"], 6 * 3600)
         self.assertEqual(self.gateway.dispute(d["dispute_id"])["status"], "WAITING_FOR_SELLER_RESPONSE")  # nothing sent
 
+    def test_k_approved_escalation_takes_only_the_step_it_named_once(self):
+        d = self.gateway.open_dispute("CAP-9", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "9.00", due(5))
+        held = self.swarm.handle_dispute(d["dispute_id"], 900, "buyer-9", {"id": "ORDER-9"}, TRACKERS)
+        self.assertIn("send the evidence", self.swarm.approvals.get(held.approval_id)["action"])
+        early = self.swarm.handle_dispute(d["dispute_id"], 900, "buyer-9", {"id": "ORDER-9"}, TRACKERS, approval_id=held.approval_id)
+        self.assertEqual(early.state, "refused")  # still pending: nobody approved it
+        self.swarm.approvals.approve(held.approval_id, "Sri")
+        sent = self.swarm.handle_dispute(d["dispute_id"], 900, "buyer-9", {"id": "ORDER-9"}, TRACKERS, approval_id=held.approval_id)
+        self.assertEqual((sent.action, sent.state), ("provide_evidence", VERIFIED))
+        again = self.gateway.open_dispute("CAP-10", "UNAUTHORISED", "9.00", due(5))
+        other = self.swarm.handle_dispute(again["dispute_id"], 900, "buyer-10", {"id": "ORDER-10"}, [], approval_id=held.approval_id)
+        self.assertEqual(other.state, "refused")  # one approval, one dispute, one use
+
     def test_small_claim_without_evidence_is_accepted_and_refunded_then_checked(self):
         d = self.gateway.open_dispute("CAP-4", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "1.50", due(72))
         result = self.swarm.handle_dispute(d["dispute_id"], 900, "buyer-4")

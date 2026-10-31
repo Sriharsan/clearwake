@@ -3,6 +3,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 from http.cookies import CookieError, SimpleCookie
 
+import io
 import json
 import re
 import secrets
@@ -15,6 +16,7 @@ from .console import ConsoleError
 ASSETS = Path(__file__).resolve().parent.parent / "web"
 VERIFY_JS = Path(__file__).resolve().parent.parent / "vendor" / "verdock-core" / "js" / "verify.js"
 CONSOLE_COOKIE = "clearwake_console"
+MAX_BODY = 1 << 20
 # Files the console serves, each from a fixed path. Nothing else under web/ or vendor/ is reachable.
 CONSOLE_ASSETS = {
     "/console": ("console.html", "text/html"), "/console/": ("console.html", "text/html"),
@@ -145,6 +147,21 @@ class ClearwakeHandler(Handler):
             return
 
     def do_POST(self):
+        # A refused POST whose body is unread makes Windows reset the socket before the client reads the refusal.
+        # Read a bounded body first and replay it, so every route (core and console) answers cleanly.
+        original = self.rfile
+        try:
+            length = int(self.headers.get("Content-Length") or 0)
+        except ValueError:
+            length = 0
+        if 0 < length <= MAX_BODY:
+            self.rfile = io.BytesIO(original.read(length))
+        try:
+            self.route_post()
+        finally:
+            self.rfile = original
+
+    def route_post(self):
         path = urlsplit(self.path).path
         if not path.startswith("/console/api/"):
             return super().do_POST()

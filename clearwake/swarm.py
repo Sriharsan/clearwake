@@ -188,11 +188,25 @@ class MerchantSwarm:
             shown = {"backend": proposal.label, "proposed": action, "deadline": clock, "sources": sources}
             self.receipt(f"{dispute_id}:proposal", "clearwake.dispute.proposal", {"dispute": dispute_id, "reason": view.reason,
                          "proposed": action, "evidence_items": len(evidences), "deadline_state": clock["state"], "model": proposal.model}, True)
+            # An escalation asks a person to approve one exact next step; an approved one lets the swarm take only that step.
+            planned = "provide_evidence" if evidences else "accept_and_refund"
+            approved = False
+            record = self.approvals.get(approval_id) if approval_id else None
+            if record and record["operation"].startswith("dispute_"):
+                try:
+                    self.approvals.require(approval_id, f"dispute_{planned}", dispute_id, view.amount_minor, view.currency)
+                except Refused as error:
+                    return Result(dispute_id, planned, "refused", f"Approval not valid: {error}", approval_id=approval_id, proposal=shown)
+                self.approvals.consume(approval_id)
+                self.receipt(f"{dispute_id}:approval-used", "clearwake.approval.used", {"dispute": dispute_id, "approval": approval_id,
+                             "approver": record["approver"], "step": planned}, True)
+                action, approved = planned, True
             if clock["state"] in ("soon", "lapsed") and approval_id is None:
                 action = "escalate"
             if action == "escalate":
-                approval_id = self.approvals.request("dispute", f"answer dispute {dispute_id} ({view.reason})", dispute_id, view.amount_minor,
-                                                     view.currency, self.policy["operations"]["accept_claim"]["max_amount_minor"], owner, 3600)
+                step = "send the evidence from PayPal's record" if evidences else f"accept and refund {money(view.amount_minor)} {view.currency}"
+                approval_id = self.approvals.request(f"dispute_{planned}", f"answer dispute {dispute_id} ({view.reason}): {step}", dispute_id,
+                                                     view.amount_minor, view.currency, self.policy["operations"]["accept_claim"]["max_amount_minor"], owner, 3600)
                 self.receipt(f"{dispute_id}:escalated", "clearwake.dispute.escalated", {"dispute": dispute_id, "approval": approval_id,
                              "seconds_left": clock["seconds_left"] if clock["seconds_left"] is not None else -1}, True)
                 return Result(dispute_id, "escalate", "awaiting approval", f"Escalated to the inbox. Deadline: {clock['state']}.",
@@ -213,11 +227,11 @@ class MerchantSwarm:
             decision = decide(self.policy, "accept_claim", view.amount_minor, view.currency)            # accept_and_refund
             if not decision.allowed:
                 return Result(dispute_id, action, "refused", f"Policy refused: {decision.reason}.", proposal=shown)
-            if decision.needs_approval and approval_id is None:
+            if decision.needs_approval and approval_id is None and not approved:
                 approval_id = self.approvals.request("accept_claim", f"accept and refund {money(view.amount_minor)}", dispute_id, view.amount_minor,
                                                      view.currency, decision.limit_minor, owner, 3600)
                 return Result(dispute_id, action, "awaiting approval", "Above the approval threshold.", approval_id=approval_id, proposal=shown)
-            if decision.needs_approval:
+            if decision.needs_approval and not approved:
                 try:
                     self.approvals.require(approval_id, "accept_claim", dispute_id, view.amount_minor, view.currency)
                 except Refused as error:

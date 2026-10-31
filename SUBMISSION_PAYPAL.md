@@ -57,7 +57,7 @@ A model can only propose. It cannot approve, send, change a limit or mark a refu
 | f. Three agents split refunds; the one over the capture is stopped | rehearsal | PASS |
 | g. Prompt injection | rehearsal, refused before any PayPal call | PASS |
 | h. Tampered receipt fails | offline | PASS |
-| i. Item not received, tracking before the deadline | real sandbox | SKIPPED in the recorded runs: no open dispute. PASS in rehearsal |
+| i. Item not received, tracking before the deadline | real sandbox | PASS on dispute `PP-R-SLI-10195419`: PayPal had it under review and offered only supporting info, so the tracker from the order record was sent that way and read back from PayPal's record. PASS in rehearsal |
 | j. Agent order disputed, mandate receipt attached and verified | rehearsal dispute, receipt verified offline | PASS |
 | k. Near deadline escalation | real sandbox | SKIPPED in the recorded runs. PASS in rehearsal |
 | l. Ten disputes in parallel | real sandbox | SKIPPED in the recorded runs. PASS in rehearsal: 4 evidenced, 4 refunded, 2 escalated, 0.15 s per dispute |
@@ -97,9 +97,9 @@ Clearwake runs on [verdock-core](https://github.com/Sriharsan/verdock-core) v0.1
 
 ## Judging criteria
 
-**Technological Implementation.** Clearwake calls PayPal's Orders v2, Payments v2 and Disputes v1 APIs directly through one allowlisted, sandbox only adapter, and every money movement is checked by a separate read of PayPal's record. Refunds carry one stable `PayPal-Request-Id` reserved before the send, so a duplicate click, a restart or a second agent replays the held operation instead of sending again. A lost response is held as UNKNOWN and reconciled from PayPal's refund record (case e, injected fault in sandbox). Swarm invariants stop parallel agents from refunding past a capture or past a customer's daily cap (case f). It runs with the Python standard library only, and 67 Python and 4 UI tests pass offline.
+**Technological Implementation.** Clearwake calls PayPal's Orders v2, Payments v2 and Disputes v1 APIs directly through one allowlisted, sandbox only adapter, and every money movement is checked by a separate read of PayPal's record. Refunds carry one stable `PayPal-Request-Id` reserved before the send, so a duplicate click, a restart or a second agent replays the held operation instead of sending again. A lost response is held as UNKNOWN and reconciled from PayPal's refund record (case e, injected fault in sandbox). Swarm invariants stop parallel agents from refunding past a capture or past a customer's daily cap (case f). It runs with the Python standard library only, and 78 Python and 12 UI tests pass offline.
 
-**Design.** The console has three screens: the buyer agent with the owner's mandate, the merchant control room with the approval inbox, disputes and an AG Grid ledger, and a receipt verifier that checks every receipt in the browser. Every screen states its mode ("rehearsal, invented records"), the buyer agent's proposal is shown next to the mandate decision, and anything above the merchant's threshold waits in the inbox for a person. The older refund workroom at `/` shows the limit gauge, the autonomy levels and a timeline where a lost response sits as UNKNOWN.
+**Design.** The console has three screens: the buyer agent with the owner's mandate, the merchant control room with the approval inbox, disputes and a sortable ledger, and a receipt verifier that checks every receipt in the browser. Every screen states its mode ("rehearsal, invented records"), the buyer agent's proposal is shown next to the mandate decision, and anything above the merchant's threshold waits in the inbox for a person. The older refund workroom at `/` shows the limit gauge, the autonomy levels and a timeline where a lost response sits as UNKNOWN.
 
 **Potential Impact.** Value today, on every dispute: in the Chargebacks911 2026 Chargeback Field Report (a vendor survey of more than 250 merchants), net recovery on chargebacks averages about 10.7% of cases, evidence collection is merchants' top representment challenge (29.0%), and about one third of merchants do not dispute any chargebacks at all. Clearwake attacks exactly that step: it gathers the evidence from PayPal's own record and answers before the deadline, or escalates while there is still time. Value tomorrow, on agent orders: a PYMNTS Intelligence survey reported by Forkast found that 93% of merchants believe AI or agent providers should bear the loss when an agent buys wrong, and only 28% would offer their full range to agents under current terms. American Express Agent Purchase Protection is conditional on registered agents and authenticated purchase intent (also via Forkast). Clearwake's signed mandate receipt is that kind of proof of intent, linked to the PayPal order and attached to the dispute (case j). Sources: [docs/SOURCES.md](docs/SOURCES.md).
 
@@ -111,12 +111,9 @@ Clearwake runs on [verdock-core](https://github.com/Sriharsan/verdock-core) v0.1
 
 **Best Use of Agentic Commerce.** Both sides of an agent purchase: a buyer agent that spends only inside a signed mandate (cases a and b) and a merchant swarm that answers the dispute with that mandate as evidence (case j). Agents propose; the policy decides; PayPal's record confirms.
 
-**Best Use of PayPal + AI.** Agents read real PayPal disputes, orders, captures and tracking, and act through PayPal's Disputes and Payments APIs inside limits the merchant set. Real sandbox refunds were verified against PayPal's record (cases c, d and e), and the AI path runs on a free local model or as scripted agents, clearly labelled.
+**Best Use of PayPal + AI.** Agents read real PayPal disputes, orders, captures and tracking, and act through PayPal's Disputes and Payments APIs inside limits the merchant set. Real sandbox refunds were verified against PayPal's record (cases c, d and e), a real sandbox dispute was answered with tracking from the order record and read back (case i), and the AI path runs on a free local model or as scripted agents, clearly labelled.
 
 **Best Demo Delivery.** A clean clone runs with one command and no installs. The video follows the same steps, and every shot is captioned with how it ran.
-
-**AG Grid.** The console's ledger table (merchant control room) and receipts table (receipt verifier) use AG Grid Community 32.3.3 (MIT), vendored under `web/vendor/ag-grid` and served from the local server so it runs under the console's Content Security Policy. Versions and file hashes: `docs/THIRD_PARTY_UI.txt`.
-
 ## Not claimed
 
 No live PayPal, no real money, no customers, no revenue. Sandbox results show the integration working against PayPal's test environment, nothing more. Survey figures are third party survey results, not Clearwake outcomes.
