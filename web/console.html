@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearwake console</title>
+<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/console.css">
+<script src="/console-lib.js" defer></script>
+<script src="/console.js" type="module"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the screen</a>
+<header class="top">
+  <a class="brand" href="/console#buyer" aria-label="Clearwake console home"><span class="brand-mark" aria-hidden="true">c</span>clearwake<span class="brand-dot">.</span></a>
+  <nav class="tabs" aria-label="Screens">
+    <a class="tab" href="#buyer" data-screen="buyer"><span class="tab-num">1</span><span class="tab-full">Buyer agent</span><span class="tab-short" aria-hidden="true">Buyer</span></a>
+    <a class="tab" href="#merchant" data-screen="merchant"><span class="tab-num">2</span><span class="tab-full">Merchant control room</span><span class="tab-short" aria-hidden="true">Merchant</span></a>
+    <a class="tab" href="#verify" data-screen="verify"><span class="tab-num">3</span><span class="tab-full">Receipt verifier</span><span class="tab-short" aria-hidden="true">Verifier</span></a>
+  </nav>
+  <div class="top-meta">
+    <span class="pill rehearsal" id="mode-pill">Rehearsal, invented records</span>
+    <span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: loading</span>
+    <a class="workroom-link" href="/">Workroom</a>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <div id="server-error" class="banner error" role="alert" hidden></div>
+
+  <!-- 1. Buyer agent -->
+  <section id="screen-buyer" class="screen" aria-labelledby="buyer-title" hidden>
+    <div class="screen-head">
+      <div><p class="eyebrow">Buyer agent</p><h1 id="buyer-title">Spend only inside the owner's mandate.</h1></div>
+      <p class="screen-note">The agent may only name a product. The mandate check reads numbers and ids, never the agent's words. Every purchase it allows gets a signed receipt. Rehearsal: no PayPal checkout runs here and the order ids are invented.</p>
+    </div>
+    <div class="buyer-grid">
+      <article class="card mandate" aria-labelledby="mandate-title">
+        <h2 id="mandate-title" class="card-title">Owner's mandate</h2>
+        <p class="card-sub" id="mandate-owner"></p>
+        <div class="budget">
+          <div class="budget-figures"><span class="figure" id="mandate-remaining">USD 0.00</span><span class="figure-label">left of <span id="mandate-budget">USD 0.00</span></span></div>
+          <div class="meter" role="meter" aria-label="Budget spent" aria-valuemin="0" id="budget-meter"><span class="meter-fill" id="budget-fill"></span></div>
+          <p class="figure-label">Spent <span id="mandate-spent" class="mono">USD 0.00</span></p>
+        </div>
+        <dl class="facts">
+          <div><dt>Per item cap</dt><dd id="mandate-cap" class="mono"></dd></div>
+          <div><dt>Merchant</dt><dd id="mandate-merchant"></dd></div>
+          <div><dt>Categories</dt><dd id="mandate-categories"></dd></div>
+          <div><dt>Currency</dt><dd id="mandate-currency" class="mono"></dd></div>
+        </dl>
+        <h3 class="mini-title">Store catalogue <span class="tag">invented</span></h3>
+        <ul class="catalog" id="catalog"></ul>
+      </article>
+
+      <div class="buyer-work">
+        <form class="card request" id="buy-form" aria-labelledby="request-title">
+          <h2 id="request-title" class="card-title">Ask the buyer agent</h2>
+          <label for="buy-request" class="field-label">What should it buy?</label>
+          <div class="request-row">
+            <input id="buy-request" name="request" maxlength="200" autocomplete="off" required placeholder="A dot grid notebook for meeting notes">
+            <button class="button primary" type="submit" id="buy-send">Send to agent</button>
+          </div>
+          <div class="chips" aria-label="Example requests">
+            <button type="button" class="chip" data-request="A dot grid notebook for meeting notes">Notebook</button>
+            <button type="button" class="chip" data-request="A stoneware mug for the office">Mug</button>
+            <button type="button" class="chip" data-request="Wireless headphones">Headphones (outside mandate)</button>
+            <button type="button" class="chip" data-request="Wool socks">Socks (outside mandate)</button>
+          </div>
+          <p class="form-error" id="buy-error" role="alert" hidden></p>
+        </form>
+
+        <div id="buy-empty" class="card empty">
+          <h2 class="empty-title">No requests yet</h2>
+          <p>Send a request. The agent's proposal appears next to the mandate decision, with every check shown.</p>
+        </div>
+
+        <div id="buy-result" class="decision-pair" hidden>
+          <article class="card proposal" aria-labelledby="proposal-title">
+            <h2 id="proposal-title" class="card-title">Agent proposal</h2>
+            <p class="model-line">Backend: <strong id="proposal-model"></strong></p>
+            <p class="proposal-product" id="proposal-product"></p>
+            <p class="card-sub" id="proposal-request"></p>
+          </article>
+          <article class="card decision" aria-labelledby="decision-title">
+            <h2 id="decision-title" class="card-title">Mandate decision</h2>
+            <p class="verdict" id="decision-verdict"></p>
+            <ul class="checks" id="decision-checks"></ul>
+          </article>
+        </div>
+
+        <article id="receipt-card" class="card receipt" aria-labelledby="receipt-title" hidden>
+          <div class="receipt-head"><h2 id="receipt-title" class="card-title">Signed mandate receipt</h2><span class="status-chip" id="receipt-status"></span></div>
+          <dl class="facts receipt-facts">
+            <div><dt>Order (invented)</dt><dd id="receipt-order" class="mono"></dd></div>
+            <div><dt>Digest, SHA-256 of the line</dt><dd id="receipt-digest" class="mono"></dd></div>
+            <div><dt>Buyer agent public key</dt><dd id="receipt-key" class="mono"></dd></div>
+          </dl>
+          <p class="card-sub">Ed25519, draft-sahu-agent-action-receipts-00. The merchant's Evidence agent can attach this receipt to a dispute. <a href="#verify">Check the whole log in this browser</a>.</p>
+        </article>
+
+        <section class="card history" aria-labelledby="history-title">
+          <h2 id="history-title" class="card-title">Requests in this rehearsal</h2>
+          <ol class="history-list" id="buy-history"></ol>
+          <p class="empty-line" id="buy-history-empty">No requests yet.</p>
+        </section>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. Merchant control room -->
+  <section id="screen-merchant" class="screen" aria-labelledby="merchant-title" hidden>
+    <div class="screen-head">
+      <div><p class="eyebrow">Merchant control room</p><h1 id="merchant-title">Every refund held to its limit and its record.</h1></div>
+      <p class="screen-note">Rehearsal: a fake provider in a local data folder stands in for PayPal, and every record here is invented. The flow is the same one the sandbox run uses: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
+    </div>
+
+    <form class="card runner" id="case-form" aria-labelledby="runner-title">
+      <div class="runner-head"><h2 id="runner-title" class="card-title">Run a rehearsal case</h2><button type="button" class="button quiet" id="reset">New rehearsal folder</button></div>
+      <fieldset class="case-picker" id="case-picker"><legend class="sr-only">Case</legend></fieldset>
+      <div class="runner-foot"><button class="button primary" type="submit" id="case-run">Run case</button><p class="card-sub" id="runner-status" aria-live="polite"></p></div>
+    </form>
+
+    <div class="stage">
+      <article class="card side buyer-side" aria-labelledby="side-buyer-title">
+        <p class="eyebrow">Left</p>
+        <h2 id="side-buyer-title" class="card-title">Buyer agent</h2>
+        <p class="card-sub">Sends the complaint or opens the dispute. Holds the signed mandate receipt.</p>
+        <div class="side-latest" id="side-buyer"></div>
+      </article>
+      <div class="lane" aria-labelledby="gauge-caption">
+        <figure class="limit-gauge">
+          <svg viewBox="0 0 220 128" role="img" aria-labelledby="gauge-caption"><path class="gauge-track" d="M 20 112 A 90 90 0 0 1 200 112" pathLength="100"/><path id="gauge-fill" class="gauge-fill" d="M 20 112 A 90 90 0 0 1 200 112" pathLength="100" stroke-dasharray="0 100"/><line class="gauge-cap" x1="200" y1="104" x2="200" y2="122"/></svg>
+          <div class="gauge-readout"><strong id="gauge-amount">USD 0.00</strong><span id="gauge-limit">of the USD 5.00 cap</span></div>
+          <figcaption id="gauge-caption">Latest refund asked for, against the hard cap per refund. Above the cap, the policy refuses before any provider call.</figcaption>
+        </figure>
+        <div class="flow" aria-hidden="true"><span class="flow-line"></span><span class="coin" id="coin"></span></div>
+        <p class="flow-label" id="flow-label" aria-live="polite">No money has moved yet.</p>
+      </div>
+      <article class="card side swarm-side" aria-labelledby="side-swarm-title">
+        <p class="eyebrow">Right</p>
+        <h2 id="side-swarm-title" class="card-title">Merchant swarm</h2>
+        <ol class="agents" id="agents">
+          <li data-agent="intake"><strong>Intake</strong><span>reads the case</span></li>
+          <li data-agent="evidence"><strong>Evidence</strong><span>gathers records</span></li>
+          <li data-agent="decider"><strong>Decider</strong><span>proposes</span></li>
+          <li data-agent="policy"><strong>Policy</strong><span>decides</span></li>
+          <li data-agent="checker"><strong>Checker</strong><span>reads the record</span></li>
+        </ol>
+      </article>
+    </div>
+
+    <div class="room-grid">
+      <section class="card cases" aria-labelledby="cases-title">
+        <h2 id="cases-title" class="card-title">Cases</h2>
+        <p class="card-sub legend"><span class="node settled"></span>settled <span class="node unknown"></span>UNKNOWN, held <span class="node reversed"></span>refused or reversed <span class="node held"></span>waiting for a person</p>
+        <ol class="case-list" id="case-list"></ol>
+        <div class="empty" id="cases-empty"><h3 class="empty-title">No cases yet</h3><p>Run case c for a refund under the limit, or e to see an UNKNOWN held and then reconciled.</p></div>
+      </section>
+
+      <div class="room-side">
+        <section class="card inbox" aria-labelledby="inbox-title">
+          <h2 id="inbox-title" class="card-title">Approval inbox</h2>
+          <label class="field-label" for="approver">Approver name</label>
+          <input id="approver" maxlength="60" autocomplete="off" value="Sri (approver)">
+          <ol class="inbox-list" id="inbox-list"></ol>
+          <p class="empty-line" id="inbox-empty">Nothing waiting. Case d puts a USD 3.50 refund here; k puts a dispute close to its deadline here.</p>
+        </section>
+        <section class="card disputes" aria-labelledby="disputes-title">
+          <h2 id="disputes-title" class="card-title">Disputes</h2>
+          <ol class="dispute-list" id="dispute-list"></ol>
+          <p class="empty-line" id="disputes-empty">No disputes yet. Cases i, j, k and l open rehearsal disputes shaped like PayPal's Disputes API.</p>
+        </section>
+      </div>
+    </div>
+
+    <section class="card ledger" aria-labelledby="ledger-title">
+      <div class="ledger-head"><h2 id="ledger-title" class="card-title">Ledger</h2><span class="tag">rehearsal, invented records</span></div>
+      <div id="ledger-grid" class="grid-host"></div>
+      <p class="empty-line" id="ledger-empty">No money movements yet.</p>
+    </section>
+  </section>
+
+  <!-- 3. Receipt verifier -->
+  <section id="screen-verify" class="screen" aria-labelledby="verify-title" hidden>
+    <div class="screen-head">
+      <div><p class="eyebrow">Receipt verifier</p><h1 id="verify-title">Check every receipt in this browser.</h1></div>
+      <p class="screen-note">Uses WebCrypto Ed25519 and SHA-256 in this page, with the verdock-core verifier served from this machine. It needs no network once the page is open. It proves a log was not altered after it was written; it cannot prove every action was recorded or that the end was not cut off.</p>
+    </div>
+
+    <div class="verify-grid">
+      <section class="card" aria-labelledby="logs-title">
+        <div class="ledger-head"><h2 id="logs-title" class="card-title">This rehearsal's logs</h2><span class="tag">rehearsal, invented records</span></div>
+        <div class="log-cards" id="log-cards"></div>
+        <div class="verify-actions">
+          <button class="button primary" id="verify-all" type="button">Verify both logs</button>
+          <button class="button" id="tamper" type="button">Tamper with one line</button>
+          <button class="button quiet" id="restore" type="button" disabled>Restore the original</button>
+        </div>
+        <p class="card-sub" id="tamper-note" aria-live="polite"></p>
+      </section>
+
+      <form class="card own-log" id="own-form" aria-labelledby="own-title">
+        <h2 id="own-title" class="card-title">Verify any log</h2>
+        <label class="field-label" for="own-file">NDJSON file</label>
+        <input id="own-file" type="file" accept=".ndjson,.jsonl,.txt,application/x-ndjson,text/plain">
+        <label class="field-label" for="own-text">Or paste the log</label>
+        <textarea id="own-text" rows="5" spellcheck="false" placeholder="One receipt per line"></textarea>
+        <label class="field-label" for="own-key">Public key (64 hex characters)</label>
+        <input id="own-key" maxlength="64" autocomplete="off" spellcheck="false" class="mono">
+        <button class="button primary" type="submit">Verify</button>
+        <p class="form-error" id="own-error" role="alert" hidden></p>
+      </form>
+    </div>
+
+    <section class="card" aria-labelledby="lines-title">
+      <div class="ledger-head"><h2 id="lines-title" class="card-title">Lines</h2><p class="verify-summary" id="verify-summary" aria-live="polite"></p></div>
+      <div id="receipt-grid" class="grid-host"></div>
+      <p class="empty-line" id="receipts-empty">No receipts yet. Run a case in the control room or a request in the buyer screen, then verify.</p>
+    </section>
+  </section>
+</main>
+<footer class="foot"><p>Loopback only. Default runs make no provider or model calls. An outcome is called verified only when it matches PayPal's own record. Rehearsal outcomes are checked against a fake provider record, so this console shows them as "matches rehearsal record".</p></footer>
+</body>
+</html>

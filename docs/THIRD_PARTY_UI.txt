@@ -1,0 +1,29 @@
+Third party code served by the Clearwake console (/console)
+=============================================================
+
+The console loads nothing from any other host. Everything it serves is in
+this repository.
+
+verdock-core browser verifier
+  File:      vendor/verdock-core/js/verify.js, served unchanged at /verdock/verify.js
+  License:   MIT (vendor/verdock-core/LICENSE), pinned git submodule
+  Used for:  the receipt verifier screen (WebCrypto Ed25519 and SHA-256)
+
+Evaluated and not shipped
+-------------------------
+
+AG Grid Community
+  Package:   ag-grid-community (npm), version 32.3.3
+  License:   MIT, Copyright (c) 2015-2024 AG GRID LTD (read in the package's LICENSE.txt)
+  Source:    https://registry.npmjs.org/ag-grid-community/-/ag-grid-community-32.3.3.tgz
+             npm integrity sha512-KhSJ3B6mwRFA4cLjNjOZkDndJBh8o83794ZHl4Q7xP9MJf43oCN9qoZ8pyBanohgpVfLcP0scYYCr9xIlzjdiA==
+  Tried:     31 October 2026, the "noStyle" build with ag-grid.min.css and
+             ag-theme-quartz-no-font.min.css, served from this machine.
+  Result:    the grid builds rows from HTML templates that carry inline style
+             attributes. The console's Content Security Policy (style-src 'self',
+             no 'unsafe-inline') blocked them: over 100 violations per page and
+             rows drawn on top of each other. The "print" layout drew the rows
+             but stretched the table to about 5000 px wide.
+  Decision:  not vendored. The ledger and receipts tables are plain HTML tables
+             with sortable column buttons, written in web/console.js. The CSP
+             was not loosened.
