@@ -13,6 +13,7 @@ import threading
 import time
 import uuid
 from urllib.parse import urlsplit
+from urllib.error import HTTPError
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 BASE = "https://api-m.sandbox.paypal.com"
@@ -22,6 +23,10 @@ MONEY = re.compile(r"(?:0|[1-9][0-9]{0,8})\.[0-9]{2}\Z")
 
 class GatewayError(Exception):
     """A sanitized provider failure, with no credential or response disclosure."""
+
+
+class ProviderRefused(Exception):
+    """PayPal answered with a 4xx: the request was refused and nothing was applied. Not UNKNOWN."""
 
 
 def identifier(value):
@@ -62,6 +67,15 @@ def transport(request, timeout=15):
             if not isinstance(result, dict):
                 raise GatewayError("The provider response was malformed.")
             return result
+    except HTTPError as error:
+        if 400 <= error.code < 500 and error.code != 408:
+            try:  # PayPal error names and issue codes only; never headers or tokens
+                body = json.loads(error.read(65536) or b"{}")
+            except Exception:
+                body = {}
+            issues = ",".join(str(d.get("issue")) for d in body.get("details", []) if isinstance(d, dict))[:200]
+            raise ProviderRefused(f"PayPal refused it ({error.code} {body.get('name', '')} {issues}).".replace("  ", " ")) from None
+        raise GatewayError("The sandbox request could not be confirmed. No automatic retry was sent.") from None
     except Exception:
         raise GatewayError("The sandbox request could not be confirmed. No automatic retry was sent.") from None
 
@@ -115,6 +129,8 @@ class SandboxGateway:
         try:
             return self.send(Request(BASE + path, data=json.dumps(payload).encode() if payload is not None else None,
                 headers=headers, method="POST" if payload is not None else "GET"), 15)
+        except ProviderRefused:
+            raise
         except Exception:
             raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
 
@@ -174,6 +190,8 @@ class SandboxGateway:
         try:
             return self.send(Request(BASE + path, data=body, method="POST", headers={"Authorization": "Bearer " + token,
                 "Accept": "application/json", "Content-Type": content_type, "PayPal-Request-Id": request_id}), 15)
+        except ProviderRefused:
+            raise
         except Exception:
             raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
 

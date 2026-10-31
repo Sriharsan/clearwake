@@ -64,6 +64,29 @@ class DisputeTests(unittest.TestCase):
         self.assertEqual((result.action, result.state), ("accept_and_refund", VERIFIED))
         self.assertEqual(self.gateway.dispute(d["dispute_id"])["status"], "RESOLVED")
 
+    def test_open_inquiry_is_answered_and_a_paypal_refusal_is_not_unknown(self):
+        from clearwake.paypal import ProviderRefused
+        d = self.gateway.open_dispute("CAP-6", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "5.00", due(72))
+        self.gateway._update_dispute(d["dispute_id"], status="OPEN")  # real sandbox inquiries start OPEN
+        refusing = self.gateway.provide_evidence
+        self.gateway.provide_evidence = lambda *a: (_ for _ in ()).throw(ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY X)."))
+        refused = self.swarm.handle_dispute(d["dispute_id"], 2000, "buyer-6", {"id": "ORDER-6"}, TRACKERS)
+        self.assertEqual(refused.state, "refused by PayPal"); self.assertIn("Nothing was applied", refused.detail)
+        self.gateway.provide_evidence = refusing
+        sent = self.swarm.handle_dispute(d["dispute_id"], 2000, "buyer-6", {"id": "ORDER-6"}, TRACKERS)
+        self.assertEqual((sent.action, sent.state), ("provide_evidence", VERIFIED))
+
+    def test_sandbox_helpers_pass_paypal_refusals_through_unchanged(self):
+        from clearwake.paypal import ProviderRefused, SandboxGateway
+        def send(request, timeout):
+            if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
+            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY NOT_ALLOWED).")
+        gateway = SandboxGateway("synthetic-client", "synthetic-secret", send=send)
+        with self.assertRaises(ProviderRefused):
+            gateway.provide_evidence("PP-D-1", [], "12345678-1234-4234-8234-123456789abc")
+        with self.assertRaises(ProviderRefused):
+            gateway.dispute("PP-D-1")
+
     def test_a_model_cannot_send_evidence_the_records_do_not_hold(self):
         liar = Adapter("ollama", "test-model", send=lambda u, p, h: {"choices": [{"message": {"content": json.dumps({"action": "provide_evidence"})}}]})
         swarm = MerchantSwarm(self.gateway, self.root / "liar", liar, clock=lambda: NOW)

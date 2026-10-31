@@ -18,7 +18,7 @@ from verdock_core.policy import decide, load_policy, policy_hash
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed
 from verdock_core import Refused
 
-from .paypal import GatewayError
+from .paypal import GatewayError, ProviderRefused
 
 POLICY = Path(__file__).resolve().parent.parent / "policy" / "merchant.yaml"
 
@@ -166,7 +166,7 @@ class MerchantSwarm:
             return Result(dispute_id, "none", "busy", "Another agent holds this dispute.")
         try:
             view = DisputeView.from_paypal(self.gateway.dispute(dispute_id))                       # Intake
-            if view.status != "WAITING_FOR_SELLER_RESPONSE":
+            if view.status not in ("WAITING_FOR_SELLER_RESPONSE", "OPEN"):
                 return Result(dispute_id, "none", "done", f"PayPal shows {view.status}; nothing to answer.")
             clock = deadline(view, self.clock())
             evidences, sources = evidence_pack(view, order, trackers, mandate_receipt)              # Evidence
@@ -200,6 +200,9 @@ class MerchantSwarm:
                     return Result(dispute_id, action, "refused", "Policy does not allow sending evidence.", proposal=shown)
                 try:
                     self.gateway.provide_evidence(dispute_id, evidences, request_id)
+                except ProviderRefused as refused:
+                    self.receipt(f"{dispute_id}:evidence-refused", "clearwake.dispute.refused_by_paypal", {"dispute": dispute_id, "reason": str(refused)[:200]}, False)
+                    return Result(dispute_id, action, "refused by PayPal", f"{refused} Nothing was applied.", proposal=shown)
                 except GatewayError:
                     self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN)
                     return Result(dispute_id, action, UNKNOWN, "Evidence response lost. Read the dispute before doing anything else.", proposal=shown)
