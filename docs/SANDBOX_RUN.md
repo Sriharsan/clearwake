@@ -40,3 +40,22 @@ offered in the dispute's links was `provide_supporting_info`. Clearwake reads th
 * Result: **PASS** (real sandbox). Evidence was sent as supporting info, not as `provide-evidence`, because PayPal no longer offered `provide-evidence`.
 * The first attempt minutes earlier stopped at the OAuth token request with a transport error, so no dispute call was made. A second
   attempt was skipped because the script only counted WAITING_FOR_SELLER_RESPONSE and OPEN disputes. The third attempt is the PASS above.
+
+## Dispute creation by API, retried (31 October, evening)
+
+`POST /v1/customer/disputes` with a buyer `PayPal-Auth-Assertion` (by payer id, then by email) on capture `1PH921107B839311S`: HTTP 400 "No permissions to set target_client_id". Without the assertion: HTTP 400 `TRANSACTION_NOT_ELIGIBLE`. The app's token carries `disputes/create`, `update-seller` and `read-seller` but not `update-buyer`. Real sandbox disputes are still opened by the sandbox buyer in the Resolution Center, and in case n the buyer accepts the offer there.
+
+## Case m: network cut in the isolated containers (`python scripts/airgap.py`, 31 October)
+
+Agents and Ollama on an internal Docker network; the verdock-core egress gateway is the only service with a route out and allows only `api-m.sandbox.paypal.com`. Capture `1PH921107B839311S` (set with `PAYPAL_SANDBOX_CAPTURE_ID` for the run; `.env` points at the PENDING capture `96H267908A407644D`, which the capture read correctly refused in the second attempt).
+
+* Boundary: no direct route out of the agents' container (DNS fails); `CONNECT example.com:443` through the gateway refused with 403 and receipted; models `qwen3.5:4b` and `qwen2.5-coder:3b` answer inside.
+* Before the cut: refund `6PX35920F4587564U`, USD 1.00, VERIFIED.
+* 22:37:01, the gateway disconnected from the outside network: two USD 1.00 refunds held, offline, and still held on a resume attempt. `qwen2.5-coder:3b` kept drafting inside (13.1 s).
+* 22:37:17, reconnected: PayPal's capture read first, then refunds `76C086475Y724052F` and `9C434129FA2384059` VERIFIED with their original request ids. Running m2 again opened no new tunnel.
+* Every receipt log verified in a container started with `--network none`: 34 gateway lines, 12 merchant lines for this run.
+* Result: **PASS**. Report: `data/airgap/airgap-20261031-223749.json`. The receipts are published on the site under `site/receipts/`.
+
+## Cases a to n (`python scripts/cases.py --sandbox`, 31 October, evening)
+
+9 PASS, 0 FAIL, 5 SKIPPED. c: refund `6SN41486G5579815G` VERIFIED. d: refund `2NB27940EC188891M` VERIFIED after approval. e: injected fault, one refund at PayPal, reconciled. i, k, l and n: SKIPPED, no answerable sandbox dispute open. m: runs in the isolated containers (above).

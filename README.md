@@ -1,12 +1,12 @@
 # Clearwake
 
-Clearwake answers every PayPal dispute for small merchants today, inside limits they set, with proof. And it is ready for orders placed by AI agents.
+Clearwake settles PayPal disputes before they turn into fees. Agents running inside the merchant's own network resolve each case with the buyer inside the owner's limits, fight only the cases worth fighting, and never call a refund done until PayPal's own record says so.
 
 ```sh
 git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git && cd clearwake && python -m clearwake --port 8810
 ```
 
-Open http://127.0.0.1:8810/console for the three screens (buyer agent, merchant control room, receipt verifier), or http://127.0.0.1:8810 for the refund workroom. Python 3.12 or newer, nothing to install. Windows: `.\demo.ps1`. macOS or Linux: `./demo.sh`.
+Open http://127.0.0.1:8810/console for the three screens (buyer agent, merchant control room with the dispute ledger, receipt verifier), or http://127.0.0.1:8810 for the refund workroom. Python 3.12 or newer, nothing to install. Windows: `.\demo.ps1`. macOS or Linux: `./demo.sh`. The network isolated run (case m) needs Docker: `python scripts/airgap.py`.
 
 ![Clearwake refund workroom in rehearsal: limit gauge at USD 1.00 of a USD 5.00 cap, autonomy levels, and a timeline holding a lost response as UNKNOWN](docs/screenshot-unknown-1440.png)
 
@@ -14,51 +14,89 @@ Open http://127.0.0.1:8810/console for the three screens (buyer agent, merchant 
 
 **License:** MIT.
 
+## The money leak
+
+PayPal's own rules ([help350](https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350), UK edition; fees from [PayPal Merchant Fees, US](https://www.paypal.com/us/business/paypal-business-fees), updated 1 Oct 2026; both in [docs/SOURCES.md](docs/SOURCES.md)):
+
+1. No Standard Dispute Fee (USD 15.00 in the US) is charged when a case is resolved directly between seller and buyer and not escalated to a claim. Sellers who answer late, or only with evidence, let cases escalate.
+2. A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays the High Volume Dispute Fee (USD 30.00 in the US) on every dispute.
+3. A refund sent twice, or one that silently failed, costs money or a customer. Clearwake gives each refund one stable request id, holds what it cannot confirm as UNKNOWN, and checks PayPal's record before calling it done.
+
+The Standard fee is not charged on claims below twice the fee or on unauthorised transactions, so the fee leak gauge counts a fee avoided only when PayPal's rule would otherwise have charged one.
+
 ## Who it is for
 
-Small PayPal merchants who lose disputes because they cannot gather evidence before the deadline. Clearwake reads the dispute, pulls the order, the capture and the tracking from PayPal's own record, and either answers with evidence, refunds inside the merchant's limit, or puts the case in an approval inbox before the deadline runs out. Every action is checked afterwards against PayPal's record and written to a signed receipt that anyone can verify offline.
+Small PayPal merchants who lose money on disputes: cases that escalate because nobody answered in time, evidence that never went out before the deadline, refunds sent twice. Clearwake reads each dispute, and the policy decides per case: settle in conversation with an offer inside the owner's limit while PayPal still calls it an inquiry, fight with the order, capture and tracking from PayPal's own records, refund within the limit, or put it in the owner's inbox before the deadline. The model only proposes; its proposal is shown next to the policy's decision. Every action is checked afterwards against PayPal's record and written to a signed receipt that anyone can verify offline.
 
-When the buyer is an AI agent, Clearwake also signs the owner's spending mandate on the buyer side and links it to the PayPal order, so the merchant can attach it as evidence if the order is disputed.
+When the buyer is an AI agent, Clearwake also signs the owner's spending mandate on the buyer side (a cart mandate in AP2 terms) and links it to the PayPal order, so the merchant can attach it as evidence if the order is disputed as unauthorised (case j).
+
+## Without Clearwake and with it
+
+| Moment | Without Clearwake | With Clearwake |
+| --- | --- | --- |
+| A buyer opens a case | No reply in time; the case escalates and the dispute fee is charged | Settled in conversation: `send-message` and `make-offer` inside the owner's limit while the case is an inquiry; "settled, no fee" only when PayPal's record shows it RESOLVED at the INQUIRY stage |
+| A case worth fighting | Deadline missed; evidence never sent | Tracking and order facts from PayPal's records, sent before the deadline; near deadlines go to the owner with a countdown |
+| A refund reply is lost | Sent twice, or marked done when it failed | One request id, held as UNKNOWN, reconciled from PayPal's record |
+| Dispute text and buyer details | Pasted into an outside AI service | Read by a local model inside the merchant's network |
+| The network drops mid batch | Retries fire blindly | Money actions wait as "held, offline"; on reconnect PayPal is read first, then they finish with no duplicate |
+
+## The boundary
+
+The live system runs in a network isolated Docker network (`compose.airgap.yml`, `internal: true`) on the merchant's own machine. The egress gateway from [verdock-core](https://github.com/Sriharsan/verdock-core) is the only service with a route out. It allows only the hosts in [policy/merchant.yaml](policy/merchant.yaml) (`api-m.sandbox.paypal.com`) and signs a receipt for every request it sees, allowed or blocked. The hosted public site is not part of this boundary.
+
+| Stays inside | Crosses the gateway | Why |
+| --- | --- | --- |
+| Dispute text, buyer messages, evidence drafts | Only what PayPal's API needs for the step: a message, an offer amount, tracking facts | Customer data and dispute evidence stay inside the merchant's environment |
+| Policy file, approvals, limits | Nothing | A buyer message or a model reply cannot change a limit |
+| Signed receipts and the verifier | Nothing | Proof that does not depend on any outside service |
+| The model (Ollama, in its own container on the isolated network) | Nothing | Dispute text never goes to an outside AI |
+| Sandbox keys | Inside the TLS tunnel only; the gateway sees host names and byte counts | The gateway can log every request without reading it |
+
+A request the gateway refuses before it leaves (403 off the allowlist, 502 when its own network is down) is known not to have happened, so Clearwake holds it as "held, offline" instead of UNKNOWN. Case m cuts the gateway's network mid batch and restores it; see [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md).
 
 ## Status
 
 | What | How it ran | Result |
 | --- | --- | --- |
-| Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox, case b is an injected fault in sandbox | 4 of 4 PASS on 31 October. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED in PayPal's record |
-| Cases c, d, e of `scripts/cases.py --sandbox` (refund, approval then refund, lost response) | real sandbox; e is an injected fault in sandbox | PASS on 31 October. Refunds `34A6137827870312B` and `0X757409L5274794C` VERIFIED |
+| Cases a to n (`scripts/cases.py`) | rehearsal, fake provider, invented records | 14 of 14 PASS (31 October, evening) |
+| Cases c, d, e (`scripts/cases.py --sandbox`) | real sandbox; e is an injected fault in sandbox | PASS, twice on 31 October. Latest refunds `6SN41486G5579815G` and `2NB27940EC188891M` VERIFIED |
+| Case m, network cut mid batch (`scripts/airgap.py`) | real sandbox, network isolated containers, egress gateway | PASS: refund `6PX35920F4587564U` before the cut; two refunds held offline; after reconnect `76C086475Y724052F` and `9C434129FA2384059` VERIFIED, no duplicate; receipts verified with networking disabled |
 | Case i (real PayPal dispute) | real sandbox | PASS on `PP-R-SLI-10195419`: tracking sent as the supporting info PayPal offered, read back VERIFIED |
+| Case n, settled in conversation | rehearsal; the buyer's acceptance is simulated | PASS. Real sandbox: SKIPPED, needs a dispute at the INQUIRY stage opened by the sandbox buyer, who also accepts the offer in the Resolution Center (this app cannot act for the buyer) |
 | Cases k, l (real PayPal disputes) | real sandbox | SKIPPED: k needs a dispute close to its deadline, l needs ten real disputes |
-| Cases a to l (`scripts/cases.py`) | rehearsal, fake provider, invented records | 12 of 12 PASS, twice |
-| The console at `/console` | rehearsal, invented records | runs locally |
-| Offline tests | fake transports | 78 Python and 12 UI tests pass (31 October) |
+| Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox | 4 of 4 PASS. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED |
+| The console at `/console` | rehearsal, invented records | runs locally, AG Grid dispute ledger and fee leak gauge |
+| Public site (`site/`) | static, recorded sandbox run | verifies the real case m receipts in the browser |
+| Offline tests | fake transports | 94 Python and 12 UI tests pass (31 October) |
 
-Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md), from the run files in `data/runs/`. Sandbox means PayPal's test environment with test money. No live PayPal, no real money.
+Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md), from the run files in `data/runs/` and `data/airgap/`. Sandbox means PayPal's test environment with test money. No live PayPal, no real money.
 
 ## AI tools used
 
 * **Scripted agents (default).** Fixed rules, labelled "scripted, not AI" on screen and in every run file. Zero model calls.
-* **Ollama with `qwen2.5-coder:3b` (optional).** A local open weights model on loopback for agent proposals: `python scripts/cases.py --model ollama`, `python -m clearwake --console-model ollama`, or `--enable-local-ai` for the workroom specialists. No run with it is in `data/runs` yet.
+* **Ollama with `qwen2.5-coder:3b` (optional).** A local open weights model for agent proposals: `python scripts/cases.py --model ollama`, `python -m clearwake --console-model ollama`, or `--enable-local-ai` for the workroom specialists. In case m it ran in its own container inside the isolated network and kept drafting while the network was cut.
 * **Meta model API: off.** The adapter exists in the shared Relayloom core and is not enabled in Clearwake.
 
-Models only propose. The limits live in [policy/merchant.yaml](policy/merchant.yaml), read by the server and never by a model: refunds up to USD 2.00 run alone, up to USD 5.00 need an approval, anything above is refused, and one customer is capped at USD 6.00 a day.
+Models only propose. The limits live in [policy/merchant.yaml](policy/merchant.yaml), read by the server and never by a model: refunds up to USD 2.00 run alone, up to USD 5.00 need an approval, anything above is refused; offers to settle up to USD 3.00 run alone, up to USD 5.00 need an approval, and above that a partial offer of USD 5.00 goes to the owner; one customer is capped at USD 6.00 a day.
 
 ## Shared engine: verdock-core
 
-Policy decisions, approvals, swarm invariants (locks, caps per capture and per customer per day, one stable request id per action), outcome states with reconciliation, and signed receipts with an offline verifier all come from [verdock-core](https://github.com/Sriharsan/verdock-core) v0.1.0, MIT, pinned as a git submodule at `vendor/verdock-core`. It uses the Python standard library only. Clearwake adds the PayPal adapter, the agents and the screens.
+Policy decisions, approvals, swarm invariants (locks, caps per capture and per customer per day, one stable request id per action), outcome states with reconciliation, signed receipts with an offline verifier, the egress gateway and the held queue all come from [verdock-core](https://github.com/Sriharsan/verdock-core) v0.2.0, MIT, pinned as a git submodule at `vendor/verdock-core`. It uses the Python standard library only. Clearwake adds the PayPal adapter, the agents and the screens.
 
 ## Where this goes
 
-Built today on PayPal: limits outside the model, recorded approvals, swarm invariants, a separate check of every money movement against PayPal's record, signed receipts on both sides, and dispute evidence with deadline escalation.
+Built today on PayPal: settling in conversation before escalation, the per dispute policy decision, the fee leak gauge, agents in a network isolated environment with one receipted gateway, limits outside the model, recorded approvals, swarm invariants, a separate check of every money movement against PayPal's record, and signed receipts on both sides.
 
-Planned, not built: agent work inside the business's own isolated environment, local open weights models by default, shared context for teams of people and agents, continuous daily operations, and receipts accepted by payment platforms as proof. Details in [docs/VISION.md](docs/VISION.md).
+Planned, not built: shared context for teams of people and agents, continuous daily operations, and receipts accepted by payment platforms as proof. Details in [docs/VISION.md](docs/VISION.md).
 
 ## Cases, one command each
 
 ```sh
-python scripts/cases.py                         # rehearsal, a to l, no network
+python scripts/cases.py                         # rehearsal, a to n, no network
 python scripts/cases.py --sandbox               # real sandbox where PayPal allows it (keys in .env)
 python scripts/cases.py --sandbox --only i --dispute <dispute id>   # one real dispute, read by id
 python scripts/cases.py --sandbox --order <order id>                # case a after a sandbox buyer approval
+python scripts/airgap.py                        # case m: network isolated containers, cut and restore (Docker, keys in .env)
 ```
 
 Every line prints PASS, FAIL or SKIPPED with how it ran, and the run is saved to `data/runs/`. The older four refund cases still run with `scripts/check_demo.ps1` (rehearsal) and `scripts/check_sandbox.ps1` (sandbox). Sandbox setup: copy `.env.example` to `.env`, add your own sandbox app keys, then run `scripts/sandbox_setup.ps1` once and approve the order as the sandbox personal buyer.
