@@ -1,0 +1,12 @@
+{
+  "merchant": {"id": "clearwake-demo-store", "name": "Northwind Goods (demo store, invented)"},
+  "currency": "USD",
+  "products": [
+    {"id": "mug-stone", "name": "Stoneware mug", "category": "home", "price_minor": 1200},
+    {"id": "notebook-a5", "name": "A5 dot grid notebook", "category": "stationery", "price_minor": 900},
+    {"id": "pen-brass", "name": "Brass pen", "category": "stationery", "price_minor": 1800},
+    {"id": "lamp-desk", "name": "Desk lamp", "category": "home", "price_minor": 4500},
+    {"id": "headphones", "name": "Wireless headphones", "category": "electronics", "price_minor": 8900},
+    {"id": "socks-wool", "name": "Wool socks", "category": "apparel", "price_minor": 1500}
+  ]
+}
