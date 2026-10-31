@@ -6,9 +6,18 @@ CLEARWAKE_META_ACK is set), "scripted" (deterministic rules, always labelled "sc
 from dataclasses import dataclass
 import json
 import os
+import re
 from urllib.request import ProxyHandler, Request, build_opener
 
 OLLAMA = "http://127.0.0.1:11434/v1/chat/completions"
+
+
+def ollama_url():
+    """Loopback by default. Inside the isolated container network the model runs in the "ollama" container, also inside the boundary."""
+    host = os.environ.get("CLEARWAKE_OLLAMA", "127.0.0.1:11434")
+    if not re.fullmatch(r"(?:127\.0\.0\.1|ollama):11434", host):
+        raise ValueError("CLEARWAKE_OLLAMA must be 127.0.0.1:11434 or ollama:11434: the model stays inside the boundary.")
+    return f"http://{host}/v1/chat/completions"
 META = "https://api.meta.ai/v1/chat/completions"
 
 
@@ -43,7 +52,7 @@ class Adapter:
         """Ask for a JSON object with exactly `fields`. `scripted` is the rule used when backend is scripted."""
         if self.backend == "scripted":
             return Proposal("scripted", "scripted", self.label(), scripted())
-        url, headers = (OLLAMA, {}) if self.backend == "ollama" else (META, {"Authorization": "Bearer " + os.environ.get("META_API_KEY", "")})
+        url, headers = (ollama_url(), {}) if self.backend == "ollama" else (META, {"Authorization": "Bearer " + os.environ.get("META_API_KEY", "")})
         payload = {"model": self.model, "temperature": 0, "response_format": {"type": "json_object"},
                    "messages": [{"role": "system", "content": system + " Reply with one JSON object with exactly these keys: " + ", ".join(fields) + "."},
                                 {"role": "user", "content": user}]}

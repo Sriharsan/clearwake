@@ -1,4 +1,4 @@
-"""Run demo cases a to l and print PASS, FAIL or SKIPPED for each, with how it ran.
+"""Run demo cases a to n and print PASS, FAIL or SKIPPED for each, with how it ran.
 
   python scripts/cases.py                     rehearsal (fake provider, invented records, no network)
   python scripts/cases.py --sandbox           real PayPal sandbox where PayPal allows it (needs keys in .env)
@@ -25,7 +25,8 @@ sys.path.insert(0, str(ROOT))
 from clearwake import envfile  # noqa: E402
 from clearwake.buyer import BuyerAgent, Mandate, load_catalog, mandate_receipt  # noqa: E402
 from clearwake.models import Adapter  # noqa: E402
-from clearwake.paypal import GatewayError, RehearsalGateway, SandboxGateway  # noqa: E402
+from clearwake.fees import gauge  # noqa: E402
+from clearwake.paypal import GatewayError, NetworkSwitch, RehearsalGateway, SandboxGateway  # noqa: E402
 from clearwake.swarm import Case, MerchantSwarm  # noqa: E402
 from verdock_core.outcome import UNKNOWN, VERIFIED  # noqa: E402
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed, verify_log  # noqa: E402
@@ -57,6 +58,54 @@ def provider_refund_ids(gateway):
         return [r["id"] for r in gateway.merchant_view]
     with closing(sqlite3.connect(gateway.path)) as db:
         return [row[0] for row in db.execute("SELECT refund_id FROM records")]
+
+
+AIRGAP = ROOT / "data" / "airgap"
+
+
+def signal(name, wait_for=None, timeout=300):
+    """Case m inside the container: tell scripts/airgap.py where we are, then wait for it to cut or restore the network."""
+    (AIRGAP / name).write_text(datetime.now(timezone.utc).isoformat(), encoding="utf-8")
+    if wait_for:
+        started = time.monotonic()
+        while not (AIRGAP / wait_for).exists():
+            if time.monotonic() - started > timeout:
+                raise TimeoutError(f"no {wait_for} signal")
+            time.sleep(0.5)
+
+
+def egress_allowed():
+    path = AIRGAP / "egress.ndjson"
+    return sum('"verdock.egress.allowed"' in line for line in path.read_text(encoding="utf-8").splitlines()) if path.exists() else 0
+
+
+def airgap_case(real, adapter, cap_id):
+    """Case m for real: sandbox refunds through the egress gateway; scripts/airgap.py disconnects the gateway mid batch."""
+    title = "Network cut mid batch: held, offline; reconcile first; no duplicate"
+    how = f"real sandbox, network isolated container, egress gateway; refund decisions scripted, drafting by {adapter.label()} inside"
+    run_id = uuid.uuid4().hex[:6]
+    ms = MerchantSwarm(real, ROOT / "data" / "airgap" / f"merchant-{run_id}", Adapter("scripted"))
+    mcase = lambda n: Case(f"m{n}-{run_id}", "buyer complaint", "ORDER", cap_id, 2000, f"buyer-m{n}", 100, "NOT_AS_DESCRIBED", "Wrong colour.")
+    first = ms.handle(mcase(1))
+    signal("m-before-cut", wait_for="m-cut")
+    held = [ms.handle(mcase(2)).state, ms.handle(mcase(3)).state]
+    started = time.perf_counter()
+    drafted = adapter.propose("You resolve a refund request for a small online merchant. Choose refund, provide_evidence or escalate.",
+                              "Reason: NOT_AS_DESCRIBED. Buyer message: Wrong colour.", ["action"], lambda: {"action": "refund"})
+    draft_seconds = time.perf_counter() - started
+    still = [r.state for r in ms.resume_offline()]
+    signal("m-held", wait_for="m-reconnected")
+    resumed = ms.resume_offline()
+    before = egress_allowed()
+    again = ms.handle(mcase(2))
+    ids = [first.refund_id] + [r.refund_id for r in resumed]
+    ok = (first.state == VERIFIED and held == ["held, offline"] * 2 and still == ["held, offline"] * 2
+          and [r.state for r in resumed] == [VERIFIED] * 2 and len(set(ids)) == 3 and egress_allowed() == before)
+    detail = (f"before cut: refund {first.refund_id} {first.state}; during cut: {held}, still held on retry {still}, "
+              f"drafting continued ({drafted.label}, {draft_seconds:.1f} s, proposal {drafted.value}); after reconnect PayPal read first, then "
+              f"{[(r.refund_id, r.state) for r in resumed]}; rerun of m2 sent nothing ({again.state}, no new tunnel through the gateway)")
+    signal("m-done")
+    return "m", title, ok, how, detail
 
 
 def run():
@@ -195,6 +244,58 @@ def run():
     ok = (r.action, r.state) == ("provide_evidence", VERIFIED) and verify_log([jreceipt["line"]], jreceipt["public_key"])["ok"]
     record("j", "Agent order disputed as unauthorised: mandate receipt attached and verified offline", ok, "rehearsal dispute; receipt verified offline",
            f"receipt {jreceipt['digest'][:12]} attached; {r.detail}")
+
+    # n: settle in conversation before the case becomes a claim (no PayPal dispute fee)
+    if want("n"):
+        if SANDBOX:
+            listed = [real.dispute(DISPUTE)] if DISPUTE else real.disputes()
+            inquiries = [d for d in listed if d.get("dispute_life_cycle_stage") == "INQUIRY"
+                         and d.get("status") in ("WAITING_FOR_SELLER_RESPONSE", "OPEN", "WAITING_FOR_BUYER_RESPONSE", "RESOLVED")]
+            if inquiries:
+                d = real.dispute(inquiries[0]["dispute_id"]); ns = MerchantSwarm(real, ROOT / "data" / "sandbox" / "settle", adapter)
+                r = ns.handle_dispute(d["dispute_id"], 2000, "sandbox-buyer")
+                record("n", "Settled in conversation, no fee: offer inside the limit, PayPal record checked", True if r.state == VERIFIED else None if r.state == "PENDING" else False,
+                       "real sandbox; the buyer accepts the offer as the sandbox buyer in PayPal's Resolution Center",
+                       f"dispute {d['dispute_id']}: policy {r.proposal.get('decided', r.action)}, model proposed {r.proposal.get('proposed')}; {r.state}. {r.detail}")
+            else:
+                record("n", "Settled in conversation, no fee: offer inside the limit, PayPal record checked", None, "real sandbox",
+                       "No sandbox dispute at the INQUIRY stage. Open one as the sandbox buyer (item not received, paid from the PayPal balance).")
+        else:
+            ng = RehearsalGateway(work / "n.sqlite3"); ns = MerchantSwarm(ng, work / "n", adapter)
+            nd = ng.open_dispute("CAP-N", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "2.50", due(240), "The colour is wrong.", stage="INQUIRY")["dispute_id"]
+            offered = ns.handle_dispute(nd, 1800, "buyer-n")
+            ng.buyer_accepts_offer(nd)                       # rehearsal stand-in for the buyer accepting in the Resolution Center
+            settled = ns.handle_dispute(nd, 1800, "buyer-n")
+            g = gauge([{"amount": {"value": "18.00", "currency_code": "USD"}}], [ng.dispute(nd)])
+            record("n", "Settled in conversation, no fee: offer inside the limit, PayPal record checked",
+                   offered.state == "PENDING" and settled.state == VERIFIED, "rehearsal; buyer acceptance simulated",
+                   f"policy {offered.proposal['decided']}, model proposed {offered.proposal['proposed']}; offer {offered.proposal['offer']} USD; "
+                   f"{settled.detail} Gauge: {g.settled_before_escalation} settled before escalation, fee avoided {g.fee_avoided_minor / 100:.2f} USD "
+                   "(the Standard fee is not charged on claims below USD 30.00).")
+
+    # m: network cut mid batch. Real run: python scripts/airgap.py (isolated Docker network, egress gateway, sandbox)
+    if want("m"):
+        if os.environ.get("CLEARWAKE_AIRGAP") == "1":
+            record(*airgap_case(real, adapter, cap_id))
+        elif SANDBOX:
+            record("m", "Network cut mid batch: held, offline; reconcile first; no duplicate", None, "real sandbox",
+                   "Runs inside the isolated container network: python scripts/airgap.py")
+        else:
+            mg = RehearsalGateway(work / "m.sqlite3"); switch = NetworkSwitch(mg); ms = MerchantSwarm(switch, work / "m", adapter)
+            first = ms.handle(case("m1", 100, capture_ref="CAP-M"))
+            switch.cut = True
+            held = [ms.handle(case("m2", 100, capture_ref="CAP-M")).state, ms.handle(case("m3", 100, capture_ref="CAP-M")).state]
+            drafted = adapter.propose("You resolve a refund request for a small online merchant. Choose refund, provide_evidence or escalate.",
+                                      "Reason: NOT_AS_DESCRIBED. Buyer message: Wrong colour.", ["action"], lambda: {"action": "refund"})
+            switch.cut = False
+            resumed = [r.state for r in ms.resume_offline()]
+            again = ms.handle(case("m2", 100, capture_ref="CAP-M")).state
+            ids = provider_refund_ids(mg)
+            record("m", "Network cut mid batch: held, offline; reconcile first; no duplicate",
+                   first.state == VERIFIED and held == ["held, offline"] * 2 and resumed == [VERIFIED] * 2 and len(ids) == len(set(ids)) == 3,
+                   "rehearsal: network switch in the gateway stand-in",
+                   f"before cut {first.state}; during cut {held}, drafting continued ({drafted.label}); after reconnect {resumed}; "
+                   f"rerun of m2: {again}; {len(ids)} refunds at the provider, no duplicate")
 
     out_dir = ROOT / "data" / "runs"; out_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")

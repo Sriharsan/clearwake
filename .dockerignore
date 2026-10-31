@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.git
+**/.git
+data/
+output/
+site/
+**/__pycache__
+*.pem
+*.key
+*.credential.json

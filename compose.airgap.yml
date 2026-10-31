@@ -1,0 +1,38 @@
+# Network isolated Clearwake (case m). Run it with: python scripts/airgap.py
+# "inside" has no route out (internal: true). The egress gateway is the only service on both networks
+# and lets agents reach only the hosts in policy/merchant.yaml (api-m.sandbox.paypal.com), with a signed receipt per request.
+name: clearwake-airgap
+networks:
+  inside:
+    internal: true
+  outside: {}
+services:
+  egress:
+    build: .
+    image: clearwake-airgap:local
+    working_dir: /app
+    environment:
+      PYTHONPATH: /app/vendor/verdock-core
+    command: ["python", "-m", "verdock_core", "egress", "--policy", "policy/merchant.yaml", "--listen", "0.0.0.0:8080",
+              "--receipts", "/app/data/airgap/egress.ndjson", "--seed", "/app/data/airgap/egress.seed"]
+    networks: [inside, outside]
+    volumes: ["./data/airgap:/app/data/airgap"]
+  ollama:
+    image: ollama/ollama:0.12.6
+    networks: [inside]
+    volumes: ["${OLLAMA_MODELS:?set OLLAMA_MODELS to the host model folder}:/root/.ollama/models:ro"]
+  clearwake:
+    image: clearwake-airgap:local
+    networks: [inside]
+    depends_on: [egress, ollama]
+    environment:
+      CLEARWAKE_EGRESS: egress:8080
+      CLEARWAKE_OLLAMA: ollama:11434
+      CLEARWAKE_AIRGAP: "1"
+      # Only these names cross into the container; compose reads them from the ignored .env at run time.
+      CLEARWAKE_SANDBOX_ACK: ${CLEARWAKE_SANDBOX_ACK:-}
+      PAYPAL_BASE_URL: ${PAYPAL_BASE_URL:-}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+      PAYPAL_SANDBOX_CAPTURE_ID: ${PAYPAL_SANDBOX_CAPTURE_ID:-}
+    volumes: ["./data/airgap:/app/data/airgap", "./data/runs:/app/data/runs"]
