@@ -312,6 +312,15 @@ class TransportTests(unittest.TestCase):
         for bad in (("20.00", request_id, "4012-8888", "2030-12"), ("20.00", request_id, "4012888888881881", "12/30"), ("60.00", request_id, "4012888888881881", "2030-12")):
             with self.assertRaises(ValueError): gateway.create_card_order(*bad)
 
+    def test_non_sandbox_base_url_is_refused(self):
+        env = {"CLEARWAKE_SANDBOX_ACK": "I_CONFIRM_SANDBOX_ONLY", "PAYPAL_CLIENT_ID": "synthetic", "PAYPAL_CLIENT_SECRET": "synthetic"}
+        for base in (None, "https://api-m.paypal.com", "https://api-m.sandbox.paypal.com/", "http://api-m.sandbox.paypal.com"):
+            values = dict(env) if base is None else {**env, "PAYPAL_BASE_URL": base}
+            with self.subTest(base=base), patch.dict("os.environ", values, clear=True), self.assertRaises(ValueError):
+                SandboxGateway.from_environment()
+        with patch.dict("os.environ", {**env, "PAYPAL_BASE_URL": BASE}, clear=True):
+            self.assertEqual(SandboxGateway.from_environment().mode, "paypal-sandbox")
+
     def test_production_destination_and_identifier_injection_are_refused(self):
         from urllib.request import Request
         with self.assertRaises(ValueError): SandboxGateway("x", "y", base="https://api-m.paypal.com")

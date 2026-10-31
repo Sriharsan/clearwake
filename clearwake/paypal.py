@@ -79,6 +79,8 @@ class SandboxGateway:
     def from_environment(cls):
         if os.environ.get("CLEARWAKE_SANDBOX_ACK") != "I_CONFIRM_SANDBOX_ONLY":
             raise ValueError("Explicit sandbox-only acknowledgement is required.")
+        if os.environ.get("PAYPAL_BASE_URL") != BASE:
+            raise ValueError(f"PAYPAL_BASE_URL must be exactly {BASE}. Clearwake refuses to run against anything else.")
         return cls(os.environ.get("PAYPAL_CLIENT_ID", ""), os.environ.get("PAYPAL_CLIENT_SECRET", ""))
 
     def _access_token(self):
