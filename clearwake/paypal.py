@@ -138,6 +138,20 @@ class SandboxGateway:
             "payment_source": {"paypal": {"experience_context": {"user_action": "PAY_NOW", "shipping_preference": "NO_SHIPPING",
                 "return_url": return_url, "cancel_url": return_url}}}}, request_id)
 
+    def create_card_order(self, value, request_id, card_number, expiry):
+        """One-time setup without a buyer login: pay a sandbox order with one of PayPal's published sandbox test cards.
+
+        PayPal lists these numbers at developer.paypal.com/tools/sandbox/card-testing; they only work in the sandbox."""
+        amount(value, maximum=Decimal("50.00"))
+        if not re.fullmatch(r"[0-9a-f-]{36}", request_id) or not re.fullmatch(r"\d{13,19}", card_number) or not re.fullmatch(r"20\d\d-(0[1-9]|1[0-2])", expiry):
+            raise ValueError("The setup request identity or sandbox test card is invalid.")
+        self._access_token()
+        return self._request("/v2/checkout/orders", {"intent": "CAPTURE",
+            "purchase_units": [{"amount": {"currency_code": "USD", "value": value}, "description": "Clearwake sandbox setup order (test card)"}],
+            "payment_source": {"card": {"number": card_number, "expiry": expiry, "name": "Sandbox Test",
+                "billing_address": {"address_line_1": "1 Test Street", "admin_area_2": "San Jose", "admin_area_1": "CA", "postal_code": "95131", "country_code": "US"}}}},
+            request_id)
+
     def order(self, order_id):
         return self._request(f"/v2/checkout/orders/{identifier(order_id)}")
 

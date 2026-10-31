@@ -307,6 +307,10 @@ class TransportTests(unittest.TestCase):
             with self.assertRaises(ValueError): gateway.create_order(*bad)
         from urllib.request import Request
         with self.assertRaises(GatewayError): transport(Request("https://api-m.paypal.com/v2/checkout/orders"))
+        gateway.create_card_order("20.00", request_id, "4012888888881881", "2030-12")
+        self.assertEqual(json.loads(calls[-1].data)["payment_source"]["card"]["expiry"], "2030-12")
+        for bad in (("20.00", request_id, "4012-8888", "2030-12"), ("20.00", request_id, "4012888888881881", "12/30"), ("60.00", request_id, "4012888888881881", "2030-12")):
+            with self.assertRaises(ValueError): gateway.create_card_order(*bad)
 
     def test_production_destination_and_identifier_injection_are_refused(self):
         from urllib.request import Request

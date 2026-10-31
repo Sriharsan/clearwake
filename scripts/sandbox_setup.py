@@ -21,6 +21,29 @@ ENV = ROOT / ".env"
 STATE = ROOT / "data" / "sandbox" / "setup-order.json"
 
 
+# PayPal's published SANDBOX test card (developer.paypal.com/tools/sandbox/card-testing). It works only in the sandbox.
+SANDBOX_TEST_VISA = "4012888888881881"
+
+
+def card_setup(gateway):
+    """No buyer login: pay the setup order with PayPal's published sandbox test card, then save the capture."""
+    try:
+        result = gateway.create_card_order("20.00", str(uuid.uuid4()), SANDBOX_TEST_VISA, "2030-12")
+    except GatewayError:
+        sys.exit("PayPal sandbox did not accept the test card order. Many sandbox merchants (for example India based ones) "
+                 "are not enabled for direct card payments (PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING). Use the approval link "
+                 "path instead: run without --test-card and log in as the sandbox personal account. Nothing was captured.")
+    captures = [c for unit in result.get("purchase_units", []) for c in unit.get("payments", {}).get("captures", [])]
+    if result.get("status") != "COMPLETED" or not captures or captures[0].get("status") != "COMPLETED":
+        sys.exit(f"Sandbox test card order status {result.get('status')}, capture "
+                 f"{captures[0].get('status') if captures else 'missing'}. Not saved.")
+    capture = captures[0]
+    envfile.set_value(ENV, "PAYPAL_SANDBOX_CAPTURE_ID", capture["id"])
+    STATE.write_text(json.dumps({"order_id": result["id"], "capture_id": capture["id"], "captured": True, "method": "sandbox test card"}))
+    print("SANDBOX order", result["id"], "paid with PayPal's published sandbox test card.")
+    print("SANDBOX capture COMPLETED:", capture["id"], capture["amount"]["currency_code"], capture["amount"]["value"], "Saved as PAYPAL_SANDBOX_CAPTURE_ID in .env.")
+
+
 def main():
     filled = envfile.load(ENV)
     missing = [name for name in ("PAYPAL_CLIENT_ID", "PAYPAL_CLIENT_SECRET", "CLEARWAKE_SANDBOX_ACK") if not filled[name]]
@@ -28,6 +51,8 @@ def main():
         sys.exit("Fill these names in clearwake/.env first: " + ", ".join(missing))
     gateway = SandboxGateway.from_environment()
     STATE.parent.mkdir(parents=True, exist_ok=True)
+    if "--test-card" in sys.argv:
+        return card_setup(gateway)
     state = json.loads(STATE.read_text()) if STATE.is_file() else {}
     if state.get("order_id") and not state.get("captured"):
         try:
