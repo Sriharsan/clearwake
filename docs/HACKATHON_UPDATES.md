@@ -12,6 +12,10 @@ The PayPal AI Hackathon submission period opened on 1 October 2026 (9:15 am Paci
 | 2026-10-30 21:37 | `b68f331` | Add autonomy policy with recorded approvals |
 | 2026-10-30 21:37 | `0cb9e83` | Redesign the payment view as a dark control room |
 | 2026-10-30 21:45 | `d12de52` | README, submission notes and video script with honest run labels |
+| 2026-10-30 21:45 | `8d0dda6` | Record changes during the submission period from git history |
+| 2026-10-31 10:24 | `25a980b` | Sandbox setup starts a fresh order when the previous one expired |
+| 2026-10-31 10:50 | `1f475cb` | Optional sandbox setup with PayPal's published test card |
+| 2026-10-31 10:56 | `e6dfa5c` | Record the PayPal sandbox run: four of four cases passed on 31 October |
 
 ## Relayloom core (pinned submodule, `vendor/relayloom`, public MIT repository)
 
