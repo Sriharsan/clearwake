@@ -11,7 +11,6 @@ Every item was read for its license before use. Clearwake depends on code instea
 | PayPal REST APIs (Orders v2, Payments v2, Disputes v1, OAuth) | Called directly in the sandbox through `clearwake/paypal.py` with a route allowlist | PayPal developer terms | https://developer.paypal.com/ |
 | paypal/agent-toolkit 1.11.0 | Not a dependency. Used only in a separate environment for the toolkit comparison | Apache 2.0 | https://github.com/paypal/agent-toolkit |
 | qwen2.5-coder:3b through Ollama | Optional local open weights model for agent proposals. Not bundled | Model license per Ollama listing | https://ollama.com/library/qwen2.5-coder |
-| tau2-bench data | Not used by Clearwake | | |
 
 User interface libraries, if any, are listed with versions in `docs/THIRD_PARTY_UI.txt`.
 
