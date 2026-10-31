@@ -1,3 +1,6 @@
 [submodule "vendor/relayloom"]
 	path = vendor/relayloom
 	url = https://github.com/Sriharsan/relayloom.git
+[submodule "vendor/verdock-core"]
+	path = vendor/verdock-core
+	url = https://github.com/Sriharsan/verdock-core.git
