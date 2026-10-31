@@ -35,6 +35,22 @@ The PayPal AI Hackathon submission period opened on 1 October 2026 (9:15 am Paci
 | 2026-10-31 16:01 | `5e1d271` | README: dispute positioning, honest status, AI tools, verdock-core and where this goes |
 | 2026-10-31 16:01 | `72d6c18` | Submission notes: APIs, observed limits, run labels, criteria and awards |
 | 2026-10-31 16:01 | `6f7d742` | Video script for the dispute story with sandbox and rehearsal captions |
+| 2026-10-31 16:01 | `a9b9ba2` | Refresh the submission period change log, with the verdock-core submodule |
+| 2026-10-31 16:02 | `582c222` | Answer disputes under review with supporting info PayPal offers, verified by read-back |
+| 2026-10-31 16:03 | `8dda0b3` | Drop an unused tau2-bench row from third-party notices |
+| 2026-10-31 16:06 | `379a2cb` | Results: case i passed on a real sandbox dispute; current test counts |
+| 2026-10-31 16:06 | `f71a2f7` | Console controller and /console API: buyer mandate, rehearsal cases c to l, approval inbox and reconcile behind a CSRF token |
+| 2026-10-31 16:06 | `7be2d9f` | Console screens: buyer agent, merchant control room and in-browser receipt verifier |
+| 2026-10-31 16:06 | `6fae634` | Console screenshots at 390 and 1440 wide |
+| 2026-10-31 16:08 | `b7035f0` | Record what PayPal's agent toolkit does on the lost response, split and injection cases |
+| 2026-10-31 22:13 | `ab113c7` | Approved dispute escalations now act on the one step they named; refused POSTs no longer reset the socket on Windows |
+| 2026-10-31 22:23 | `2776a66` | Settle disputes in conversation before they become claims, held offline when the network is cut |
+| 2026-10-31 22:38 | `864e6e8` | Network isolated run for case m, cases n and m in the runner, and the fee leak gauge |
+| 2026-10-31 22:46 | `aba64d2` | AG Grid dispute ledger with the fee leak gauge, and console cases n and m |
+| 2026-10-31 22:47 | `0db2441` | Keep vendored AG Grid files byte for byte |
+| 2026-10-31 22:54 | `12ebb23` | Public site for Vercel: the fee leak with sources, side by side, the boundary, the recorded sandbox run and an in-browser receipt verifier |
+| 2026-10-31 22:54 | `f60871e` | Keep receipt logs byte for byte so their signatures verify after any checkout |
+| 2026-10-31 23:00 | `a2c9cd4` | Docs for the fee leak position: README, submission notes, video script, results, sandbox runs and sources |
 
 ## Relayloom core (pinned submodule, `vendor/relayloom`, public MIT repository)
 
@@ -48,9 +64,9 @@ Clearwake extends this shared workroom core. It is Sri's own public project, als
 | 2026-10-28 18:38 | `3668d31` | Build shared revision workroom and guarded Meta adapter |
 | 2026-10-30 18:02 | `e4654fa` | README: open with what Relayloom does and the single run command |
 
-## verdock-core engine (pinned submodule, `vendor/verdock-core`, tag v0.1.0, public MIT repository)
+## verdock-core engine (pinned submodule, `vendor/verdock-core`, tag v0.2.0, public MIT repository)
 
-The shared engine under the merchant swarm and the buyer agent: policy, approvals, swarm invariants, outcome states and signed receipts with an offline verifier. It is Sri's own public project (https://github.com/Sriharsan/verdock-core), built during the period and pinned at `478998c` (v0.1.0).
+The shared engine under the merchant swarm and the buyer agent: policy, approvals, swarm invariants, outcome states, signed receipts with an offline verifier, the egress gateway and the held queue. It is Sri's own public project (https://github.com/Sriharsan/verdock-core), built during the period and pinned at `f7ac784` (v0.2.0).
 
 | Date (IST) | Commit | Change |
 | --- | --- | --- |
@@ -65,6 +81,8 @@ The shared engine under the merchant swarm and the buyer agent: policy, approval
 | 2026-10-31 11:20 | `eee63df` | Add verify command line |
 | 2026-10-31 11:21 | `5797f0e` | Add browser verifier with node tests |
 | 2026-10-31 11:21 | `478998c` | Add README, changelog and third party notes |
+| 2026-10-31 22:17 | `fcd4aef` | Egress gateway with a policy host allowlist and signed receipts, and a held queue for offline actions |
+| 2026-10-31 22:21 | `f7ac784` | Close the held queue's setup connection |
 
 ## How to check
 
