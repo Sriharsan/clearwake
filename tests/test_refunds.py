@@ -312,6 +312,30 @@ class TransportTests(unittest.TestCase):
         for bad in (("20.00", request_id, "4012-8888", "2030-12"), ("20.00", request_id, "4012888888881881", "12/30"), ("60.00", request_id, "4012888888881881", "2030-12")):
             with self.assertRaises(ValueError): gateway.create_card_order(*bad)
 
+    def test_dispute_calls_use_only_sandbox_routes_and_paypal_formats(self):
+        calls = []
+        def send(request, timeout):
+            calls.append(request)
+            if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
+            return {"items": []} if request.full_url.endswith("/disputes") else {"links": []}
+        gateway, rid = SandboxGateway("synthetic-client", "synthetic-secret", send=send), "12345678-1234-4234-8234-123456789abc"
+        gateway.disputes(); gateway.dispute("PP-D-1")
+        gateway.provide_evidence("PP-D-1", [{"evidence_type": "PROOF_OF_FULFILLMENT", "notes": "Synthetic"}], rid)
+        gateway.accept_claim("PP-D-1", "Refund under limit", "2.00", "USD", rid)
+        gateway.adjudicate("PP-D-1", "BUYER_FAVOR", rid)
+        gateway.add_tracking("ORDER1", "CAPTURE1", "SYNTH123456", "USPS", rid)
+        urls = [c.full_url.replace(BASE, "") for c in calls if not c.full_url.endswith("/token")]
+        self.assertEqual(urls, ["/v1/customer/disputes", "/v1/customer/disputes/PP-D-1", "/v1/customer/disputes/PP-D-1/provide-evidence",
+                                "/v1/customer/disputes/PP-D-1/accept-claim", "/v1/customer/disputes/PP-D-1/adjudicate", "/v2/checkout/orders/ORDER1/track"])
+        evidence = next(c for c in calls if c.full_url.endswith("/provide-evidence"))
+        self.assertTrue(evidence.get_header("Content-type").startswith("multipart/form-data; boundary="))
+        self.assertIn(b'name="input"', evidence.data); self.assertEqual(evidence.get_header("Paypal-request-id"), rid)
+        for call in (lambda: gateway.adjudicate("PP-D-1", "WHATEVER", rid), lambda: gateway.accept_claim("PP-D-1", "x", "6.00", "USD", rid),
+                     lambda: gateway.add_tracking("ORDER1", "CAPTURE1", "bad id!", "USPS", rid), lambda: gateway.dispute("../orders/x")):
+            with self.assertRaises(ValueError): call()
+        from urllib.request import Request
+        with self.assertRaises(GatewayError): transport(Request(BASE + "/v1/customer/disputes/PP-D-1/escalate"))
+
     def test_non_sandbox_base_url_is_refused(self):
         env = {"CLEARWAKE_SANDBOX_ACK": "I_CONFIRM_SANDBOX_ONLY", "PAYPAL_CLIENT_ID": "synthetic", "PAYPAL_CLIENT_SECRET": "synthetic"}
         for base in (None, "https://api-m.paypal.com", "https://api-m.sandbox.paypal.com/", "http://api-m.sandbox.paypal.com"):

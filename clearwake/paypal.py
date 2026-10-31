@@ -49,14 +49,15 @@ def transport(request, timeout=15):
     if (parsed.scheme != "https" or parsed.netloc != "api-m.sandbox.paypal.com"
             or parsed.query or parsed.fragment or parsed.username or parsed.password
             or not re.fullmatch(r"/v1/oauth2/token|/v2/payments/captures/[A-Za-z0-9_-]{1,64}(?:/refund)?|/v2/payments/refunds/[A-Za-z0-9_-]{1,64}"
-                                r"|/v2/checkout/orders(?:/[A-Za-z0-9_-]{1,64}(?:/capture)?)?", parsed.path)):
+                                r"|/v2/checkout/orders(?:/[A-Za-z0-9_-]{1,64}(?:/capture|/track)?)?"
+                                r"|/v1/customer/disputes(?:/[A-Za-z0-9_-]{1,64}(?:/provide-evidence|/accept-claim|/adjudicate)?)?", parsed.path)):
         raise GatewayError("Only reviewed PayPal sandbox routes are allowed.")
     try:
         with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=timeout) as response:
-            raw = response.read(65537)
-            if len(raw) > 65536:
+            raw = response.read(262145)
+            if len(raw) > 262144:
                 raise GatewayError("The provider response exceeded its bound.")
-            result = json.loads(raw)
+            result = json.loads(raw) if raw.strip() else {}
             if not isinstance(result, dict):
                 raise GatewayError("The provider response was malformed.")
             return result
@@ -153,6 +154,52 @@ class SandboxGateway:
             "payment_source": {"card": {"number": card_number, "expiry": expiry, "name": "Sandbox Test",
                 "billing_address": {"address_line_1": "1 Test Street", "admin_area_2": "San Jose", "admin_area_1": "CA", "postal_code": "95131", "country_code": "US"}}}},
             request_id)
+
+    # Disputes (sandbox). Opening a dispute for the buyer needs partner permission this app does not have,
+    # so disputes are opened by the sandbox buyer and Clearwake handles them from here.
+    def disputes(self):
+        return self._request("/v1/customer/disputes").get("items", [])
+
+    def dispute(self, dispute_id):
+        return self._request(f"/v1/customer/disputes/{identifier(dispute_id)}")
+
+    def _post(self, path, payload, request_id, content_type="application/json"):
+        if not re.fullmatch(r"[0-9a-f-]{36}", request_id):
+            raise ValueError("A stable request identity is required.")
+        self._access_token()
+        with self._lock:
+            token = self._token
+        body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+        try:
+            return self.send(Request(BASE + path, data=body, method="POST", headers={"Authorization": "Bearer " + token,
+                "Accept": "application/json", "Content-Type": content_type, "PayPal-Request-Id": request_id}), 15)
+        except Exception:
+            raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
+
+    def provide_evidence(self, dispute_id, evidences, request_id):
+        """Evidence from the record only, as PayPal's multipart 'input' part. No files are attached by this build."""
+        boundary = "clearwake" + request_id.replace("-", "")
+        part = json.dumps({"evidences": evidences})
+        body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"input\"\r\nContent-Type: application/json\r\n\r\n{part}\r\n--{boundary}--\r\n").encode()
+        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/provide-evidence", body, request_id, f"multipart/form-data; boundary={boundary}")
+
+    def accept_claim(self, dispute_id, note, refund_value, currency, request_id):
+        amount(refund_value)
+        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/accept-claim",
+                          {"note": note[:2000], "refund_amount": {"currency_code": currency, "value": refund_value}}, request_id)
+
+    def adjudicate(self, dispute_id, outcome, request_id):
+        """Sandbox only: settle a dispute so a test can finish without waiting for PayPal."""
+        if outcome not in ("BUYER_FAVOR", "SELLER_FAVOR"):
+            raise ValueError("Outcome must be BUYER_FAVOR or SELLER_FAVOR.")
+        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/adjudicate", {"adjudication_outcome": outcome}, request_id)
+
+    def add_tracking(self, order_id, capture_id, tracking_number, carrier, request_id):
+        identifier(capture_id)
+        if not re.fullmatch(r"[A-Za-z0-9]{6,40}", tracking_number) or not re.fullmatch(r"[A-Z_]{2,40}", carrier):
+            raise ValueError("Invalid tracking number or carrier code.")
+        return self._post(f"/v2/checkout/orders/{identifier(order_id)}/track",
+                          {"capture_id": capture_id, "tracking_number": tracking_number, "carrier": carrier, "notify_payer": False}, request_id)
 
     def order(self, order_id):
         return self._request(f"/v2/checkout/orders/{identifier(order_id)}")
