@@ -17,8 +17,22 @@ operations:
   provide_evidence:
     level: Execute within Limits
     retry: safe
+  # Settling in conversation, before PayPal escalates the case to a claim. PayPal refunds an offer only if the buyer accepts it.
+  make_offer:
+    level: Execute within Limits
+    max_amount_minor: 500
+    approval_above_minor: 300
+    currency: USD
+    retry: never
+  send_message:
+    level: Execute within Limits
+    retry: safe
   propose_resolution:
     level: Draft
     retry: never
 caps:
   per_customer_per_day_minor: 600
+# The only host the egress gateway lets agents reach.
+egress:
+  allow_hosts:
+    - api-m.sandbox.paypal.com

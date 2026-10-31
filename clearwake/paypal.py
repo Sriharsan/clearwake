@@ -13,7 +13,8 @@ import threading
 import time
 import uuid
 from urllib.parse import urlsplit
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
+import socket
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 BASE = "https://api-m.sandbox.paypal.com"
@@ -23,6 +24,10 @@ MONEY = re.compile(r"(?:0|[1-9][0-9]{0,8})\.[0-9]{2}\Z")
 
 class GatewayError(Exception):
     """A sanitized provider failure, with no credential or response disclosure."""
+
+
+class Offline(Exception):
+    """The request never left: the egress gateway refused the tunnel or nothing could be reached. Safe to hold, not UNKNOWN."""
 
 
 class ProviderRefused(Exception):
@@ -49,6 +54,25 @@ class NoRedirect(HTTPRedirectHandler):
         return None
 
 
+def egress_proxy():
+    """Inside the network isolated container the only way out is the egress gateway, set by CLEARWAKE_EGRESS=host:port.
+
+    Ambient proxy settings are never read. TLS runs end to end through the gateway's CONNECT tunnel."""
+    value = os.environ.get("CLEARWAKE_EGRESS", "")
+    if not value:
+        return {}
+    if not re.fullmatch(r"[a-z0-9.-]{1,63}:\d{2,5}", value):
+        raise GatewayError("CLEARWAKE_EGRESS must be host:port of the egress gateway.")
+    return {"https": "http://" + value}
+
+
+def never_left(error):
+    """True only for failures before any byte of the request could reach PayPal."""
+    reason = getattr(error, "reason", None)
+    return (isinstance(error, URLError) and (isinstance(reason, (ConnectionRefusedError, socket.gaierror))
+            or (isinstance(reason, OSError) and str(reason).startswith("Tunnel connection failed"))))
+
+
 def transport(request, timeout=15):
     """No ambient proxies, redirects, arbitrary URLs or unbounded responses."""
     parsed = urlsplit(request.full_url)
@@ -56,10 +80,10 @@ def transport(request, timeout=15):
             or parsed.query or parsed.fragment or parsed.username or parsed.password
             or not re.fullmatch(r"/v1/oauth2/token|/v2/payments/captures/[A-Za-z0-9_-]{1,64}(?:/refund)?|/v2/payments/refunds/[A-Za-z0-9_-]{1,64}"
                                 r"|/v2/checkout/orders(?:/[A-Za-z0-9_-]{1,64}(?:/capture|/track)?)?"
-                                r"|/v1/customer/disputes(?:/[A-Za-z0-9_-]{1,64}(?:/provide-evidence|/provide-supporting-info|/accept-claim|/adjudicate)?)?", parsed.path)):
+                                r"|/v1/customer/disputes(?:/[A-Za-z0-9_-]{1,64}(?:/provide-evidence|/provide-supporting-info|/accept-claim|/adjudicate|/send-message|/make-offer)?)?", parsed.path)):
         raise GatewayError("Only reviewed PayPal sandbox routes are allowed.")
     try:
-        with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=timeout) as response:
+        with build_opener(ProxyHandler(egress_proxy()), NoRedirect()).open(request, timeout=timeout) as response:
             raw = response.read(262145)
             if len(raw) > 262144:
                 raise GatewayError("The provider response exceeded its bound.")
@@ -74,9 +98,14 @@ def transport(request, timeout=15):
             except Exception:
                 body = {}
             issues = ",".join(str(d.get("issue")) for d in body.get("details", []) if isinstance(d, dict))[:200]
-            raise ProviderRefused(f"PayPal refused it ({error.code} {body.get('name', '')} {issues}).".replace("  ", " ")) from None
+            name = body.get("name") or str(body.get("error_description") or body.get("error") or "")[:120]
+            raise ProviderRefused(f"PayPal refused it ({error.code} {name} {issues}).".replace("  ", " ").replace(" )", ")")) from None
         raise GatewayError("The sandbox request could not be confirmed. No automatic retry was sent.") from None
-    except Exception:
+    except GatewayError:
+        raise
+    except Exception as error:
+        if never_left(error):
+            raise Offline("Offline: the request did not leave this network.") from None
         raise GatewayError("The sandbox request could not be confirmed. No automatic retry was sent.") from None
 
 
@@ -129,7 +158,7 @@ class SandboxGateway:
         try:
             return self.send(Request(BASE + path, data=json.dumps(payload).encode() if payload is not None else None,
                 headers=headers, method="POST" if payload is not None else "GET"), 15)
-        except ProviderRefused:
+        except (ProviderRefused, Offline):
             raise
         except Exception:
             raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
@@ -190,7 +219,7 @@ class SandboxGateway:
         try:
             return self.send(Request(BASE + path, data=body, method="POST", headers={"Authorization": "Bearer " + token,
                 "Accept": "application/json", "Content-Type": content_type, "PayPal-Request-Id": request_id}), 15)
-        except ProviderRefused:
+        except (ProviderRefused, Offline):
             raise
         except Exception:
             raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
@@ -213,6 +242,16 @@ class SandboxGateway:
         amount(refund_value)
         return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/accept-claim",
                           {"note": note[:2000], "refund_amount": {"currency_code": currency, "value": refund_value}}, request_id)
+
+    def send_message(self, dispute_id, message, request_id):
+        """Talk to the buyer inside the dispute (INQUIRY stage only, when PayPal offers send_message)."""
+        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/send-message", {"message": message[:2000]}, request_id)
+
+    def make_offer(self, dispute_id, note, offer_value, currency, request_id):
+        """Offer the buyer a refund to settle in the INQUIRY stage. PayPal refunds only if the buyer accepts."""
+        amount(offer_value)
+        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/make-offer", {"note": note[:2000], "offer_type": "REFUND",
+                          "offer_amount": {"currency_code": currency, "value": offer_value}}, request_id)
 
     def adjudicate(self, dispute_id, outcome, request_id):
         """Sandbox only: settle a dispute so a test can finish without waiting for PayPal."""
@@ -278,10 +317,14 @@ class RehearsalGateway:
         db.execute("CREATE TABLE IF NOT EXISTS disputes(id TEXT PRIMARY KEY,body TEXT NOT NULL)")
         return db
 
-    def open_dispute(self, capture_id, reason, value, due_iso, message=""):
-        """Rehearsal only: stands in for a buyer opening a dispute in PayPal's Resolution Center."""
+    def open_dispute(self, capture_id, reason, value, due_iso, message="", stage=None):
+        """Rehearsal only: stands in for a buyer opening a dispute in PayPal's Resolution Center.
+
+        stage="INQUIRY" opens it the way a PayPal account buyer does: seller and buyer talk first, no claim yet."""
         dispute_id = "PP-D-REH-" + uuid.uuid4().hex[:10].upper()
         body = {"dispute_id": dispute_id, "status": "WAITING_FOR_SELLER_RESPONSE", "reason": reason,
+                **({"dispute_life_cycle_stage": stage, "links": [{"rel": rel, "method": "POST"} for rel in ("send_message", "make_offer", "accept_claim")]}
+                   if stage == "INQUIRY" else {}),
                 "dispute_amount": {"currency_code": "USD", "value": value}, "seller_response_due_date": due_iso,
                 "disputed_transactions": [{"seller_transaction_id": identifier(capture_id)}],
                 "messages": [{"posted_by": "BUYER", "content": message[:500]}] if message else []}
@@ -331,3 +374,57 @@ class RehearsalGateway:
         if self.outcome == "lost-response":
             raise GatewayError("The fake provider accepted the claim but the response was lost.")
         return {"links": []}
+
+    def send_message(self, dispute_id, message, request_id):
+        body = self.dispute(dispute_id)
+        if body.get("dispute_life_cycle_stage") != "INQUIRY":
+            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY NOT_IN_INQUIRY).")
+        if not any(m.get("request_id") == request_id for m in body.get("messages", [])):
+            self._update_dispute(dispute_id, messages=body.get("messages", []) + [{"posted_by": "SELLER", "content": message[:2000], "request_id": request_id}])
+        return {"links": []}
+
+    def make_offer(self, dispute_id, note, offer_value, currency, request_id):
+        body = self.dispute(dispute_id)
+        if body.get("dispute_life_cycle_stage") != "INQUIRY":
+            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY NOT_IN_INQUIRY).")
+        if (body.get("offer") or {}).get("request_id") != request_id:
+            self._update_dispute(dispute_id, status="WAITING_FOR_BUYER_RESPONSE", offer={"offer_type": "REFUND", "request_id": request_id,
+                                 "buyer_requested_amount": body["dispute_amount"], "seller_offered_amount": {"currency_code": currency, "value": offer_value}})
+        if self.outcome == "lost-response":
+            raise GatewayError("The fake provider recorded the offer but the response was lost.")
+        return {"links": []}
+
+    # The buyer's side. In the real sandbox the sandbox buyer does this in PayPal's Resolution Center:
+    # this app's token has no disputes/update-buyer scope, so Clearwake cannot act for the buyer.
+    def buyer_accepts_offer(self, dispute_id):
+        body = self.dispute(dispute_id)
+        offered = body["offer"]["seller_offered_amount"]
+        capture_id = body["disputed_transactions"][0]["seller_transaction_id"]
+        outcome, self.outcome = self.outcome, "completed"
+        try:
+            self.refund(capture_id, offered["value"], offered["currency_code"], body["offer"]["request_id"])
+        finally:
+            self.outcome = outcome
+        return self._update_dispute(dispute_id, status="RESOLVED", dispute_outcome={"outcome_code": "RESOLVED_WITH_PAYOUT", "amount_refunded": offered})
+
+    def buyer_escalates(self, dispute_id):
+        return self._update_dispute(dispute_id, status="UNDER_REVIEW", dispute_life_cycle_stage="CHARGEBACK", links=[])
+
+
+class NetworkSwitch:
+    """Rehearsal stand-in for pulling the cable: while cut, every provider call fails the way the egress gateway
+    answers when its upstream is gone (refused before any byte leaves). The real network cut is case m in Docker."""
+
+    def __init__(self, gateway):
+        self.gateway, self.cut = gateway, False
+
+    def __getattr__(self, name):
+        value = getattr(self.gateway, name)
+        if not callable(value):
+            return value
+
+        def call(*args, **kwargs):
+            if self.cut:
+                raise Offline("Offline: the request did not leave this network.")
+            return value(*args, **kwargs)
+        return call

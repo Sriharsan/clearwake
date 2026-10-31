@@ -68,3 +68,35 @@ def propose(view, evidences, refund_limit_minor, clock):
     if view.amount_minor <= refund_limit_minor:
         return "accept_and_refund", "No evidence that answers this reason, and the amount is within the refund limit."
     return "escalate", "No evidence that answers this reason, and the amount is above the refund limit."
+
+
+DECISIONS = ("settle_by_offer", "refund_within_limit", "fight_with_evidence", "escalate")
+UNAUTHORISED = ("UNAUTHORISED", "UNAUTHORIZED")
+
+
+def dispute_decision(policy, view, evidences, clock, inquiry):
+    """The policy's decision for one dispute: (action, reason, amount_minor). The model's proposal never changes it.
+
+    Fight only when the records answer the reason. Otherwise settle in conversation while the case is still an
+    inquiry (no claim, so no PayPal dispute fee), up to the owner's offer limit, a partial offer above it.
+    After escalation, refund within the claim limit. Everything else, and anything near its deadline, goes to the owner.
+    """
+    from verdock_core.policy import decide
+    if clock["state"] in ("soon", "lapsed"):
+        return "escalate", f"Deadline {clock['state']}: the owner decides.", 0
+    if evidences:
+        return "fight_with_evidence", f"{len(evidences)} record(s) answer this reason.", 0
+    if view.reason in UNAUTHORISED:
+        return "escalate", "Unauthorised with no signed mandate on record: the owner decides.", 0
+    if inquiry:
+        full = decide(policy, "make_offer", view.amount_minor, view.currency)
+        if full.allowed:
+            return "settle_by_offer", "Full refund offer within the owner's offer limit.", view.amount_minor
+        limit = policy["operations"].get("make_offer", {}).get("max_amount_minor", 0)
+        if full.reason == "above limit" and limit:
+            return "settle_by_offer", f"Partial offer: the owner's offer limit is {limit / 100:.2f} {view.currency}.", limit
+        return "escalate", f"Policy does not allow an offer ({full.reason}).", 0
+    claim = decide(policy, "accept_claim", view.amount_minor, view.currency)
+    if claim.allowed:
+        return "refund_within_limit", "Refund within the owner's claim limit.", view.amount_minor
+    return "escalate", f"Above the owner's refund limit ({claim.reason}).", 0
