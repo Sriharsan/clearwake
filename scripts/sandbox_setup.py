@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from clearwake import envfile  # noqa: E402
-from clearwake.paypal import SandboxGateway  # noqa: E402
+from clearwake.paypal import GatewayError, SandboxGateway  # noqa: E402
 
 ENV = ROOT / ".env"
 STATE = ROOT / "data" / "sandbox" / "setup-order.json"
@@ -29,6 +29,13 @@ def main():
     gateway = SandboxGateway.from_environment()
     STATE.parent.mkdir(parents=True, exist_ok=True)
     state = json.loads(STATE.read_text()) if STATE.is_file() else {}
+    if state.get("order_id") and not state.get("captured"):
+        try:
+            gateway.order(state["order_id"])
+        except GatewayError:
+            # Unapproved sandbox orders expire after a few hours; start a fresh one rather than waiting forever.
+            print("The previous sandbox order expired or is unavailable. Creating a new one.")
+            state = {}
     if not state.get("order_id"):
         order = gateway.create_order("20.00", str(uuid.uuid4()), "http://127.0.0.1:8810/sandbox-approved")
         link = next((item["href"] for item in order.get("links", []) if item.get("rel") in ("payer-action", "approve")), "")
