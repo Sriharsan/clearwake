@@ -12,7 +12,7 @@ Open http://127.0.0.1:8810. Python 3.11 or newer, nothing to install. Windows: `
 
 *Screenshot: rehearsal mode, invented records, fake provider.*
 
-**License:** MIT. **Status:** a working local app with 39 offline tests (35 Python, 4 UI). Default mode is a rehearsal with a fake provider and invented records. A real PayPal sandbox adapter is built in; what has actually run against the sandbox is listed in [SUBMISSION_PAYPAL.md](SUBMISSION_PAYPAL.md). Built during the PayPal AI Hackathon submission period; see [docs/HACKATHON_UPDATES.md](docs/HACKATHON_UPDATES.md).
+**License:** MIT. **Status:** a working local app with 39 offline tests (35 Python, 4 UI). Default mode is a rehearsal with a fake provider and invented records. The PayPal sandbox path has also run: on 31 October the four cases passed against `api-m.sandbox.paypal.com`, with two real USD 1.00 sandbox refunds that PayPal's own records show as COMPLETED. No real money is involved. Details are in [SUBMISSION_PAYPAL.md](SUBMISSION_PAYPAL.md). Built during the PayPal AI Hackathon submission period; see [docs/HACKATHON_UPDATES.md](docs/HACKATHON_UPDATES.md).
 
 ### Autonomy where it is safe, approval where it matters, proof after every action
 

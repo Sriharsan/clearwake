@@ -46,9 +46,11 @@ The adapter refuses any base URL other than `https://api-m.sandbox.paypal.com`, 
 | --- | --- | --- |
 | Four cases, `scripts/check_demo.ps1` | Rehearsal, invented records, fake provider | 4 of 4 PASS (30 Oct) |
 | Specialists on the local model (`qwen2.5-coder:3b`, Ollama) | Real local model, fictional brief | Ran (30 Oct): 3 real model calls, 412 tokens reported. Product and engineering outputs passed their contract checks. The support output failed validation and was refused, so this flow does not complete on the local model yet. The rehearsal uses deterministic specialists |
-| Sandbox OAuth and setup order | PayPal sandbox | Ran (30 Oct): token issued, order `3BU49347KG046682J` created (USD 20.00), waiting for sandbox buyer approval |
-| Sandbox capture | PayPal sandbox | PENDING, after buyer approval |
-| Four cases, `scripts/check_sandbox.ps1` | PayPal sandbox (case b is an injected fault in sandbox) | PENDING |
+| Sandbox OAuth and setup order | PayPal sandbox | Ran: token issued, order `1DW875094F275773J` created (USD 20.00). The first order, `3BU49347KG046682J`, expired unapproved and the setup now replaces expired orders |
+| Sandbox capture | PayPal sandbox | Ran (31 Oct): approved by the sandbox personal test buyer. Capture `1PH921107B839311S` COMPLETED, USD 20.00 sandbox money |
+| Four cases, `scripts/check_sandbox.ps1` | PayPal sandbox (case b is an injected fault in sandbox) | **4 of 4 PASS (31 Oct).** a: refund `79R527888E694933F` sent, then VERIFIED from PayPal's refund record. b: a real refund was sent and its reply withheld, so it was held as UNKNOWN, the second send was replayed, and there was exactly 1 POST. c: refund `7A545589JM079780C` read from PayPal resolved UNKNOWN to VERIFIED with no second POST. d: USD 6.00 refused at setup and at send, 0 POSTs |
+| Independent read of the sandbox records | PayPal sandbox | Ran (31 Oct): capture `1PH921107B839311S` is PARTIALLY_REFUNDED. Both refunds are COMPLETED, USD 1.00 each, linked to that capture, and carry Clearwake's request ID in `custom_id` |
+| Test card setup (`--test-card`) | PayPal sandbox | Refused by PayPal for this sandbox merchant: PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING. Nothing captured |
 
 ## How to run
 
