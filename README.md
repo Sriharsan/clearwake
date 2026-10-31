@@ -26,10 +26,11 @@ When the buyer is an AI agent, Clearwake also signs the owner's spending mandate
 | --- | --- | --- |
 | Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox, case b is an injected fault in sandbox | 4 of 4 PASS on 31 October. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED in PayPal's record |
 | Cases c, d, e of `scripts/cases.py --sandbox` (refund, approval then refund, lost response) | real sandbox; e is an injected fault in sandbox | PASS on 31 October. Refunds `34A6137827870312B` and `0X757409L5274794C` VERIFIED |
-| Cases i, k, l (real PayPal disputes) | real sandbox | SKIPPED: no open sandbox dispute at the time of the run |
+| Case i (real PayPal dispute) | real sandbox | PASS on `PP-R-SLI-10195419`: tracking sent as the supporting info PayPal offered, read back VERIFIED |
+| Cases k, l (real PayPal disputes) | real sandbox | SKIPPED: k needs a dispute close to its deadline, l needs ten real disputes |
 | Cases a to l (`scripts/cases.py`) | rehearsal, fake provider, invented records | 12 of 12 PASS, twice |
 | The console at `/console` | rehearsal, invented records | runs locally |
-| Offline tests | fake transports | 67 Python and 4 UI tests pass (31 October) |
+| Offline tests | fake transports | 78 Python and 12 UI tests pass (31 October) |
 
 Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md), from the run files in `data/runs/`. Sandbox means PayPal's test environment with test money. No live PayPal, no real money.
 

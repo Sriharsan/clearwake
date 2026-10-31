@@ -25,7 +25,7 @@ Inside a sandbox run, only some cases touch PayPal. The rest run as rehearsal or
 | f. Split refunds stopped at the capture | rehearsal | PASS |
 | g. Prompt injection | rehearsal, refused before any PayPal call | PASS |
 | h. Tampered receipt | offline | PASS |
-| i. Item not received, tracking before the deadline | real sandbox | SKIPPED, no open sandbox dispute |
+| i. Item not received, tracking before the deadline | real sandbox (case runs above); then dispute `PP-R-SLI-10195419` in a separate run | SKIPPED in the case runs; PASS on `PP-R-SLI-10195419`: tracking sent as the supporting info PayPal offered, read back VERIFIED |
 | j. Mandate receipt as dispute evidence | rehearsal dispute, receipt verified offline | PASS |
 | k. Near deadline escalation | real sandbox | SKIPPED, no open sandbox dispute |
 | l. Ten disputes in parallel | real sandbox | SKIPPED, no open sandbox dispute |
@@ -48,8 +48,8 @@ Amounts for c, d and e are the ones set in `scripts/cases.py`. The four case che
 
 | Measure | Rehearsal (each of the two runs) | Real sandbox |
 | --- | --- | --- |
-| Disputes handled | 13 (i, j, k and ten in l) | 0 (none were open when the runs happened) |
-| Item not received, case i | evidence sent, PayPal record shows UNDER_REVIEW | SKIPPED |
+| Disputes handled | 13 (i, j, k and ten in l) | 1 (case i, `PP-R-SLI-10195419`, opened by the sandbox buyer after the case runs) |
+| Item not received, case i | evidence sent, PayPal record shows UNDER_REVIEW | PASS. PayPal had already moved it to UNDER_REVIEW and offered only `provide_supporting_info`. The tracker from the order record was sent, and PayPal's record showed it (SUBMITTED_BY_SELLER, 2026-10-31T10:31:38Z) |
 | Unauthorised agent order with mandate receipt, case j | evidence sent with the receipt, UNDER_REVIEW, receipt verifies offline | not run against a real dispute |
 | Near deadline, case k | escalated to the approval inbox with 4 h 59 min left | SKIPPED |
 | Batch of ten, case l (4 not received, 4 not as described, 2 unauthorised) | 4 evidenced, 4 refunded, 2 escalated | SKIPPED |
