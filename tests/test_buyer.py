@@ -51,6 +51,24 @@ class MandateTests(unittest.TestCase):
         proposal, decision = BuyerAgent(MANDATE, Adapter("ollama", "test-model", send=bad)).choose("a mug")
         self.assertIsNone(proposal.value); self.assertFalse(decision.allowed)
 
+    def test_mandate_receipt_is_evidence_that_verifies_offline_and_detects_edits(self):
+        import tempfile
+        from pathlib import Path
+        from clearwake.buyer import mandate_receipt
+        from clearwake.evidence import DisputeView, evidence_pack
+        from verdock_core.receipts import ReceiptLog, create_seed, load_seed, verify_log
+        with tempfile.TemporaryDirectory() as folder:
+            seed = Path(folder) / "buyer.seed"; create_seed(str(seed))
+            log = ReceiptLog(str(Path(folder) / "buyer.ndjson"), load_seed(str(seed)))
+            demo = Mandate("Synthetic shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))
+            receipt = mandate_receipt(log, demo, self.products["notebook-a5"], "clearwake-demo-store", "ORDER-SYNTH-9")
+            self.assertTrue(verify_log([receipt["line"]], receipt["public_key"])["ok"])
+            view = DisputeView.from_paypal({"dispute_id": "PP-D-9", "reason": "UNAUTHORISED", "dispute_amount": {"currency_code": "USD", "value": "9.00"}})
+            evidences, sources = evidence_pack(view, {"id": "ORDER-SYNTH-9"}, [], receipt)
+            self.assertIn("ORDER-SYNTH-9", evidences[0]["notes"]); self.assertIn(receipt["digest"][:16], evidences[0]["notes"])
+            edited = receipt["line"].replace('"price_minor":900', '"price_minor":90')
+            self.assertFalse(verify_log([edited], receipt["public_key"])["ok"])
+
     def test_meta_backend_stays_off_without_confirmation(self):
         with self.assertRaises(ValueError):
             Adapter("meta")

@@ -51,6 +51,19 @@ def check(mandate, merchant_id, currency, product, spent_minor):
     return MandateDecision(not failed, "Inside the mandate." if not failed else "Refused: " + ", ".join(failed) + ".", product, checks)
 
 
+def mandate_receipt(log, mandate, product, merchant_id, order_id, ts_ms=None):
+    """Signed record of authenticated purchase intent: the owner's mandate, the item, and the PayPal order it paid for.
+
+    Written to the buyer's own receipt log with the buyer agent's key. Returns what the merchant's Evidence agent attaches."""
+    from verdock_core.receipts import line_hash
+    params = {"order_id": order_id, "merchant": merchant_id, "item": product["id"], "price_minor": product["price_minor"],
+              "currency": mandate.currency, "budget_minor": mandate.budget_minor, "per_item_cap_minor": mandate.per_item_cap_minor,
+              "allowed_categories": list(mandate.allowed_categories)}
+    line = log.append(f"mandate:{order_id}", "clearwake.buyer.mandate", params, True, actor={"agent": "clearwake-buyer", "user": mandate.owner}, ts_ms=ts_ms)
+    return {"order_id": order_id, "owner": mandate.owner, "item": product["id"], "price": f"{mandate.currency} {product['price_minor'] / 100:.2f}",
+            "cap": f"{mandate.currency} {mandate.per_item_cap_minor / 100:.2f}", "digest": line_hash(line), "line": line, "public_key": log.public_key}
+
+
 class BuyerAgent:
     def __init__(self, mandate, adapter, catalog_path=CATALOG):
         self.mandate, self.adapter = mandate, adapter
