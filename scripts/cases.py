@@ -34,6 +34,8 @@ ARGS = sys.argv[1:]
 SANDBOX = "--sandbox" in ARGS
 BACKEND = ARGS[ARGS.index("--model") + 1] if "--model" in ARGS else "scripted"
 ORDER = ARGS[ARGS.index("--order") + 1] if "--order" in ARGS else None
+DISPUTE = ARGS[ARGS.index("--dispute") + 1] if "--dispute" in ARGS else None
+ONLY = set(ARGS[ARGS.index("--only") + 1].split(",")) if "--only" in ARGS else None
 MANDATE = Mandate("Synthetic shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))  # demo cap USD 102
 
 
@@ -72,7 +74,9 @@ def run():
     results = []
 
     def record(key, title, ok, how, detail):
-        status = "PASS" if ok is True else "SKIPPED" if ok is None else "FAIL"
+        if ONLY and key not in ONLY:
+            return
+        status ="PASS" if ok is True else "SKIPPED" if ok is None else "FAIL"
         results.append({"case": key, "title": title, "status": status, "how": how, "detail": detail})
         print(f"{status:7} {key}. {title}  [{how}]  {detail}", flush=True)
 
@@ -100,18 +104,22 @@ def run():
     run_id = uuid.uuid4().hex[:6]
     def case(cid, amount, capture_minor=1800, customer=None, message="Wrong colour received.", capture_ref=None):
         return Case(f"{cid}-{run_id}", "buyer complaint", "ORDER", capture_ref or cap_id, capture_minor, customer or f"buyer-{cid}", amount, "NOT_AS_DESCRIBED", message)
-    s = swarm("c"); r = s.handle(case("c", 150))
-    record("c", "Refund under the limit, verified against PayPal's record", r.state == VERIFIED, where, f"refund {r.refund_id}: {r.state}")
-    s = swarm("d"); pending = s.handle(case("d", 350)); s.approvals.approve(pending.approval_id, "Sri (approver)")
-    r = s.handle(case("d", 350), approval_id=pending.approval_id)
-    record("d", "Above the threshold: approval inbox, then refund verified", pending.state == "awaiting approval" and r.state == VERIFIED, where,
-           f"waited for approval {pending.approval_id[:8]}, then refund {r.refund_id}: {r.state}")
-    lost = LoseResponse(real) if SANDBOX else RehearsalGateway(work / "e-provider.sqlite3", "lost-response")
-    s = swarm("e", lost); first = s.handle(case("e", 150)); again = s.handle(case("e", 150))
-    ids = provider_refund_ids(lost); settled = s.reconcile(case("e", 150), ids[0]) if ids else None
-    record("e", "Lost response: UNKNOWN, no blind retry, reconciled from PayPal", first.state == UNKNOWN and again.state == UNKNOWN and len(ids) == 1
-           and settled is not None and settled.state == VERIFIED, "injected fault in sandbox" if SANDBOX else "rehearsal",
-           f"{first.state}, second attempt sent nothing, {len(ids)} refund at PayPal, reconciled to {settled and settled.state}")
+    want = lambda key: not ONLY or key in ONLY
+    if want("c"):
+        s = swarm("c"); r = s.handle(case("c", 150))
+        record("c", "Refund under the limit, verified against PayPal's record", r.state == VERIFIED, where, f"refund {r.refund_id}: {r.state}")
+    if want("d"):
+        s = swarm("d"); pending = s.handle(case("d", 350)); s.approvals.approve(pending.approval_id, "Sri (approver)")
+        r = s.handle(case("d", 350), approval_id=pending.approval_id)
+        record("d", "Above the threshold: approval inbox, then refund verified", pending.state == "awaiting approval" and r.state == VERIFIED, where,
+               f"waited for approval {pending.approval_id[:8]}, then refund {r.refund_id}: {r.state}")
+    if want("e"):
+        lost = LoseResponse(real) if SANDBOX else RehearsalGateway(work / "e-provider.sqlite3", "lost-response")
+        s = swarm("e", lost); first = s.handle(case("e", 150)); again = s.handle(case("e", 150))
+        ids = provider_refund_ids(lost); settled = s.reconcile(case("e", 150), ids[0]) if ids else None
+        record("e", "Lost response: UNKNOWN, no blind retry, reconciled from PayPal", first.state == UNKNOWN and again.state == UNKNOWN and len(ids) == 1
+               and settled is not None and settled.state == VERIFIED, "injected fault in sandbox" if SANDBOX else "rehearsal",
+               f"{first.state}, second attempt sent nothing, {len(ids)} refund at PayPal, reconciled to {settled and settled.state}")
     s = swarm("f", RehearsalGateway(work / "f-provider.sqlite3"))
     with ThreadPoolExecutor(max_workers=3) as pool:
         states = list(pool.map(lambda i: s.handle(case(f"f{i}", 200, capture_minor=500, capture_ref="CAP-SPLIT"), owner=f"agent-{i}").state, range(3)))
@@ -134,7 +142,10 @@ def run():
     now = datetime.now(timezone.utc); due = lambda h: (now + timedelta(hours=h)).isoformat().replace("+00:00", "Z")
     trackers = [{"number": "SYNTH1Z999AA10123456", "carrier": "UPS", "status": "SHIPPED"}]
     if SANDBOX:
-        open_disputes = [d for d in real.disputes() if d.get("status") == "WAITING_FOR_SELLER_RESPONSE"]
+        listed = [real.dispute(DISPUTE)] if DISPUTE else real.disputes()  # the sandbox list can lag; --dispute reads one by id
+        offers = lambda d: {link.get("rel") for link in d.get("links", []) if isinstance(link, dict)}
+        open_disputes = [d for d in listed if d.get("status") in ("WAITING_FOR_SELLER_RESPONSE", "OPEN")
+                         or (d.get("status") == "UNDER_REVIEW" and "provide_supporting_info" in offers(d))]
         not_received = [d for d in open_disputes if "NOT_RECEIVED" in d.get("reason", "")]
         if not_received:
             ds = MerchantSwarm(real, work / "disputes", adapter)
@@ -143,8 +154,10 @@ def run():
             trackers = [{"number": t["id"].split("-", 1)[-1], "carrier": "UPS", "status": t.get("status")}
                         for unit in order.get("purchase_units", []) for t in unit.get("shipping", {}).get("trackers", [])]
             r = ds.handle_dispute(not_received[0]["dispute_id"], 2000, "sandbox-buyer", {"id": order_id}, trackers)
-            record("i", "Item not received: tracking submitted before the deadline", (r.action, r.state) == ("provide_evidence", VERIFIED),
-                   "real sandbox", f"dispute {not_received[0]['dispute_id']}: {r.action}, {r.detail} Deadline {r.proposal.get('deadline', {}).get('state')}.")
+            record("i", "Item not received: tracking submitted before the deadline",
+                   r.action in ("provide_evidence", "provide_supporting_info") and r.state == VERIFIED, "real sandbox",
+                   f"dispute {not_received[0]['dispute_id']} ({not_received[0].get('status')}): {r.action}, {r.state}. {r.detail}"
+                   + (f" Deadline {r.proposal['deadline']['state']}." if "deadline" in r.proposal else ""))
         else:
             record("i", "Item not received: tracking submitted before the deadline", None, "real sandbox",
                    "No open 'item not received' sandbox dispute. Open one as the sandbox buyer in the Resolution Center.")

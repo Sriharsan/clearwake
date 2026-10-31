@@ -166,6 +166,9 @@ class MerchantSwarm:
             return Result(dispute_id, "none", "busy", "Another agent holds this dispute.")
         try:
             view = DisputeView.from_paypal(self.gateway.dispute(dispute_id))                       # Intake
+            offered = {link.get("rel") for link in view.raw.get("links", []) if isinstance(link, dict)}
+            if view.status == "UNDER_REVIEW" and "provide_supporting_info" in offered:
+                return self.supporting_info(view, order, trackers, mandate_receipt)
             if view.status not in ("WAITING_FOR_SELLER_RESPONSE", "OPEN"):
                 return Result(dispute_id, "none", "done", f"PayPal shows {view.status}; nothing to answer.")
             clock = deadline(view, self.clock())
@@ -235,6 +238,32 @@ class MerchantSwarm:
             return self.check_dispute(dispute_id, action, ("RESOLVED",), shown, approval_id)
         finally:
             self.invariants.unlock(f"dispute:{dispute_id}", owner)
+
+    def supporting_info(self, view, order, trackers, mandate_receipt):
+        """PayPal is reviewing and only offers supporting info: send record facts as notes, then read them back."""
+        from .evidence import evidence_pack
+        evidences, sources = evidence_pack(view, order, trackers, mandate_receipt)
+        shown = {"backend": "rule: PayPal offers only provide_supporting_info", "proposed": "provide_supporting_info", "sources": sources}
+        if not evidences or not decide(self.policy, "provide_evidence", 0).allowed:
+            return Result(view.id, "escalate", "awaiting approval", "Under review with nothing from the record to add. A person decides.", proposal=shown)
+        notes = "Facts from the merchant's PayPal records: " + "; ".join(sources) + ". " + " ".join(e.get("notes", "") for e in evidences)
+        request_id = self.invariants.request_id(f"dispute:{view.id}:supporting_info")
+        try:
+            self.gateway.provide_supporting_info(view.id, notes, request_id)
+        except ProviderRefused as refused:
+            return Result(view.id, "provide_supporting_info", "refused by PayPal", f"{refused} Nothing was applied.", proposal=shown)
+        except GatewayError:
+            self.outcomes.record(f"dispute:{view.id}", UNKNOWN)
+            return Result(view.id, "provide_supporting_info", UNKNOWN, "Response lost. Read the dispute before anything else.", proposal=shown)
+        try:
+            after = self.gateway.dispute(view.id)
+        except (GatewayError, ProviderRefused):
+            after = {}
+        seen = any(any(t.get("number", "") in str(info) for t in trackers) for info in after.get("supporting_info", []))
+        state = VERIFIED if seen else UNKNOWN
+        self.receipt(f"{view.id}:supporting-info", "clearwake.dispute.supporting_info", {"dispute": view.id, "items": len(sources), "state": state}, seen)
+        return Result(view.id, "provide_supporting_info", state, "PayPal's dispute record now shows the tracking note." if seen
+                      else "Sent, but PayPal's dispute record does not show it yet. Not counted as verified.", proposal=shown)
 
     def check_dispute(self, dispute_id, action, good_statuses, shown, approval_id=None):
         """Checker: read the dispute back from PayPal. Only the expected status counts as verified."""

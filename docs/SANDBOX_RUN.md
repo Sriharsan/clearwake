@@ -28,3 +28,15 @@ All against `https://api-m.sandbox.paypal.com` with Sri's sandbox app. These are
 | j. Mandate receipt as dispute evidence | rehearsal dispute; receipt verified offline | PASS |
 
 An earlier attempt of the same run, minutes before, failed cases c, d and e with **nothing sent to PayPal**. The swarm sent no refund request because sandbox authentication had not been prepared. Clearwake will not fetch a token in the moment before a POST, so the refunds were held. The fix adds a capture preflight read before every refund (commit after `8753970`). If the preflight fails, the refund is refused with "Nothing was sent".
+
+## Case i on a real dispute (`python scripts/cases.py --sandbox --dispute PP-R-SLI-10195419 --only i`, 31 October)
+
+The sandbox buyer opened dispute `PP-R-SLI-10195419` ("item not received") on order `8M960780ES843141H` in the Resolution Center.
+When Clearwake read it, PayPal had already moved it to UNDER_REVIEW (stage CHARGEBACK). The only merchant action PayPal still
+offered in the dispute's links was `provide_supporting_info`. Clearwake reads those links and uses only what PayPal offers.
+
+* The swarm sent the tracker from the PayPal order record (`SYNTH1Z999AA10654321`, SHIPPED) as supporting info. Nothing else was sent.
+* The Checker read the dispute back. PayPal's record shows the note as SUBMITTED_BY_SELLER at 2026-10-31T10:31:38Z, so the case is VERIFIED.
+* Result: **PASS** (real sandbox). Evidence was sent as supporting info, not as `provide-evidence`, because PayPal no longer offered `provide-evidence`.
+* The first attempt minutes earlier stopped at the OAuth token request with a transport error, so no dispute call was made. A second
+  attempt was skipped because the script only counted WAITING_FOR_SELLER_RESPONSE and OPEN disputes. The third attempt is the PASS above.

@@ -56,7 +56,7 @@ def transport(request, timeout=15):
             or parsed.query or parsed.fragment or parsed.username or parsed.password
             or not re.fullmatch(r"/v1/oauth2/token|/v2/payments/captures/[A-Za-z0-9_-]{1,64}(?:/refund)?|/v2/payments/refunds/[A-Za-z0-9_-]{1,64}"
                                 r"|/v2/checkout/orders(?:/[A-Za-z0-9_-]{1,64}(?:/capture|/track)?)?"
-                                r"|/v1/customer/disputes(?:/[A-Za-z0-9_-]{1,64}(?:/provide-evidence|/accept-claim|/adjudicate)?)?", parsed.path)):
+                                r"|/v1/customer/disputes(?:/[A-Za-z0-9_-]{1,64}(?:/provide-evidence|/provide-supporting-info|/accept-claim|/adjudicate)?)?", parsed.path)):
         raise GatewayError("Only reviewed PayPal sandbox routes are allowed.")
     try:
         with build_opener(ProxyHandler({}), NoRedirect()).open(request, timeout=timeout) as response:
@@ -202,6 +202,13 @@ class SandboxGateway:
         body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"input\"\r\nContent-Type: application/json\r\n\r\n{part}\r\n--{boundary}--\r\n").encode()
         return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/provide-evidence", body, request_id, f"multipart/form-data; boundary={boundary}")
 
+    def provide_supporting_info(self, dispute_id, notes, request_id):
+        """Offered by PayPal once a dispute is under review: facts from the record as notes, no files."""
+        boundary = "clearwake" + request_id.replace("-", "")
+        part = json.dumps({"notes": notes[:2000]})
+        body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"input\"\r\nContent-Type: application/json\r\n\r\n{part}\r\n--{boundary}--\r\n").encode()
+        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/provide-supporting-info", body, request_id, f"multipart/form-data; boundary={boundary}")
+
     def accept_claim(self, dispute_id, note, refund_value, currency, request_id):
         amount(refund_value)
         return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/accept-claim",
@@ -303,6 +310,13 @@ class RehearsalGateway:
         self._update_dispute(dispute_id, status="UNDER_REVIEW", evidences=evidences)
         if self.outcome == "lost-response":
             raise GatewayError("The fake provider recorded the evidence but the response was lost.")
+        return {"links": []}
+
+    def provide_supporting_info(self, dispute_id, notes, request_id):
+        body = self.dispute(dispute_id)
+        self._update_dispute(dispute_id, supporting_info=body.get("supporting_info", []) + [{"notes": notes[:2000], "source": "SUBMITTED_BY_SELLER"}])
+        if self.outcome == "lost-response":
+            raise GatewayError("The fake provider recorded the note but the response was lost.")
         return {"links": []}
 
     def accept_claim(self, dispute_id, note, refund_value, currency, request_id):

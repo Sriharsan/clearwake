@@ -76,6 +76,16 @@ class DisputeTests(unittest.TestCase):
         sent = self.swarm.handle_dispute(d["dispute_id"], 2000, "buyer-6", {"id": "ORDER-6"}, TRACKERS)
         self.assertEqual((sent.action, sent.state), ("provide_evidence", VERIFIED))
 
+    def test_under_review_dispute_gets_supporting_info_from_the_record_only(self):
+        d = self.gateway.open_dispute("CAP-7", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "5.00", due(72))
+        self.gateway._update_dispute(d["dispute_id"], status="UNDER_REVIEW", links=[{"rel": "provide_supporting_info", "method": "POST"}])
+        result = self.swarm.handle_dispute(d["dispute_id"], 2000, "buyer-7", {"id": "ORDER-7"}, TRACKERS)
+        self.assertEqual((result.action, result.state), ("provide_supporting_info", VERIFIED))
+        self.assertIn("SYNTH1Z999AA10123456", self.gateway.dispute(d["dispute_id"])["supporting_info"][0]["notes"])
+        nothing = self.gateway.open_dispute("CAP-8", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "5.00", due(72))
+        self.gateway._update_dispute(nothing["dispute_id"], status="UNDER_REVIEW", links=[{"rel": "provide_supporting_info", "method": "POST"}])
+        self.assertEqual(self.swarm.handle_dispute(nothing["dispute_id"], 2000, "buyer-8", {"id": "ORDER-8"}, []).state, "awaiting approval")
+
     def test_sandbox_helpers_pass_paypal_refusals_through_unchanged(self):
         from clearwake.paypal import ProviderRefused, SandboxGateway
         def send(request, timeout):
