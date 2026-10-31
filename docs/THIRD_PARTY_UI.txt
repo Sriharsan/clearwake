@@ -9,6 +9,21 @@ verdock-core browser verifier
   License:   MIT (vendor/verdock-core/LICENSE), pinned git submodule
   Used for:  the receipt verifier screen (WebCrypto Ed25519 and SHA-256)
 
+AG Grid Community
+  File:      web/vendor/ag-grid-community-35.3.1.min.js, served unchanged at /vendor/ag-grid-community.min.js
+  Package:   ag-grid-community (npm), version 35.3.1, published 2 June 2026
+  License:   MIT, Copyright (c) 2015-2026 AG GRID LTD (web/vendor/ag-grid-community-LICENSE.txt, from the package)
+  Source:    https://registry.npmjs.org/ag-grid-community/-/ag-grid-community-35.3.1.tgz
+             npm integrity sha512-Wmkd/xYTCbAApcZZO74nBggZCnd/oX753NY3MJ4zYARVpfBHRWWhIBJ2sFTFKbDWwHZOWsx3YT9+kkyeuyLKlw==
+             (the downloaded tarball hashed to the same value on 31 October 2026)
+  Used for:  the dispute ledger in the merchant control room
+  CSP:       version 33 and later set row and cell positions through the CSS object model and take a
+             styleNonce for the style blocks they add. The console page gets a fresh nonce per response.
+             While the bundle loads it writes 14 fixed style blocks before it knows the nonce; those are
+             allowed by their exact SHA-256 (AG_GRID_STYLE_HASHES in clearwake/server.py). No
+             'unsafe-inline'. Checked in Chromium on 31 October 2026: zero CSP violations, rows drawn
+             correctly. Other console tables stay plain HTML.
+
 Evaluated and not shipped
 -------------------------
 

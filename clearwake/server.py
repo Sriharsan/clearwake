@@ -17,11 +17,31 @@ ASSETS = Path(__file__).resolve().parent.parent / "web"
 VERIFY_JS = Path(__file__).resolve().parent.parent / "vendor" / "verdock-core" / "js" / "verify.js"
 CONSOLE_COOKIE = "clearwake_console"
 MAX_BODY = 1 << 20
+# Fixed style blocks that AG Grid 35.3.1 writes while it loads, before the grid gets this page's nonce.
+# Listed by exact SHA-256 so nothing else inline is allowed. Recompute them if the vendored file changes.
+AG_GRID_STYLE_HASHES = " ".join("'sha256-%s'" % h for h in (
+    "vCdgOn5r7+50hv0fSyNA/UhS3G10q3Rc/EvM1j3HJ7g=",
+    "n/jLSmeREqUxcuqub7Kuz6vz8MPx1xKx9bOESi5lmvM=",
+    "47JG+Icotai/YQ5+MnJnjTV8e9M1nFS1n5DTCW/kAo8=",
+    "au60U7LxI343gDbEQU7hZtTc1hbrvGcvU9qGDant0V0=",
+    "nf1sroLSakzniJTkX+8i0PIFkSGgWjG5mPGAsgoxIxU=",
+    "C6dMyeQ0VQdETHOPKR+JADr0JDElLaNWFWDvMRxLe7o=",
+    "TpM9G9ZKBt+31bZ3h4Y0MkoP2aysh7AI0EcoFMnR+k4=",
+    "39Q1r3e7Fob1zhI7Z43IDrTh0c5eYSqRiEET+a78i0s=",
+    "mvhJWU+0vXpp4dPWZbp+3bA6SYYF0J45O3f81cXqqbo=",
+    "SJYVEguegPpBuUcJiD5Y0Okns1caQK/qkZCFglqgsYQ=",
+    "KMak0OkUSEgGET+sgHkIV1Y35kopID/yhZfQHXzqdZQ=",
+    "4pe1KrAEDwjT6xVouCIg1E8rtZnERw6aaWSiOSRT7j0=",
+    "dZJgLOiKwxMaxFF+gbc4rEegWWsPo7iRGxN468zCBCg=",
+    "xNhuE0G9r0EEPguBS/EhU3t72C3e45R0mS1nxxhjkGM=",
+))
 # Files the console serves, each from a fixed path. Nothing else under web/ or vendor/ is reachable.
 CONSOLE_ASSETS = {
     "/console": ("console.html", "text/html"), "/console/": ("console.html", "text/html"),
     "/console.css": ("console.css", "text/css"), "/console.js": ("console.js", "text/javascript"),
     "/console-lib.js": ("console-lib.js", "text/javascript"),
+    # AG Grid Community 35.3.1, MIT, vendored unchanged (docs/THIRD_PARTY_UI.txt). Its styles carry the page's nonce.
+    "/vendor/ag-grid-community.min.js": ("vendor/ag-grid-community-35.3.1.min.js", "text/javascript"),
 }
 
 
@@ -65,7 +85,12 @@ def workroom_page():
 class ClearwakeHandler(Handler):
     server_version = "Clearwake"
 
+    style_nonce = None
+
     def send_header(self, keyword, value):
+        # The console page lets in only styles carrying this response's nonce (AG Grid's); everything else stays 'self'.
+        if keyword.lower() == "content-security-policy" and self.style_nonce:
+            value = value.replace("style-src 'self'", f"style-src 'self' 'nonce-{self.style_nonce}' {AG_GRID_STYLE_HASHES}", 1)
         # Cookies are scoped by host, not port. Keep separate local apps from
         # overwriting each other's sessions while retaining upstream attributes.
         if keyword.lower() == "set-cookie" and value.startswith(COOKIE + "="):
@@ -87,6 +112,12 @@ class ClearwakeHandler(Handler):
         if path in CONSOLE_ASSETS or path == "/verdock/verify.js":
             name, kind = CONSOLE_ASSETS.get(path, (None, "text/javascript"))
             source = VERIFY_JS if name is None else ASSETS / name
+            if kind == "text/html":
+                self.style_nonce = secrets.token_urlsafe(18)
+                try:
+                    return self.send_asset(lambda: source.read_bytes().replace(b"__STYLE_NONCE__", self.style_nonce.encode()), kind)
+                finally:
+                    self.style_nonce = None
             return self.send_asset(lambda: source.read_bytes(), kind)
         asset = {"/": (workroom_page, "text/html"), "/app.js": (core_script, "text/javascript"),
             "/payment.js": (lambda: (ASSETS / "payment.js").read_bytes(), "text/javascript"),

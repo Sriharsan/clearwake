@@ -22,8 +22,9 @@ from verdock_core.policy import decide
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed, verify_log
 
 from .buyer import BuyerAgent, Mandate, load_catalog, mandate_receipt
+from .fees import fee_if_escalated, gauge as fee_gauge
 from .models import Adapter
-from .paypal import GatewayError, LIMIT, RehearsalGateway
+from .paypal import GatewayError, LIMIT, NetworkSwitch, RehearsalGateway
 from .swarm import Case, MerchantSwarm, money
 
 # The same owner mandate as scripts/cases.py: USD 102 budget, one store, two categories.
@@ -42,8 +43,12 @@ CASES = {
     "j": "Agent order disputed as unauthorised: mandate receipt attached",
     "k": "Near deadline: escalated with the countdown",
     "l": "Batch of ten disputes in parallel",
+    "n": "Settle in conversation before escalation: offer inside the limit, PayPal record checked",
+    "m": "Network cut mid batch: held, offline, then PayPal read first and no duplicate",
 }
-DISPUTE_CASES = ("i", "j", "k", "l")
+DISPUTE_CASES = ("i", "j", "k", "l", "n")
+DECIDED = {"provide_evidence": "fight_with_evidence", "provide_supporting_info": "fight_with_evidence", "accept_and_refund": "refund_within_limit",
+           "escalate": "escalate", "settle_by_offer": "settle_by_offer", "fight_with_evidence": "fight_with_evidence"}
 REQUEST = re.compile(r"[\x20-\x7e]{1,200}\Z")
 
 
@@ -157,6 +162,7 @@ class Console:
                  "state": result.state, "action": result.action, "detail": result.detail,
                  "refund_id": result.refund_id, "approval_id": result.approval_id,
                  "proposed": result.proposal.get("proposed"), "model": result.proposal.get("backend"),
+                 "decided": result.proposal.get("decided") or DECIDED.get(result.action, result.action), "offer": result.proposal.get("offer"),
                  "gateway": gateway, "adapter": adapter, "history": [], **(extra or {})}
         if case is not None:
             entry.update({"amount_minor": case.amount_minor, "capture": case.capture_id, "capture_minor": case.capture_minor,
@@ -200,7 +206,7 @@ class Console:
 
     def run_case(self, key):
         if key not in CASES:
-            raise ConsoleError("Choose one of the rehearsal cases c, d, e, f, g, i, j, k or l.")
+            raise ConsoleError("Choose one of the rehearsal cases c, d, e, f, g, i, j, k, l, m or n.")
         with self._lock:
             run = uuid.uuid4().hex[:6]
             started = time.perf_counter()
@@ -249,9 +255,9 @@ class Console:
     def _due(self, hours):
         return (self.clock() + timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
 
-    def _open_dispute(self, key, run, capture, reason, value, hours, message="", customer=None, order=None, trackers=(), receipt=None):
+    def _open_dispute(self, key, run, capture, reason, value, hours, message="", customer=None, order=None, trackers=(), receipt=None, stage=None):
         """Rehearsal stand in for a buyer opening a dispute in PayPal's Resolution Center."""
-        opened = self.gateway.open_dispute(capture, reason, value, self._due(hours), message)
+        opened = self.gateway.open_dispute(capture, reason, value, self._due(hours), message, stage=stage)
         return {"dispute_id": opened["dispute_id"], "reason": reason, "amount_minor": int(round(float(value) * 100)),
                 "capture": capture, "capture_minor": 900, "customer": customer or f"buyer-{key}-{run}",
                 "order": order or f"ORDER-{key.upper()}-{run}", "due": opened["seller_response_due_date"], "message": message,
@@ -289,6 +295,62 @@ class Console:
                  for i, rs in enumerate(reasons)]
         with ThreadPoolExecutor(max_workers=5) as pool:
             return list(pool.map(lambda info: self._handle_dispute("l", run, info), batch))
+
+    def _case_n(self, run):
+        info = self._open_dispute("n", run, f"CAP-N-{run}", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "2.50", 240, "The colour is wrong.", stage="INQUIRY")
+        entry = self._handle_dispute("n", run, info)
+        self.gateway.buyer_accepts_offer(info["dispute_id"])  # rehearsal stand-in: in the sandbox the buyer accepts in the Resolution Center
+        settled = self.swarm.handle_dispute(info["dispute_id"], info["capture_minor"], info["customer"], {"id": info["order"]})
+        self._history(entry, settled, "The buyer accepted the offer (rehearsal stand-in for the sandbox buyer in PayPal's Resolution Center).")
+        return [entry]
+
+    def _case_m(self, run):
+        switch = NetworkSwitch(self.gateway)
+        cases = [self._refund_case(f"m{i}", run, 100, capture_ref=f"CAP-M-{run}") for i in (1, 2)]
+        with self._with(gateway=switch) as swarm:
+            first = self._entry("m", run, swarm.handle(cases[0]), cases[0])
+            switch.cut = True
+            second = self._entry("m", run, swarm.handle(cases[1]), cases[1], extra={"network": "cut"})
+            switch.cut = False
+            for result in swarm.resume_offline():
+                self._history(second, result, "Network restored. PayPal's record was read first, then the held refund resumed with its request id.")
+            again = swarm.handle(cases[1])
+            self._history(second, again, "Run again after reconnect: nothing was sent again.")
+        return [first, second]
+
+    def dispute_ledger(self):
+        """One row per dispute: PayPal's stage and status read from the record now, next to the policy decision and the model proposal."""
+        rows = []
+        for e in self.entries:
+            if e["kind"] != "PayPal dispute":
+                continue
+            try:
+                record = self.gateway.dispute(e["dispute_id"])
+            except GatewayError:
+                record = {}
+            stage = record.get("dispute_life_cycle_stage") or "not given"
+            settled = record.get("status") == "RESOLVED" and stage == "INQUIRY"
+            rows.append({"dispute": e["dispute_id"], "case": e["key"], "reason": e["reason"], "amount": money(e["amount_minor"]),
+                         "stage": stage, "paypal_status": record.get("status", "unreadable"), "decided": e.get("decided") or "",
+                         "proposed": e.get("proposed") or "", "model": e.get("model") or "", "state": e["state"], "due": e.get("due"),
+                         "settled_before_escalation": settled, "fee_avoided": money(fee_if_escalated(record, False)) if settled else "0.00",
+                         "source": REHEARSAL})
+        return rows
+
+    def fee_state(self):
+        """The fee leak gauge on this rehearsal folder's invented records: sales are the captures behind its cases."""
+        sales = {}
+        for e in self.entries:
+            if e.get("capture"):
+                sales[e["capture"]] = {"amount": {"value": money(e.get("capture_minor", 0)), "currency_code": "USD"}}
+        disputes = []
+        for e in self.entries:
+            if e["kind"] == "PayPal dispute":
+                try:
+                    disputes.append(self.gateway.dispute(e["dispute_id"]))
+                except GatewayError:
+                    pass
+        return {**fee_gauge(list(sales.values()), disputes, self.clock()).as_dict(), "label": REHEARSAL}
 
     # Inbox and reconcile ---------------------------------------------------------------------
     def _find(self, field, value):
@@ -401,6 +463,7 @@ class Console:
                            "hash": self.swarm.policy_hash},
                 "cases": [{"key": k, "title": t, "dispute": k in DISPUTE_CASES} for k, t in CASES.items()],
                 "entries": entries, "runs": self.runs, "inbox": self.inbox(), "ledger": self.ledger(), "gauge": gauge,
+                "disputes": self.dispute_ledger(), "fees": self.fee_state(),
                 "now": now_iso(self.clock),
             }
 

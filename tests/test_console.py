@@ -164,6 +164,20 @@ class ConsoleHTTPTests(unittest.TestCase):
             self.assertEqual(self.request("GET", path)[0], 404, path)
         self.assertEqual(self.request("GET", "/")[0], 200)  # the workroom still answers
 
+    def test_only_the_console_page_lets_in_ag_grid_styles_by_nonce_and_fixed_hashes(self):
+        import re
+        status, headers, page = self.request("GET", "/console")
+        nonce = re.search(rb'name="cw-style-nonce" content="([A-Za-z0-9_-]{24})"', page).group(1).decode()
+        csp = headers["Content-Security-Policy"]
+        self.assertIn(f"style-src 'self' 'nonce-{nonce}' 'sha256-", csp)
+        self.assertNotIn("unsafe-inline", csp); self.assertNotIn("unsafe-hashes", csp)
+        again = re.search(rb'content="([A-Za-z0-9_-]{24})"', self.request("GET", "/console")[2]).group(1).decode()
+        self.assertNotEqual(nonce, again)  # a fresh nonce for every page
+        status, headers, grid = self.request("GET", "/vendor/ag-grid-community.min.js")
+        self.assertEqual((status, headers["Content-Type"]), (200, "text/javascript; charset=utf-8"))
+        self.assertIn(b"styleNonce", grid); self.assertNotIn("nonce-", headers["Content-Security-Policy"])
+        self.assertNotIn("nonce-", self.request("GET", "/console.js")[1]["Content-Security-Policy"])
+
     def test_reset_opens_a_new_folder_and_keeps_the_old_one(self):
         self.run_case("c")
         before = self.console.data
