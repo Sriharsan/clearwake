@@ -1,0 +1,20 @@
+{
+ "recorded": "2026-10-31",
+ "label": "recorded sandbox run, 31 Oct",
+ "logs": [
+  {
+   "file": "receipts/case-m-merchant.ndjson",
+   "title": "Case m: merchant agents, refunds through the gateway",
+   "public_key": "5fec32e4b3ff4300cfda35105e2924f935adc501a9dc486aa26b295e861bb769",
+   "lines": 12,
+   "ok_in_python": true
+  },
+  {
+   "file": "receipts/egress-gateway.ndjson",
+   "title": "Egress gateway: every request that tried to leave",
+   "public_key": "6cf664b01eadc58ffac85fde3304ebc3bc1fe480c110f95d10818d4c6db512ed",
+   "lines": 34,
+   "ok_in_python": true
+  }
+ ]
+}

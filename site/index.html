@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearwake</title>
+<meta name="description" content="Clearwake settles PayPal disputes before they turn into fees. Sandbox only.">
+<link rel="stylesheet" href="style.css">
+<script src="app.js" type="module"></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#top"><span class="mark" aria-hidden="true">c</span>clearwake</a>
+  <nav aria-label="Sections">
+    <a href="#leak">The fee leak</a><a href="#compare">Side by side</a><a href="#boundary">Boundary</a><a href="#run">Sandbox run</a><a href="#verify">Verify</a>
+  </nav>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <p class="pill">PayPal sandbox only. No real money.</p>
+    <h1>Clearwake settles PayPal disputes before they turn into fees.</h1>
+    <p class="lede">Agents running inside the merchant's own network resolve each case with the buyer inside the owner's limits, fight only the cases worth fighting, and never call a refund done until PayPal's own record says so.</p>
+    <div class="cta">
+      <a class="button primary" href="https://github.com/Sriharsan/clearwake">Source on GitHub</a>
+      <a class="button" href="#run-it">Run it on your machine</a>
+    </div>
+  </section>
+
+  <section id="leak" class="block" aria-labelledby="leak-title">
+    <h2 id="leak-title">Where the money leaks</h2>
+    <p class="sub">PayPal's own rules. Each card links to the page it comes from.</p>
+    <div class="cards">
+      <article class="card">
+        <span class="num">1</span>
+        <h3>Cases that escalate pay a fee</h3>
+        <p>PayPal charges no Standard Dispute Fee when a case is resolved directly between seller and buyer and not escalated to a claim. Sellers who answer late, or only with evidence, let the case escalate.</p>
+        <p class="figure"><span>USD 15.00</span> Standard Dispute Fee, US</p>
+        <p class="src">Rule: <a href="https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350">PayPal Help Center, help350</a> (UK edition; the US edition was not reachable when checked). Fee: <a href="https://www.paypal.com/us/business/paypal-business-fees">PayPal Merchant Fees, US</a>, updated 1 Oct 2026.</p>
+      </article>
+      <article class="card">
+        <span class="num">2</span>
+        <h3>A high dispute rate doubles it</h3>
+        <p>A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays the High Volume Dispute Fee on every dispute.</p>
+        <p class="figure"><span>USD 30.00</span> High Volume Dispute Fee, US</p>
+        <p class="src">Rule: <a href="https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350">help350</a>. Fee: <a href="https://www.paypal.com/us/business/paypal-business-fees">PayPal Merchant Fees, US</a>.</p>
+      </article>
+      <article class="card">
+        <span class="num">3</span>
+        <h3>A refund sent twice, or one that silently failed</h3>
+        <p>Either costs money or a customer. Clearwake gives each refund one stable request id, holds any reply it cannot confirm as UNKNOWN, and only reports a refund once PayPal's refund record matches.</p>
+        <p class="figure"><span>1</span> request per refund, checked against PayPal</p>
+        <p class="src">Shown in the recorded sandbox run below.</p>
+      </article>
+    </div>
+    <p class="note">The Standard fee is also not charged on claims below twice the fee or on unauthorised transactions, so Clearwake counts a fee avoided only when PayPal's rule would otherwise have charged it.</p>
+  </section>
+
+  <section id="compare" class="block" aria-labelledby="compare-title">
+    <h2 id="compare-title">Without Clearwake and with it</h2>
+    <div class="table-wrap">
+      <table>
+        <caption class="sr">Without Clearwake compared with Clearwake</caption>
+        <thead><tr><th scope="col">Moment</th><th scope="col">Without Clearwake</th><th scope="col">With Clearwake</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">A buyer opens a case</th><td>No reply in time; the case escalates and the dispute fee is charged</td><td>Settled in conversation: a message and an offer inside the owner's limit while PayPal still calls it an inquiry</td></tr>
+          <tr><th scope="row">A case worth fighting</th><td>Deadline missed; evidence never sent</td><td>Tracking and order facts from PayPal's own records, sent before the deadline; near deadlines go to the owner</td></tr>
+          <tr><th scope="row">A refund reply is lost</th><td>Sent twice, or marked done when it failed</td><td>One request id, held as UNKNOWN, reconciled from PayPal's record</td></tr>
+          <tr><th scope="row">Dispute text and buyer details</th><td>Pasted into an outside AI service</td><td>Read by a local model inside the merchant's network</td></tr>
+          <tr><th scope="row">The network drops mid batch</th><td>Retries fire blindly</td><td>Money actions wait as "held, offline"; on reconnect PayPal is read first, then they finish with no duplicate</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="boundary" class="block" aria-labelledby="boundary-title">
+    <h2 id="boundary-title">The boundary</h2>
+    <p class="sub">The live system runs in a network isolated container network on the merchant's own machine. One gateway is the only way out.</p>
+    <figure class="diagram">
+      <svg viewBox="0 0 800 300" role="img" aria-labelledby="dg-title dg-desc">
+        <title id="dg-title">Clearwake boundary</title>
+        <desc id="dg-desc">Agents, policy, checks, receipts and the local model sit inside the merchant's network. The egress gateway is the only path out and reaches only the PayPal sandbox API.</desc>
+        <rect class="zone" x="10" y="20" width="480" height="260" rx="14"/>
+        <text class="zone-label" x="30" y="48">Inside the merchant's network (no route out)</text>
+        <rect class="box" x="30" y="70" width="200" height="56" rx="8"/><text class="t" x="130" y="96">Agents</text><text class="s" x="130" y="114">Intake, Evidence, Decider, Checker</text>
+        <rect class="box" x="250" y="70" width="220" height="56" rx="8"/><text class="t" x="360" y="96">Policy and approvals</text><text class="s" x="360" y="114">limits a model cannot change</text>
+        <rect class="box" x="30" y="146" width="200" height="56" rx="8"/><text class="t" x="130" y="172">Local model</text><text class="s" x="130" y="190">Ollama, dispute text stays here</text>
+        <rect class="box" x="250" y="146" width="220" height="56" rx="8"/><text class="t" x="360" y="172">Signed receipts</text><text class="s" x="360" y="190">verify with no network</text>
+        <rect class="box gate" x="380" y="222" width="190" height="46" rx="8"/><text class="t" x="475" y="250">Egress gateway</text>
+        <rect class="box ext" x="600" y="210" width="150" height="70" rx="8"/><text class="t" x="675" y="240">PayPal sandbox</text><text class="s" x="675" y="258">api-m.sandbox.paypal.com</text>
+        <line class="flow" x1="570" y1="245" x2="600" y2="245"/>
+        <path class="flow route" d="M470 98 H510 V222"/>
+        <text class="s left" x="600" y="196">only allowed host</text>
+        <text class="s left blocked" x="560" y="60">any other host: blocked, receipted</text>
+        <line class="flow blocked" x1="500" y1="56" x2="552" y2="56"/>
+      </svg>
+    </figure>
+    <div class="table-wrap">
+      <table>
+        <caption class="sr">What stays inside and what crosses the gateway</caption>
+        <thead><tr><th scope="col">Stays inside</th><th scope="col">Crosses the gateway</th><th scope="col">Why</th></tr></thead>
+        <tbody>
+          <tr><td>Dispute text, buyer messages, evidence drafts</td><td>Only what PayPal's API needs for the step: a message, an offer amount, tracking facts</td><td>Customer data and dispute evidence stay inside the merchant's environment</td></tr>
+          <tr><td>Policy file, approvals, limits</td><td>Nothing</td><td>A buyer message or a model reply cannot change a limit</td></tr>
+          <tr><td>Signed receipts and the verifier</td><td>Nothing</td><td>Proof that does not depend on any outside service</td></tr>
+          <tr><td>The model</td><td>Nothing</td><td>Runs through Ollama in its own container on the isolated network</td></tr>
+          <tr><td>Sandbox keys</td><td>Inside the TLS tunnel only; the gateway sees host names and byte counts</td><td>The gateway can log every request without reading it</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="run" class="block" aria-labelledby="run-title">
+    <h2 id="run-title">Recorded sandbox run, 31 Oct</h2>
+    <p class="sub">Real PayPal sandbox records with test money. IDs are PayPal's own.</p>
+    <div class="table-wrap">
+      <table>
+        <caption class="sr">Recorded sandbox run</caption>
+        <thead><tr><th scope="col">Case</th><th scope="col">What happened</th><th scope="col">PayPal IDs</th></tr></thead>
+        <tbody id="run-rows">
+          <tr><th scope="row">Setup</th><td>Order approved by the sandbox buyer and captured, USD 20.00</td><td class="mono">order 1DW875094F275773J, capture 1PH921107B839311S</td></tr>
+          <tr><th scope="row">c</th><td>Refund under the limit, matched to PayPal's refund record</td><td class="mono">34A6137827870312B</td></tr>
+          <tr><th scope="row">d</th><td>Above the approval threshold: waited in the owner's inbox, then refunded and matched</td><td class="mono">0X757409L5274794C</td></tr>
+          <tr><th scope="row">e</th><td>Reply withheld on purpose after a real refund: held as UNKNOWN, the second attempt sent nothing, reconciled from PayPal</td><td class="mono">one refund at PayPal</td></tr>
+          <tr><th scope="row">i</th><td>Item not received: tracking from PayPal's order record sent as supporting info; PayPal's dispute record shows it from the seller</td><td class="mono">dispute PP-R-SLI-10195419</td></tr>
+          <tr><th scope="row">m</th><td>In the isolated network: one refund verified, the gateway cut off, two refunds held offline, the network restored, PayPal read first, both refunds verified, the rerun sent nothing</td><td class="mono">6PX35920F4587564U, 76C086475Y724052F, 9C434129FA2384059</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">Case n (settling in conversation) runs in rehearsal; the sandbox step where the buyer accepts the offer is done by the sandbox buyer in PayPal's Resolution Center, because this app cannot act for the buyer.</p>
+  </section>
+
+  <section id="verify" class="block" aria-labelledby="verify-title">
+    <h2 id="verify-title">Verify the receipts yourself</h2>
+    <p class="sub">The verdock-core verifier runs in this page with WebCrypto. Nothing is uploaded; a file you drop in is read only by your browser.</p>
+    <div class="verify">
+      <div class="logs" id="logs"></div>
+      <form class="own" id="own">
+        <h3>Check any receipt log</h3>
+        <label for="own-file">NDJSON file</label>
+        <input id="own-file" type="file" accept=".ndjson,.jsonl,.txt">
+        <label for="own-key">Trusted public key, 64 hex characters</label>
+        <input id="own-key" class="mono" maxlength="64" autocomplete="off" spellcheck="false">
+        <button class="button primary" type="submit">Verify</button>
+        <p class="result" id="own-result" aria-live="polite"></p>
+      </form>
+    </div>
+  </section>
+
+  <section id="run-it" class="block" aria-labelledby="runit-title">
+    <h2 id="runit-title">Run it on your machine</h2>
+    <p class="sub">Python 3.12 or newer, nothing to install. Starts in rehearsal with invented records and makes no network calls.</p>
+    <pre class="code"><code>git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
+cd clearwake
+python -m clearwake --port 8810</code></pre>
+    <p class="sub">Then open 127.0.0.1:8810/console. The isolated network run is <code>python scripts/airgap.py</code> (Docker and your own sandbox keys).</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <p>Sandbox only. No real money. The live system runs inside the merchant's network; this site does not.</p>
+</footer>
+</body>
+</html>
