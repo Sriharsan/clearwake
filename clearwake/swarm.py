@@ -115,6 +115,13 @@ class MerchantSwarm:
             self.invariants.unlock(f"case:{case.id}", owner)
 
     def execute(self, case, shown, approval_id=None):
+        try:  # preflight: read the capture before any money moves (this also prepares sandbox authentication)
+            capture = self.gateway.capture(case.capture_id)
+            if capture.get("status") not in ("COMPLETED", "PARTIALLY_REFUNDED"):
+                raise GatewayError(f"capture status {capture.get('status')}")
+        except GatewayError as error:
+            self.receipt(f"{case.id}:preflight", "clearwake.refund.blocked", {"case": case.id, "reason": "capture preflight failed"}, False)
+            return Result(case.id, "refund", "refused", f"Capture preflight failed ({error}). Nothing was sent.", approval_id=approval_id, proposal=shown)
         day = self.clock().date().isoformat()
         try:
             reservation = self.invariants.reserve(f"capture:{case.capture_id}", case.capture_minor, case.amount_minor, case.customer_id, day,

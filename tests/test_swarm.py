@@ -85,6 +85,11 @@ class SwarmTests(unittest.TestCase):
         self.assertEqual([first.state, second.state, third.state], [VERIFIED, VERIFIED, VERIFIED])
         self.assertEqual(self.swarm.handle(case("D4", 150, capture="CAP-D", capture_minor=500)).state, "refused")
 
+    def test_failed_capture_preflight_sends_nothing(self):
+        self.gateway.capture = lambda capture_id: {"id": capture_id, "status": "REFUNDED"}
+        result = self.swarm.handle(case("P1", 150))
+        self.assertEqual(result.state, "refused"); self.assertIn("Nothing was sent", result.detail); self.assertEqual(self.provider_refunds(), [])
+
     def test_no_double_action_on_one_case(self):
         self.assertTrue(self.swarm.invariants.lock("case:C6", "other-agent", 300))
         self.assertEqual(self.swarm.handle(case("C6", 150)).state, "busy"); self.assertEqual(self.provider_refunds(), [])
