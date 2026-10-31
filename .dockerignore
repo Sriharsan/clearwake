@@ -10,3 +10,5 @@ site/
 *.pem
 *.key
 *.credential.json
+.venv
+**/node_modules
