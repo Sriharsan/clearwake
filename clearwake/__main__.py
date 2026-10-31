@@ -3,6 +3,7 @@ import argparse
 import os
 from pathlib import Path
 
+from .console import Console
 from .controller import RefundCase, RefundController
 from .paypal import RehearsalGateway, SandboxGateway
 from .server import ClearwakeServer
@@ -15,6 +16,8 @@ def main():
     parser.add_argument("--enable-paypal-sandbox", action="store_true", help="Explicitly enable sandbox-only network requests; never production")
     parser.add_argument("--enable-meta-synthetic", action="store_true", help="Separate opt-in for the upstream fixed synthetic AI fixture; may consume provider credits")
     parser.add_argument("--enable-local-ai", action="store_true", help="Explicitly use the reviewed local model for the fixed synthetic fixture")
+    parser.add_argument("--console-model", choices=("scripted", "ollama"), default="scripted",
+                        help="Agents in the /console rehearsal: scripted rules (default, no model calls) or a local Ollama model on loopback")
     parser.add_argument("--rehearsal-outcome", choices=("completed", "pending", "lost-response"), default="completed")
     args = parser.parse_args()
     if args.enable_meta_synthetic and args.enable_local_ai:
@@ -36,10 +39,12 @@ def main():
             from .local_ai import LocalWorker
             worker = LocalWorker.from_environment()
         controller = RefundController(args.database, case=case, gateway=gateway, worker=worker)
+        console = Console(args.database.resolve().parent / "console", args.console_model)
     except (ValueError, OSError) as error:
         parser.error(str(error))
-    server = ClearwakeServer(("127.0.0.1", args.port), controller)
+    server = ClearwakeServer(("127.0.0.1", args.port), controller, console)
     print(f"Clearwake: http://127.0.0.1:{args.port}")
+    print(f"Console:   http://127.0.0.1:{args.port}/console (rehearsal, invented records; agents: {console.adapter.label()})")
     print(f"Payments: {gateway.mode}. Specialists: {controller.mode}. No calls occur just by opening the page.")
     print("Loopback only. Use synthetic data. One immutable bounded capture per database.")
     try:
