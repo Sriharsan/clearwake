@@ -135,9 +135,21 @@ def run():
     trackers = [{"number": "SYNTH1Z999AA10123456", "carrier": "UPS", "status": "SHIPPED"}]
     if SANDBOX:
         open_disputes = [d for d in real.disputes() if d.get("status") == "WAITING_FOR_SELLER_RESPONSE"]
-        for key, title in (("i", "Item not received: tracking submitted before the deadline"), ("k", "Near deadline: escalated with the countdown"),
-                           ("l", "Batch of ten disputes in parallel")):
-            record(key, title, None, "real sandbox", f"{len(open_disputes)} open sandbox dispute(s). Needs disputes opened by the sandbox buyer in the Resolution Center.")
+        not_received = [d for d in open_disputes if "NOT_RECEIVED" in d.get("reason", "")]
+        if not_received:
+            ds = MerchantSwarm(real, work / "disputes", adapter)
+            order_id = json.loads((ROOT / "data" / "sandbox" / "setup-order.json").read_text())["order_id"]
+            order = real.order(order_id)
+            trackers = [{"number": t["id"].split("-", 1)[-1], "carrier": "UPS", "status": t.get("status")}
+                        for unit in order.get("purchase_units", []) for t in unit.get("shipping", {}).get("trackers", [])]
+            r = ds.handle_dispute(not_received[0]["dispute_id"], 2000, "sandbox-buyer", {"id": order_id}, trackers)
+            record("i", "Item not received: tracking submitted before the deadline", (r.action, r.state) == ("provide_evidence", VERIFIED),
+                   "real sandbox", f"dispute {not_received[0]['dispute_id']}: {r.action}, {r.detail} Deadline {r.proposal.get('deadline', {}).get('state')}.")
+        else:
+            record("i", "Item not received: tracking submitted before the deadline", None, "real sandbox",
+                   "No open 'item not received' sandbox dispute. Open one as the sandbox buyer in the Resolution Center.")
+        for key, title in (("k", "Near deadline: escalated with the countdown"), ("l", "Batch of ten disputes in parallel")):
+            record(key, title, None, "real sandbox", f"{len(open_disputes)} open sandbox dispute(s). k needs a real dispute close to its PayPal deadline; l needs ten real disputes.")
     else:
         dg = RehearsalGateway(work / "disputes.sqlite3"); ds = MerchantSwarm(dg, work / "disputes", adapter)
         d = dg.open_dispute("CAP-I", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "9.00", due(72), "Never arrived.")
