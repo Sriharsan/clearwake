@@ -1,6 +1,7 @@
 """Case m for real: Clearwake in a network isolated Docker network, the network cut mid batch, then restored.
 
   python scripts/airgap.py            needs Docker, the sandbox keys in .env and a local Ollama model folder
+  python scripts/airgap.py --boundary-only   only the boundary checks (steps 1 and 2), leaving the stack up: no sandbox call, no refund
 
 1. Builds the image and starts the egress gateway (the only service with a route out) and Ollama (inside only).
 2. Checks the boundary from inside: no direct route out, a host off the allowlist is blocked and receipted,
@@ -10,6 +11,7 @@
 4. Verifies every receipt log in a container with networking disabled.
 Results go to data/airgap/airgap-<time>.json. Keys never leave .env except as run time variables of one container.
 """
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 import json
 import os
@@ -71,12 +73,17 @@ def main():
     sh(*COMPOSE, "up", "-d", "--build", "egress", "ollama")
     time.sleep(3)
     report["gateway"] = sh(*COMPOSE, "logs", "egress").splitlines()[-1:]
-    report["boundary"]["direct route out from the agents' container"] = inside(PROBE_DIRECT)
-    report["boundary"]["example.com through the gateway"] = inside(PROBE_BLOCKED)
-    report["boundary"]["models inside the boundary"] = inside(PROBE_MODEL)
+    probes = {"direct route out from the agents' container": PROBE_DIRECT, "example.com through the gateway": PROBE_BLOCKED,
+              "models inside the boundary": PROBE_MODEL}
+    with ThreadPoolExecutor(max_workers=3) as pool:  # three independent read only checks, run together
+        results = dict(zip(probes, pool.map(inside, probes.values())))
+    report["boundary"].update(results)
     for key, value in report["boundary"].items():
         print(f"  {key}: {value}", flush=True)
 
+    if "--boundary-only" in sys.argv:  # checks the boundary and stops: no sandbox call, no refund
+        print("the gateway and the model stay up; stop them with: docker compose -f compose.airgap.yml down", flush=True)
+        return 0
     model = sys.argv[sys.argv.index("--model") + 1] if "--model" in sys.argv else "ollama"
     print(f"case m: sandbox refunds through the gateway, model {model} inside ...", flush=True)
     run = subprocess.Popen([*COMPOSE, "run", "--rm", "--no-deps", "-T", "clearwake", "python", "scripts/cases.py", "--sandbox", "--only", "m",
