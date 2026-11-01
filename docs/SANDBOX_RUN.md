@@ -56,6 +56,10 @@ Agents and Ollama on an internal Docker network; the verdock-core egress gateway
 * Every receipt log verified in a container started with `--network none`: 34 gateway lines, 12 merchant lines for this run.
 * Result: **PASS**. Report: `data/airgap/airgap-20261031-223749.json`. The receipts are published on the site under `site/receipts/`.
 
+## Case o, dispatch proof (1 November)
+
+Not run in the sandbox. It needs a dispute where the buyer says items are missing, and a dispatch receipt for that order (`python scripts/dispatch.py pack ...`). Attaching the packing photo to `provide-evidence` as an `evidence-file` part follows PayPal's reference and is untested on a real dispute. Rehearsal passes (see docs/RESULTS.md).
+
 ## Cases a to n (`python scripts/cases.py --sandbox`, 31 October, evening)
 
 9 PASS, 0 FAIL, 5 SKIPPED. c: refund `6SN41486G5579815G` VERIFIED. d: refund `2NB27940EC188891M` VERIFIED after approval. e: injected fault, one refund at PayPal, reconciled. i, k, l and n: SKIPPED, no answerable sandbox dispute open. m: runs in the isolated containers (above).

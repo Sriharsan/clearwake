@@ -92,7 +92,7 @@ def pack(swarm, counter, order_id, capture_id, items, photos, sealed, ts_ms=None
 def find(swarm, order_id):
     """The newest dispatch receipt for this order in the merchant's log, and whether the whole log verifies."""
     path = Path(swarm.receipts.path)
-    if not order_id or not path.is_file():
+    if not isinstance(order_id, str) or not IDENTIFIER.fullmatch(order_id) or not path.is_file():
         return None
     verified = verify_log(str(path), swarm.receipts.public_key)["ok"]
     found = None
@@ -144,6 +144,8 @@ def assess(swarm, order, trackers, claim):
 
 def documents(swarm, order_id, hashes):
     """The stored photos, only those whose SHA-256 the signed receipt lists."""
+    if not IDENTIFIER.fullmatch(order_id):
+        return []
     out, folder = [], swarm.data / "dispatch" / order_id
     for path in sorted(folder.glob("*")) if folder.is_dir() else []:
         if path.suffix.lower() in PHOTO_TYPES and path.stat().st_size <= MAX_PHOTO and sha256_file(path) in hashes:

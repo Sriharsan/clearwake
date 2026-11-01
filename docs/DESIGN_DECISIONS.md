@@ -24,3 +24,4 @@ One OpenAI compatible adapter with three backends:
 * Scripted agents, always labelled "scripted, not AI".
 
 Models only propose. The policy file decides.
+* **Dispatch proof (1 November).** A signed receipt written at packing, in the merchant's own receipt chain, so it verifies offline with the rest. The buyer's message is read only as a claim to check ("only 2 of 3 arrived") and never decides an amount or an action. Strong proof (count matches the order, sealed, tracking shows shipped, log verifies) goes out as evidence; weak proof is never sent, so Clearwake does not answer a claim of missing items with tracking alone. Only photos whose SHA-256 the receipt lists are attached. SAM runs as a separate process in its own environment, offline, so the app stays on the Python standard library. Still photos use SAM 3 because Meta's image code loads that checkpoint; SAM 3.1 is the video tracker, and the receipt names the model that actually ran.

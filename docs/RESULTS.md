@@ -24,6 +24,16 @@ Every number on this page comes from the run files in `data/runs/*.json` or from
 
 Case m used scripted rules for the refund decisions and `qwen2.5-coder:3b` through Ollama inside the boundary for the drafting that continued during the cut (6.3 s, 9.3 s and 13.1 s for one proposal in the three attempts). The first attempt sent no refund because the local model proposed `provide_evidence` for a refund case; the second sent none because the configured capture was PENDING and the capture read blocked it. Both are kept in `data/airgap/`.
 
+### Dispatch proof, case o (1 November 2026)
+
+| Case | How it ran | Result |
+| --- | --- | --- |
+| o. Buyer says 2 of 3 items arrived | rehearsal; synthetic parcel pictures (`fixtures/dispatch/`); the count came from a scripted table, labelled "scripted count, not SAM" | PASS. Strong proof (3 of 3 counted, sealed, tracking shipped, log verifies): evidence sent with the photo, PayPal's rehearsal record read back and shows the dispatch proof. Weak proof (the photo shows 2 of 3): nothing sent, the policy settled by offer |
+| o | real SAM count on a photo | **not run**: needs the gated SAM 3 weights (`tools/sam/setup.ps1`) and a photo of an open parcel |
+| o | real sandbox | **not run**: needs a sandbox dispute where the buyer says items are missing |
+
+Which model: still photos use SAM 3 (`facebook/sam3`). SAM 3.1 (`facebook/sam3.1`, 27 March 2026) is Meta's video tracker and is not claimed for photos. Meta lists a CUDA GPU as a prerequisite; this machine has none, so a CPU run is untested until the weights exist. Real timings will be added here from that run.
+
 Sandbox dispute creation by API was retried on 31 October: HTTP 400 "No permissions to set target_client_id" with the buyer's PayPal-Auth-Assertion, and `TRANSACTION_NOT_ELIGIBLE` without it. This app's token has no `disputes/update-buyer` scope, so accepting an offer as the buyer cannot be driven through the API either.
 
 ## Runs of the case runner (`scripts/cases.py`, 31 October 2026)

@@ -51,6 +51,12 @@ The PayPal AI Hackathon submission period opened on 1 October 2026 (9:15 am Paci
 | 2026-10-31 22:54 | `12ebb23` | Public site for Vercel: the fee leak with sources, side by side, the boundary, the recorded sandbox run and an in-browser receipt verifier |
 | 2026-10-31 22:54 | `f60871e` | Keep receipt logs byte for byte so their signatures verify after any checkout |
 | 2026-10-31 23:00 | `a2c9cd4` | Docs for the fee leak position: README, submission notes, video script, results, sandbox runs and sources |
+| 2026-10-31 23:00 | `71395ad` | Refresh the submission period change log from git history |
+| 2026-10-31 23:03 | `6dd2f07` | Keep the local virtual environment out of the container image |
+| 2026-10-31 23:21 | `a4cde6d` | Public site URL in the README and submission notes |
+| 2026-11-01 10:38 | `1d087a2` | Console screenshots show the dispute ledger and the fee leak gauge |
+| 2026-11-01 10:58 | `7f52a0e` | Read only helpers for the demo: show a sandbox dispute, print a saved network cut run, and a boundary only check |
+| 2026-11-01 11:22 | `426a0f5` | Dispatch proof: signed packing record, strong or weak check against a buyer's claim, evidence with the photo, case o |
 
 ## Relayloom core (pinned submodule, `vendor/relayloom`, public MIT repository)
 

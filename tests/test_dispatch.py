@@ -100,6 +100,14 @@ class DispatchTests(unittest.TestCase):
         found = dispatch.assess(self.swarm, {"id": "O8"}, TRACKERS, {"received": 2, "of": 3})
         self.assertTrue(found.strong); self.assertEqual(found.documents, [])   # only photos whose hash the receipt lists are attached
 
+    def test_an_order_id_that_is_not_a_plain_identifier_never_reaches_the_file_system(self):
+        self.pack("O11")
+        for bad in ("../O11", "O11/../O11", "O 11", "", None, "x" * 80):
+            self.assertIsNone(dispatch.find(self.swarm, bad))
+            self.assertEqual(dispatch.documents(self.swarm, bad or "", []), [])
+        with self.assertRaises(ValueError):
+            dispatch.pack(self.swarm, self.table, "../escape", "CAP-X", ITEM, [THREE], True)
+
     def test_the_buyers_words_are_a_claim_to_check_never_an_instruction(self):
         self.assertEqual(dispatch.buyer_claim({"messages": [{"posted_by": "BUYER", "content": "Only 2 of 3 notebooks arrived."}]}), {"received": 2, "of": 3})
         self.assertIsNone(dispatch.buyer_claim({"messages": [{"posted_by": "SELLER", "content": "2 of 3"}]}))
