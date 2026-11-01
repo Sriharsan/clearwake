@@ -404,6 +404,7 @@ async function start() {
     { field: 'amount', headerName: 'Amount USD', minWidth: 110, cellClass: 'cell-mono' },
     { field: 'stage', headerName: 'Stage', minWidth: 120 },
     { field: 'decided', headerName: 'Policy decision', minWidth: 170 },
+    { field: 'dispatch', headerName: 'Dispatch proof', minWidth: 300, tooltipField: 'dispatch', cellClassRules: { 'cw-yes': p => /counted, sealed/.test(p.value || ''), 'cw-late': p => /^weak/.test(p.value || '') } },
     { field: 'proposed', headerName: 'Model proposed', minWidth: 170 },
     { field: 'paypal_status', headerName: 'PayPal record', minWidth: 190 },
     { field: 'state', headerName: 'Checked', minWidth: 140, cellClassRules: { 'cell-ok': p => p.value === 'VERIFIED', 'cell-wait': p => p.value === 'UNKNOWN' || p.value === 'PENDING' } },

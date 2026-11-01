@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import closing
 
 import base64
+import hashlib
 from decimal import Decimal
 import json
 import os
@@ -224,11 +225,17 @@ class SandboxGateway:
         except Exception:
             raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
 
-    def provide_evidence(self, dispute_id, evidences, request_id):
-        """Evidence from the record only, as PayPal's multipart 'input' part. No files are attached by this build."""
+    def provide_evidence(self, dispute_id, evidences, request_id, files=()):
+        """Evidence from the record only, as PayPal's multipart 'input' part. files are (name, bytes, content type) photos;
+        each goes in as an 'evidence-file' part and is named in the evidence's documents. Attaching files is untested on a real dispute."""
         boundary = "clearwake" + request_id.replace("-", "")
         part = json.dumps({"evidences": evidences})
-        body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"input\"\r\nContent-Type: application/json\r\n\r\n{part}\r\n--{boundary}--\r\n").encode()
+        body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"input\"\r\nContent-Type: application/json\r\n\r\n{part}\r\n").encode()
+        for name, data, kind in files:
+            if not re.fullmatch(r"[A-Za-z0-9._-]{1,80}", name) or not re.fullmatch(r"image/(jpeg|png)", kind) or len(data) > 10 * 1024 * 1024:
+                raise ValueError("An evidence file needs a plain name, a jpeg or png type and at most 10 MB.")
+            body += (f"--{boundary}\r\nContent-Disposition: form-data; name=\"evidence-file\"; filename=\"{name}\"\r\nContent-Type: {kind}\r\n\r\n").encode() + data + b"\r\n"
+        body += f"--{boundary}--\r\n".encode()
         return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/provide-evidence", body, request_id, f"multipart/form-data; boundary={boundary}")
 
     def provide_supporting_info(self, dispute_id, notes, request_id):
@@ -349,8 +356,9 @@ class RehearsalGateway:
             db.execute("UPDATE disputes SET body=? WHERE id=?", (json.dumps(body), dispute_id))
         return body
 
-    def provide_evidence(self, dispute_id, evidences, request_id):
-        self._update_dispute(dispute_id, status="UNDER_REVIEW", evidences=evidences)
+    def provide_evidence(self, dispute_id, evidences, request_id, files=()):
+        self._update_dispute(dispute_id, status="UNDER_REVIEW", evidences=evidences,
+                             evidence_files=[{"name": n, "sha256": hashlib.sha256(d).hexdigest(), "bytes": len(d)} for n, d, _ in files])
         if self.outcome == "lost-response":
             raise GatewayError("The fake provider recorded the evidence but the response was lost.")
         return {"links": []}

@@ -12,6 +12,7 @@ Every item was read for its license before use. Clearwake depends on code instea
 | paypal/agent-toolkit 1.11.0 | Not a dependency. Used only in a separate environment for the toolkit comparison | Apache 2.0 | https://github.com/paypal/agent-toolkit |
 | AG Grid Community 35.3.1 | Vendored unchanged in `web/vendor/` for the dispute ledger (details and CSP in `docs/THIRD_PARTY_UI.txt`) | MIT | https://www.npmjs.com/package/ag-grid-community |
 | Python 3.13 slim and Ollama 0.12.6 container images | Base images for the network isolated run (`compose.airgap.yml`). Not bundled | PSF and MIT | https://hub.docker.com/_/python, https://hub.docker.com/r/ollama/ollama |
+| SAM 3 (Segment Anything with Concepts), Meta | Optional: counts items in packing photos on the merchant's machine for the dispatch proof, through `tools/sam/` in its own environment. Not bundled, not redistributed; weights are gated on Hugging Face. Still photos use SAM 3; SAM 3.1 is the video tracker and is not claimed. Carion et al., arXiv:2511.16719, 2025 | SAM License (https://github.com/facebookresearch/sam3/blob/main/LICENSE, 19 Nov 2025) | https://github.com/facebookresearch/sam3 , https://huggingface.co/facebook/sam3 |
 | qwen2.5-coder:3b through Ollama | Optional local open weights model for agent proposals. Not bundled | Model license per Ollama listing | https://ollama.com/library/qwen2.5-coder |
 
 User interface libraries, if any, are listed with versions in `docs/THIRD_PARTY_UI.txt`.

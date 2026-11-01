@@ -1,4 +1,4 @@
-"""Run demo cases a to n and print PASS, FAIL or SKIPPED for each, with how it ran.
+"""Run demo cases a to o and print PASS, FAIL or SKIPPED for each, with how it ran.
 
   python scripts/cases.py                     rehearsal (fake provider, invented records, no network)
   python scripts/cases.py --sandbox           real PayPal sandbox where PayPal allows it (needs keys in .env)
@@ -23,7 +23,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from clearwake import envfile  # noqa: E402
+from clearwake import dispatch  # noqa: E402
 from clearwake.buyer import BuyerAgent, Mandate, load_catalog, mandate_receipt  # noqa: E402
+from clearwake.counter import Counter  # noqa: E402
 from clearwake.models import Adapter  # noqa: E402
 from clearwake.fees import gauge  # noqa: E402
 from clearwake.paypal import GatewayError, NetworkSwitch, RehearsalGateway, SandboxGateway  # noqa: E402
@@ -272,6 +274,29 @@ def run():
                    f"policy {offered.proposal['decided']}, model proposed {offered.proposal['proposed']}; offer {offered.proposal['offer']} USD; "
                    f"{settled.detail} Gauge: {g.settled_before_escalation} settled before escalation, fee avoided {g.fee_avoided_minor / 100:.2f} USD "
                    "(the Standard fee is not charged on claims below USD 30.00).")
+
+    # o: dispatch proof. The parcel was photographed and counted when it was packed; the buyer says items are missing.
+    if want("o"):
+        if SANDBOX:
+            record("o", "Dispatch proof: buyer says 2 of 3 items arrived, evidence sent", None, "real sandbox",
+                   "Needs a sandbox dispute where the buyer says items are missing, and a dispatch receipt for that order: python scripts/dispatch.py pack ...")
+        else:
+            fixtures = ROOT / "fixtures" / "dispatch"
+            og = RehearsalGateway(work / "o.sqlite3"); os_ = MerchantSwarm(og, work / "o", adapter)
+            item = {"notebook-a5": {"ordered": 3, "prompt": "notebook"}}
+            strong = dispatch.pack(os_, Counter("scripted", table={"parcel-3-items.png": 3}), "ORDER-O-1", "CAP-O-1", item, [fixtures / "parcel-3-items.png"], True)
+            od = og.open_dispute("CAP-O-1", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "9.00", due(72), "Only 2 of 3 notebooks arrived.")["dispute_id"]
+            r1 = os_.handle_dispute(od, 900, "buyer-o1", {"id": "ORDER-O-1"}, trackers)
+            weak = dispatch.pack(os_, Counter("scripted", table={"parcel-2-items.png": 2}), "ORDER-O-2", "CAP-O-2", item, [fixtures / "parcel-2-items.png"], True)
+            wd = og.open_dispute("CAP-O-2", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "2.50", due(240), "Only 2 of 3 notebooks arrived.", stage="INQUIRY")["dispute_id"]
+            r2 = os_.handle_dispute(wd, 900, "buyer-o2", {"id": "ORDER-O-2"}, trackers)
+            sent = [e["notes"] for e in og.dispute(od).get("evidences", []) if "Dispatch proof" in e.get("notes", "")]
+            ok = ((r1.action, r1.state) == ("provide_evidence", VERIFIED) and bool(sent) and strong["digest"][:16] in sent[0]
+                  and r2.proposal.get("decided") == "settle_by_offer" and "evidences" not in og.dispute(wd))
+            record("o", "Dispatch proof: buyer says 2 of 3 items arrived, evidence sent", ok,
+                   "rehearsal; counted by a scripted table, not SAM",
+                   f"strong proof ({r1.proposal.get('dispatch')}): {r1.action}, {r1.state}. Weak proof ({r2.proposal.get('dispatch')}): "
+                   f"policy {r2.proposal.get('decided')}, no evidence sent. {weak['counter']}")
 
     # m: network cut mid batch. Real run: python scripts/airgap.py (isolated Docker network, egress gateway, sandbox)
     if want("m"):

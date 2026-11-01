@@ -21,6 +21,7 @@ from verdock_core.queue import HELD, RESUMED, HeldQueue
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed
 from verdock_core import Refused
 
+from . import dispatch as proof
 from .paypal import GatewayError, Offline, ProviderRefused
 
 POLICY = Path(__file__).resolve().parent.parent / "policy" / "merchant.yaml"
@@ -57,6 +58,7 @@ class Result:
 class MerchantSwarm:
     def __init__(self, gateway, data_dir, adapter, policy_path=POLICY, agent="clearwake-merchant", clock=None):
         data = Path(data_dir); data.mkdir(parents=True, exist_ok=True)
+        self.data = data
         self.gateway, self.adapter, self.agent = gateway, adapter, agent
         self.policy = load_policy(policy_path); self.policy_hash = policy_hash(self.policy)
         self.approvals = ApprovalStore(str(data / "approvals.sqlite3"))
@@ -168,6 +170,19 @@ class MerchantSwarm:
         return Result(case.id, "refund", state, {VERIFIED: "Matches PayPal's refund record.", MISMATCH: "PayPal's record does not match. Escalated.",
                       PENDING: "PayPal shows it pending.", UNKNOWN: "No readable record yet."}[state], refund_id, approval_id, shown)
 
+    def _proof(self, view, order, trackers):
+        """Dispatch proof for this dispute's order, checked against what the buyer says arrived. None when there is nothing to check.
+
+        The buyer's message is read only as a claim to check. It never decides an amount or an action."""
+        claim = proof.buyer_claim(view.raw)
+        found = proof.assess(self, order, trackers, claim)
+        if found is not None:
+            self.receipt(f"{view.id}:dispatch-checked", "clearwake.dispute.dispatch_checked", {
+                "dispute": view.id, "order": (order or {}).get("id", ""), "claimed_received": claim["received"] if claim else -1,
+                "claimed_of": claim["of"] if claim else -1, "strong": found.strong,
+                "receipt": found.record["digest"] if found.record else "", "summary": found.summary[:300]}, found.strong)
+        return found
+
     def handle_dispute(self, dispute_id, capture_minor, customer_id, order=None, trackers=(), mandate_receipt=None,
                        approval_id=None, owner="swarm-1"):
         """A real PayPal dispute (or its rehearsal twin): Intake, Evidence, Decider, policy, Checker. Deadlines escalate."""
@@ -189,7 +204,8 @@ class MerchantSwarm:
             if view.status not in ("WAITING_FOR_SELLER_RESPONSE", "OPEN"):
                 return Result(dispute_id, "none", "done", f"PayPal shows {view.status}; nothing to answer.")
             clock = deadline(view, self.clock())
-            evidences, sources = evidence_pack(view, order, trackers, mandate_receipt)              # Evidence
+            dispatch_found = self._proof(view, order, trackers)
+            evidences, sources = evidence_pack(view, order, trackers, mandate_receipt, dispatch_found)  # Evidence
             limit = self.policy["operations"]["accept_claim"].get("approval_above_minor", 0)
 
             def scripted():
@@ -202,7 +218,8 @@ class MerchantSwarm:
             action = action if action in ("provide_evidence", "accept_and_refund", "escalate") else "escalate"
             if action == "provide_evidence" and not evidences:
                 action = "escalate"  # a model may not claim evidence that the records do not hold
-            shown = {"backend": proposal.label, "proposed": action, "deadline": clock, "sources": sources}
+            shown = {"backend": proposal.label, "proposed": action, "deadline": clock, "sources": sources,
+                     "dispatch": dispatch_found.summary if dispatch_found else None, "claim": dispatch_found.claim if dispatch_found else None}
             self.receipt(f"{dispute_id}:proposal", "clearwake.dispute.proposal", {"dispute": dispute_id, "reason": view.reason,
                          "proposed": action, "evidence_items": len(evidences), "deadline_state": clock["state"], "model": proposal.model}, True)
             # An escalation asks a person to approve one exact next step; an approved one lets the swarm take only that step.
@@ -232,8 +249,9 @@ class MerchantSwarm:
             if action == "provide_evidence":
                 if not decide(self.policy, "provide_evidence", 0).allowed:
                     return Result(dispute_id, action, "refused", "Policy does not allow sending evidence.", proposal=shown)
+                files = dispatch_found.documents if dispatch_found and dispatch_found.strong else ()
                 try:
-                    self.gateway.provide_evidence(dispute_id, evidences, request_id)
+                    self.gateway.provide_evidence(dispute_id, evidences, request_id, files)
                 except Offline:
                     return self.hold(f"dispute:{dispute_id}", "dispute", request_id, args, dispute_id, shown)
                 except ProviderRefused as refused:
@@ -242,7 +260,8 @@ class MerchantSwarm:
                 except GatewayError:
                     self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN)
                     return Result(dispute_id, action, UNKNOWN, "Evidence response lost. Read the dispute before doing anything else.", proposal=shown)
-                return self.check_dispute(dispute_id, action, ("UNDER_REVIEW", "WAITING_FOR_BUYER_RESPONSE", "RESOLVED"), shown)
+                note = dispatch_found.record["digest"][:16] if dispatch_found and dispatch_found.strong else None
+                return self.check_dispute(dispute_id, action, ("UNDER_REVIEW", "WAITING_FOR_BUYER_RESPONSE", "RESOLVED"), shown, expect_note=note)
             decision = decide(self.policy, "accept_claim", view.amount_minor, view.currency)            # accept_and_refund
             if not decision.allowed:
                 return Result(dispute_id, action, "refused", f"Policy refused: {decision.reason}.", proposal=shown)
@@ -287,7 +306,8 @@ class MerchantSwarm:
         if view.status not in ("WAITING_FOR_SELLER_RESPONSE", "OPEN"):
             return Result(dispute_id, "none", "done", f"PayPal shows {view.status}; nothing to answer.")
         clock = deadline(view, self.clock())
-        evidences, sources = evidence_pack(view, args["order"], args["trackers"], args["mandate_receipt"])
+        dispatch_found = self._proof(view, args["order"], args["trackers"])
+        evidences, sources = evidence_pack(view, args["order"], args["trackers"], args["mandate_receipt"], dispatch_found)
         decided, why, offer_minor = dispute_decision(self.policy, view, evidences, clock, inquiry=True)
         buyer = " ".join(m.get("content", "") for m in view.raw.get("messages", []) or [] if m.get("posted_by") == "BUYER")[:300]
         proposal = self.adapter.propose(
@@ -298,7 +318,8 @@ class MerchantSwarm:
         proposed = (proposal.value or {}).get("action")
         proposed = proposed if proposed in DECISIONS else "no usable proposal"
         shown = {"backend": proposal.label, "proposed": proposed, "decided": decided, "why": why, "deadline": clock,
-                 "sources": sources, "stage": "INQUIRY", "offer": money(offer_minor) if offer_minor else None}
+                 "sources": sources, "stage": "INQUIRY", "offer": money(offer_minor) if offer_minor else None,
+                 "dispatch": dispatch_found.summary if dispatch_found else None, "claim": dispatch_found.claim if dispatch_found else None}
         self.receipt(f"{dispute_id}:decision", "clearwake.dispute.decision", {"dispute": dispute_id, "stage": "INQUIRY", "proposed": proposed,
                      "decided": decided, "offer_minor": offer_minor, "model": proposal.model}, True)
         if decided == "fight_with_evidence":
@@ -441,17 +462,25 @@ class MerchantSwarm:
         return Result(view.id, "provide_supporting_info", state, "PayPal's dispute record now shows the tracking note." if seen
                       else "Sent, but PayPal's dispute record does not show it yet. Not counted as verified.", proposal=shown)
 
-    def check_dispute(self, dispute_id, action, good_statuses, shown, approval_id=None):
-        """Checker: read the dispute back from PayPal. Only the expected status counts as verified."""
+    def check_dispute(self, dispute_id, action, good_statuses, shown, approval_id=None, expect_note=None):
+        """Checker: read the dispute back from PayPal. Only the expected status counts as verified.
+
+        expect_note is the start of the dispatch receipt digest: when evidence was sent, the read back says whether PayPal's record shows it."""
         try:
-            status = self.gateway.dispute(dispute_id).get("status")
-        except GatewayError:
-            status = None
+            record = self.gateway.dispute(dispute_id)
+            status = record.get("status")
+        except (GatewayError, Offline):
+            record, status = {}, None
         state = VERIFIED if status in good_statuses else UNKNOWN if status is None else MISMATCH
         if state == UNKNOWN:
             self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN)
-        self.receipt(f"{dispute_id}:check", "clearwake.dispute.checked", {"dispute": dispute_id, "action": action, "status": status or "", "state": state}, state == VERIFIED)
-        return Result(dispute_id, action, state, f"PayPal now shows {status}." if status else "Could not read the dispute.", approval_id=approval_id, proposal=shown)
+        seen = expect_note is not None and any(expect_note in str(e.get("notes", "")) for e in record.get("evidences", []) or [])
+        self.receipt(f"{dispute_id}:check", "clearwake.dispute.checked", {"dispute": dispute_id, "action": action, "status": status or "", "state": state,
+                     **({"dispatch_evidence_seen": seen} if expect_note is not None else {})}, state == VERIFIED)
+        detail = f"PayPal now shows {status}." if status else "Could not read the dispute."
+        if expect_note is not None and status:
+            detail += " PayPal's record shows the dispatch proof." if seen else " PayPal's record does not show the dispatch proof text yet."
+        return Result(dispute_id, action, state, detail, approval_id=approval_id, proposal=shown)
 
     def reconcile(self, case, known_refund_id):
         """Resolve an UNKNOWN from PayPal's own record of a known refund id. Reads only; never resends."""

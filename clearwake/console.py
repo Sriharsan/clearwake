@@ -21,7 +21,9 @@ from verdock_core.outcome import UNKNOWN, VERIFIED
 from verdock_core.policy import decide
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed, verify_log
 
+from . import dispatch
 from .buyer import BuyerAgent, Mandate, load_catalog, mandate_receipt
+from .counter import Counter
 from .fees import fee_if_escalated, gauge as fee_gauge
 from .models import Adapter
 from .paypal import GatewayError, LIMIT, NetworkSwitch, RehearsalGateway
@@ -45,8 +47,10 @@ CASES = {
     "l": "Batch of ten disputes in parallel",
     "n": "Settle in conversation before escalation: offer inside the limit, PayPal record checked",
     "m": "Network cut mid batch: held, offline, then PayPal read first and no duplicate",
+    "o": "Buyer says 2 of 3 items arrived: dispatch proof counted 3, sealed; evidence sent",
 }
-DISPUTE_CASES = ("i", "j", "k", "l", "n")
+DISPUTE_CASES = ("i", "j", "k", "l", "n", "o")
+FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "dispatch"
 DECIDED = {"provide_evidence": "fight_with_evidence", "provide_supporting_info": "fight_with_evidence", "accept_and_refund": "refund_within_limit",
            "escalate": "escalate", "settle_by_offer": "settle_by_offer", "fight_with_evidence": "fight_with_evidence"}
 REQUEST = re.compile(r"[\x20-\x7e]{1,200}\Z")
@@ -163,6 +167,7 @@ class Console:
                  "refund_id": result.refund_id, "approval_id": result.approval_id,
                  "proposed": result.proposal.get("proposed"), "model": result.proposal.get("backend"),
                  "decided": result.proposal.get("decided") or DECIDED.get(result.action, result.action), "offer": result.proposal.get("offer"),
+                 "dispatch": result.proposal.get("dispatch"), "claim": result.proposal.get("claim"),
                  "gateway": gateway, "adapter": adapter, "history": [], **(extra or {})}
         if case is not None:
             entry.update({"amount_minor": case.amount_minor, "capture": case.capture_id, "capture_minor": case.capture_minor,
@@ -206,7 +211,7 @@ class Console:
 
     def run_case(self, key):
         if key not in CASES:
-            raise ConsoleError("Choose one of the rehearsal cases c, d, e, f, g, i, j, k, l, m or n.")
+            raise ConsoleError("Choose one of the rehearsal cases c, d, e, f, g, i, j, k, l, m, n or o.")
         with self._lock:
             run = uuid.uuid4().hex[:6]
             started = time.perf_counter()
@@ -304,6 +309,15 @@ class Console:
         self._history(entry, settled, "The buyer accepted the offer (rehearsal stand-in for the sandbox buyer in PayPal's Resolution Center).")
         return [entry]
 
+    def _case_o(self, run):
+        """Rehearsal: the parcel was packed and counted, then the buyer says 2 of 3 arrived. The signed dispatch proof answers it."""
+        order, capture = f"ORDER-O-{run}", f"CAP-O-{run}"
+        made = dispatch.pack(self.swarm, Counter("scripted", table={"parcel-3-items.png": 3}), order, capture,
+                             {"notebook-a5": {"ordered": 3, "prompt": "notebook"}}, [FIXTURES / "parcel-3-items.png"], True)
+        info = self._open_dispute("o", run, capture, "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "9.00", 72, "Only 2 of 3 notebooks arrived.",
+                                  order=order, trackers=TRACKERS)
+        return [self._handle_dispute("o", run, info, extra={"dispatch_receipt": made["digest"][:16], "counter": made["counter"]})]
+
     def _case_m(self, run):
         switch = NetworkSwitch(self.gateway)
         cases = [self._refund_case(f"m{i}", run, 100, capture_ref=f"CAP-M-{run}") for i in (1, 2)]
@@ -333,6 +347,7 @@ class Console:
             rows.append({"dispute": e["dispute_id"], "case": e["key"], "reason": e["reason"], "amount": money(e["amount_minor"]),
                          "stage": stage, "paypal_status": record.get("status", "unreadable"), "decided": e.get("decided") or "",
                          "proposed": e.get("proposed") or "", "model": e.get("model") or "", "state": e["state"], "due": e.get("due"),
+                         "dispatch": e.get("dispatch") or "none",
                          "settled_before_escalation": settled, "fee_avoided": money(fee_if_escalated(record, False)) if settled else "0.00",
                          "source": REHEARSAL})
         return rows

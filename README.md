@@ -56,11 +56,29 @@ The live system runs in a network isolated Docker network (`compose.airgap.yml`,
 
 A request the gateway refuses before it leaves (403 off the allowlist, 502 when its own network is down) is known not to have happened, so Clearwake holds it as "held, offline" instead of UNKNOWN. Case m cuts the gateway's network mid batch and restores it; see [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md).
 
+## Dispatch proof
+
+Some disputes are about what was in the box. At packing the merchant photographs the open parcel. SAM, an open weights model from Meta, runs on the merchant's own machine, counts the items and writes one signed receipt into the same receipt chain: the PayPal order id and capture id, the items ordered and counted, the SHA-256 of each photo, whether the parcel was sealed, how it was counted, and the policy hash. Nothing goes to an outside AI.
+
+When a buyer says some items did not arrive, the Evidence agent finds that receipt in the verified log and checks it against the order and the tracking:
+
+* **Strong proof** (the count matches the order, the parcel is sealed, tracking shows it shipped, and the log verifies) is sent as evidence through `provide-evidence` before the deadline, with the photo attached. The Checker reads PayPal's dispute back and says whether PayPal's record shows the dispatch proof.
+* **Weak proof** is never sent. The policy settles by offer while the case is an inquiry, refunds within the limit, or escalates to the owner.
+* The buyer's words are read only as a claim to check, for example "only 2 of 3 arrived". They never decide an amount or an action.
+
+```sh
+python scripts/dispatch.py pack --order <order id> --capture <capture id> --item notebook-a5=3:notebook --photo parcel.jpg --sealed
+python scripts/cases.py --only o       # rehearsal: strong proof sends evidence, weak proof settles by offer
+```
+
+Which model: still photos use **SAM 3** (`facebook/sam3`). Meta's **SAM 3.1** checkpoint is the video tracker, and Clearwake does not claim to count photos with it. The model name, device and milliseconds are written into every receipt. SAM and its weights are gated on Hugging Face and need a one time setup that you run yourself: [tools/sam/README.md](tools/sam/README.md). SAM Materials are under the SAM License; credits are in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md). What is real: the signed receipt, the strong and weak checks and the evidence path are covered by tests and run in rehearsal with synthetic parcel pictures counted by a scripted table, labelled "scripted count, not SAM". A real SAM count on a photo and a real sandbox dispute for case o have not been run yet (see Status).
+
 ## Status
 
 | What | How it ran | Result |
 | --- | --- | --- |
-| Cases a to n (`scripts/cases.py`) | rehearsal, fake provider, invented records | 14 of 14 PASS (31 October, evening) |
+| Cases a to o (`scripts/cases.py`) | rehearsal, fake provider, invented records | 15 of 15 PASS (1 November) |
+| Case o, dispatch proof | rehearsal; synthetic parcel pictures, scripted count, not SAM | PASS: strong proof sent as evidence and read back; weak proof not sent, settled by offer instead. Real SAM count and real sandbox dispute: not run yet |
 | Cases c, d, e (`scripts/cases.py --sandbox`) | real sandbox; e is an injected fault in sandbox | PASS, twice on 31 October. Latest refunds `6SN41486G5579815G` and `2NB27940EC188891M` VERIFIED |
 | Case m, network cut mid batch (`scripts/airgap.py`) | real sandbox, network isolated containers, egress gateway | PASS: refund `6PX35920F4587564U` before the cut; two refunds held offline; after reconnect `76C086475Y724052F` and `9C434129FA2384059` VERIFIED, no duplicate; receipts verified with networking disabled |
 | Case i (real PayPal dispute) | real sandbox | PASS on `PP-R-SLI-10195419`: tracking sent as the supporting info PayPal offered, read back VERIFIED |
@@ -69,7 +87,7 @@ A request the gateway refuses before it leaves (403 off the allowlist, 502 when 
 | Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox | 4 of 4 PASS. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED |
 | The console at `/console` | rehearsal, invented records | runs locally, AG Grid dispute ledger and fee leak gauge |
 | Public site, https://clearwake-mu.vercel.app (`site/`) | static on Vercel, recorded sandbox run | verifies the real case m receipts in the browser |
-| Offline tests | fake transports | 94 Python and 12 UI tests pass (31 October) |
+| Offline tests | fake transports | 109 Python and 12 UI tests pass (1 November) |
 
 Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md), from the run files in `data/runs/` and `data/airgap/`. Sandbox means PayPal's test environment with test money. No live PayPal, no real money.
 
@@ -94,7 +112,7 @@ Planned, not built: shared context for teams of people and agents, continuous da
 ## Cases, one command each
 
 ```sh
-python scripts/cases.py                         # rehearsal, a to n, no network
+python scripts/cases.py                         # rehearsal, a to o, no network
 python scripts/cases.py --sandbox               # real sandbox where PayPal allows it (keys in .env)
 python scripts/cases.py --sandbox --only i --dispute <dispute id>   # one real dispute, read by id
 python scripts/cases.py --sandbox --order <order id>                # case a after a sandbox buyer approval

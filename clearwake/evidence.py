@@ -40,9 +40,14 @@ def deadline(view, now=None, escalate_before_seconds=24 * 3600):
     return {"seconds_left": left, "state": "lapsed" if left <= 0 else "soon" if left <= escalate_before_seconds else "ok"}
 
 
-def evidence_pack(view, order=None, trackers=(), mandate_receipt=None):
-    """Return (evidences for PayPal, sources shown on screen). Only facts read from records."""
+def evidence_pack(view, order=None, trackers=(), mandate_receipt=None, dispatch=None):
+    """Return (evidences for PayPal, sources shown on screen). Only facts read from records.
+
+    dispatch is the Assessment of the signed dispatch proof (clearwake/dispatch.py). Strong proof is added as evidence. When the
+    buyer says items are missing and the proof is weak, nothing is sent: tracking alone does not answer a claim of missing items."""
     evidences, sources = [], []
+    if dispatch is not None and dispatch.partial_claim and not dispatch.strong:
+        return [], []
     shipped = [t for t in trackers if t.get("status") in ("SHIPPED", "DELIVERED")]
     if shipped and "NOT_RECEIVED" in view.reason:
         evidences.append({"evidence_type": "PROOF_OF_FULFILLMENT",
@@ -55,6 +60,10 @@ def evidence_pack(view, order=None, trackers=(), mandate_receipt=None):
             f"item {mandate_receipt['item']}, price {mandate_receipt['price']}, cap {mandate_receipt['cap']}. Ed25519 receipt {mandate_receipt['digest'][:16]}..., "
             "verifiable offline with the buyer agent's public key.")[:2000]})
         sources.append(f"Mandate receipt {mandate_receipt['digest'][:16]} (verified offline before use)")
+    if dispatch is not None and dispatch.strong:
+        from .dispatch import evidence_item
+        evidences.append(evidence_item(dispatch))
+        sources.append(f"Dispatch receipt {dispatch.record['digest'][:16]} ({dispatch.summary})")
     return evidences, sources
 
 
