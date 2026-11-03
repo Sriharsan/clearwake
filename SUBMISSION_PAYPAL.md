@@ -43,7 +43,7 @@ The adapter (`clearwake/paypal.py`) refuses any base URL other than `https://api
 ### Limits observed in the sandbox
 
 * **Dispute create through the API**, retried on 31 October: with a buyer `PayPal-Auth-Assertion` (payer id or email) HTTP 400 "No permissions to set target_client_id"; without it `TRANSACTION_NOT_ELIGIBLE`. A normal merchant app cannot open a dispute for the buyer, so real sandbox disputes are opened by the sandbox buyer in the Resolution Center.
-* **Accept offer as the buyer**: the app's token has `disputes/update-seller` but not `disputes/update-buyer`, so Clearwake cannot accept its own offer for the buyer. In case n the sandbox buyer accepts in the Resolution Center; in rehearsal that step is simulated and labelled.
+* **Accept offer as the buyer**: the app's token has `disputes/update-seller` but not `disputes/update-buyer`, so Clearwake cannot accept its own offer for the buyer. In case n the sandbox buyer opens the dispute in the Resolution Center; in rehearsal the buyer's acceptance is simulated and labelled.
 * **Card payments** were refused with PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING for this sandbox merchant, so buyer payments are approved by the sandbox buyer in PayPal checkout.
 * **paypal/agent-toolkit** (1.11.0) has no capture refund tool. Its money returning action for disputes is `accept_dispute_claim`. Clearwake keeps its own allowlisted adapter ([docs/DESIGN_DECISIONS.md](docs/DESIGN_DECISIONS.md)).
 
@@ -69,7 +69,7 @@ A model can only propose. It cannot approve, send, change a limit or mark a refu
 | i. Item not received, tracking before the deadline | real sandbox | PASS on dispute `PP-R-SLI-10195419`: PayPal offered only supporting info, so the tracker from the order record was sent that way and read back from PayPal's record |
 | m. Network cut mid batch | real sandbox, network isolated containers, egress gateway | PASS: refund `6PX35920F4587564U` before the cut; two refunds held offline and still held on retry; after reconnect PayPal read first, refunds `76C086475Y724052F` and `9C434129FA2384059` VERIFIED; no duplicate; receipts verified with networking disabled |
 | m. Boundary | same run | no direct route out of the agents' container; `example.com` through the gateway refused with 403 and receipted |
-| n. Settled in conversation, no fee | rehearsal; buyer acceptance simulated | PASS. Real sandbox SKIPPED: no dispute at the INQUIRY stage |
+| n. Settled in conversation, no fee | rehearsal; buyer acceptance simulated | PASS. Real sandbox: PASS on dispute PP-R-OBG-10196144. The policy chose an offer of USD 2.50, PayPal accepted it and paid the settlement (refund 0TB11858A85953644), the case read UNDER_REVIEW first and then RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage, never a claim, no fee |
 | o. Dispatch proof: buyer says 2 of 3 items arrived | real sandbox, SAM 3 on the CPU, CC0 test photo | PASS: 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo. Try 1 refused by PayPal, try 2 lost and held UNKNOWN, try 3 accepted |
 | o. weak proof | rehearsal, scripted count | PASS: not sent, settled by offer |
 | a, b, f, g, h, j | rehearsal or offline | PASS |

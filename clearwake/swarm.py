@@ -303,7 +303,7 @@ class MerchantSwarm:
         Messages and offers go through PayPal's Disputes API. Only PayPal's record can mark a case settled."""
         from .evidence import DECISIONS, deadline, dispute_decision, evidence_pack
         dispute_id = view.id
-        if view.status in ("WAITING_FOR_BUYER_RESPONSE", "RESOLVED"):
+        if view.status in ("WAITING_FOR_BUYER_RESPONSE", "RESOLVED", "UNDER_REVIEW"):   # an offer was made: read what PayPal shows now
             return self.settlement(dispute_id)
         if view.status not in ("WAITING_FOR_SELLER_RESPONSE", "OPEN"):
             return Result(dispute_id, "none", "done", f"PayPal shows {view.status}; nothing to answer.")
@@ -437,7 +437,14 @@ class MerchantSwarm:
         if status == "RESOLVED" and stage == "INQUIRY":
             state, detail = VERIFIED, f"Settled, no fee: PayPal shows RESOLVED ({outcome or 'no outcome code'}) at the INQUIRY stage, never a claim."
         elif stage == "INQUIRY":
-            state, detail = PENDING, f"Offer sent. PayPal shows {status}; waiting for the buyer."
+            paid = [m for m in record.get("fund_movements", []) or [] if m.get("party") == "BUYER" and m.get("reason") == "DISPUTE_SETTLEMENT"]
+            if paid:  # PayPal already paid the settlement; the case itself has not closed. Never counted as settled until it reads RESOLVED.
+                amount = paid[0].get("amount", {})
+                refund = ((record.get("refund_details") or {}).get("transactions") or [{}])[0].get("id", "")
+                state, detail = PENDING, (f"PayPal paid the settlement to the buyer (USD {amount.get('value')}, refund {refund}) and still shows {status} at the "
+                                          "INQUIRY stage, never a claim. Not counted as settled, no fee, until PayPal reads RESOLVED.")
+            else:
+                state, detail = PENDING, f"Offer sent. PayPal shows {status}; waiting for the buyer."
         else:
             state, detail = MISMATCH, f"PayPal shows stage {stage} ({status}): the case became a claim. Not counted as settled."
         self.receipt(f"{dispute_id}:settlement", "clearwake.dispute.settlement", {"dispute": dispute_id, "status": status or "", "stage": stage or "",

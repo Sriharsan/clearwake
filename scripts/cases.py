@@ -252,7 +252,7 @@ def run():
         if SANDBOX:
             listed = [real.dispute(DISPUTE)] if DISPUTE else real.disputes()
             inquiries = [d for d in listed if d.get("dispute_life_cycle_stage") == "INQUIRY"
-                         and d.get("status") in ("WAITING_FOR_SELLER_RESPONSE", "OPEN", "WAITING_FOR_BUYER_RESPONSE", "RESOLVED")]
+                         and d.get("status") in ("WAITING_FOR_SELLER_RESPONSE", "OPEN", "WAITING_FOR_BUYER_RESPONSE", "UNDER_REVIEW", "RESOLVED")]
             if inquiries:
                 d = real.dispute(inquiries[0]["dispute_id"]); ns = MerchantSwarm(real, ROOT / "data" / "sandbox" / "settle", adapter)
                 r = ns.handle_dispute(d["dispute_id"], 2000, "sandbox-buyer")

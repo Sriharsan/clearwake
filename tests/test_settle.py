@@ -135,6 +135,19 @@ class OfferOrderTests(SettleTests):
         self.assertEqual(self.swarm.handle_dispute(d, 2000, "buyer-n10").state, PENDING)             # a later try is not blocked
 
 
+class PaidSettlementTests(SettleTests):
+    def test_a_paid_settlement_on_a_case_still_under_review_is_reported_but_not_counted_as_settled(self):
+        d = self.inquiry("CAP-N11")
+        self.swarm.handle_dispute(d, 2000, "buyer-n11")
+        self.gateway._update_dispute(d, status="UNDER_REVIEW", fund_movements=[{"party": "BUYER", "reason": "DISPUTE_SETTLEMENT", "amount": {"currency_code": "USD", "value": "2.50"}}],
+                                     refund_details={"transactions": [{"id": "REFUND-1"}]})
+        result = self.swarm.handle_dispute(d, 2000, "buyer-n11")
+        self.assertEqual(result.state, PENDING); self.assertIn("paid the settlement", result.detail); self.assertIn("REFUND-1", result.detail)
+        self.assertIn("until PayPal reads RESOLVED", result.detail)
+        self.gateway._update_dispute(d, status="RESOLVED", dispute_outcome={"outcome_code": "RESOLVED_WITH_PAYOUT"})
+        self.assertEqual(self.swarm.handle_dispute(d, 2000, "buyer-n11").state, VERIFIED)
+
+
 class NetworkCutTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); root = Path(self.folder.name)
