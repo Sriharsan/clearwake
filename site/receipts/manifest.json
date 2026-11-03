@@ -23,6 +23,14 @@
    "lines": 9,
    "ok_in_python": true,
    "recorded": "2026-11-03"
+  },
+  {
+   "file": "receipts/case-n-settle.ndjson",
+   "title": "Case n: settled in conversation on a real sandbox dispute, offer sent alone, PayPal reads RESOLVED",
+   "public_key": "93980b0de422af30f7bfaaab14c16c06209e71b296119e84d6b02c4c8517e6f9",
+   "lines": 5,
+   "ok_in_python": true,
+   "recorded": "2026-11-03"
   }
  ]
 }
