@@ -58,7 +58,14 @@ Agents and Ollama on an internal Docker network; the verdock-core egress gateway
 
 ## Case o, dispatch proof (1 November)
 
-Not run in the sandbox. It needs a dispute where the buyer says items are missing, and a dispatch receipt for that order (`python scripts/dispatch.py pack ...`). Attaching the packing photo to `provide-evidence` as an `evidence-file` part follows PayPal's reference and is untested on a real dispute. Rehearsal passes (see docs/RESULTS.md).
+Run for real on 3 November 2026.
+
+* New order `7RV99265V1496281G`, USD 20.00, approved by the sandbox buyer; capture `4AN16499K3427771T` COMPLETED; synthetic UPS tracking added and shown SHIPPED by PayPal.
+* The buyer opened dispute `PP-R-UKF-10195772` in the Resolution Center (item not received, expected refund USD 5.00): "Only 2 of 3 notebooks arrived." PayPal: OPEN, stage INQUIRY, and it offered the seller `provide_evidence`, `send_message`, `make_offer`, `escalate` and `accept_claim`.
+* Packing: SAM 3 counted 3 of 3 on the CPU (`python scripts/dispatch.py pack --data data/sandbox/dispatch ... --counter sam --save-count`), signed receipt `8b92abb9e53a6244`.
+* `provide-evidence` with the photo as an `evidence-file` part. Try 1, refused: `400 INVALID_REQUEST ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES`, nothing applied (the tracking and the dispatch proof were two entries, and the disputed item shows no item id). The fix sends one merged entry. Try 2: response lost, held as UNKNOWN; reading the dispute showed nothing had landed. Try 3, same request id: HTTP 200 in 4.2 s.
+* Read back: a PROOF_OF_FULFILLMENT entry, source SUBMITTED_BY_SELLER, 3 Nov 2026 10:13 UTC, with the dispatch notes, the tracker and a document `packing-photo-893632548b14c5d5.jpg` that PayPal now hosts. Status WAITING_FOR_BUYER_RESPONSE, stage INQUIRY.
+* Result: **PASS**. The receipts of the run, including the refused try, are `site/receipts/case-o-dispatch.ndjson` and verify in the browser.
 
 ## Cases a to n (`python scripts/cases.py --sandbox`, 31 October, evening)
 

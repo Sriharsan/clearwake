@@ -50,11 +50,12 @@ def buyer_claim(dispute):
     return None
 
 
-def pack(swarm, counter, order_id, capture_id, items, photos, sealed, ts_ms=None):
+def pack(swarm, counter, order_id, capture_id, items, photos, sealed, ts_ms=None, photo_note=""):
     """Count the photos and write the signed dispatch receipt.
 
     items: {sku: {"ordered": 3, "prompt": "notebook"}}. With several photos the largest count per item is used, so a photo
-    that hides one item cannot lower the count. Returns the receipt facts, its digest and the stored photo names."""
+    that hides one item cannot lower the count. photo_note says what the photo is when it is not a packing photo of this parcel,
+    for example "test photo, CC0, not a real parcel"; it is signed into the receipt and sent with the evidence. Returns the receipt facts and digest."""
     for value in (order_id, capture_id):
         if not isinstance(value, str) or not IDENTIFIER.fullmatch(value):
             raise ValueError("Use a valid PayPal order id and capture id.")
@@ -85,6 +86,10 @@ def pack(swarm, counter, order_id, capture_id, items, photos, sealed, ts_ms=None
     params = {"order": order_id, "capture": capture_id, "ordered": {k: v["ordered"] for k, v in items.items()}, "counted": counted,
               "prompts": {k: v["prompt"] for k, v in items.items()}, "images": sorted(set(hashes)), "sealed": bool(sealed),
               "counter": labels.pop(), "model": models.pop(), "device": devices.pop(), "count_ms": total_ms}
+    if photo_note:
+        if not re.fullmatch(r"[ -~]{1,200}", photo_note):
+            raise ValueError("The photo note must be 1 to 200 plain characters.")
+        params["photo_note"] = photo_note
     line = swarm.receipt(f"dispatch:{order_id}", ACTION, params, True)
     return {**params, "digest": line_hash(line), "line": line, "public_key": swarm.receipts.public_key, "folder": str(folder)}
 
@@ -158,7 +163,8 @@ def evidence_item(assessment):
     p, record = assessment.record["params"], assessment.record
     counts = ", ".join(f"{p['counted'][k]} of {n} {k}" for k, n in p["ordered"].items())
     notes = (f"Dispatch proof recorded when the parcel was packed, before it shipped: {counts} counted, parcel sealed, "
-             f"{len(p['images'])} photo(s) with SHA-256 {', '.join(h[:12] for h in p['images'])}. Counted by {p['counter']} on the merchant's own machine. "
+             f"{len(p['images'])} photo(s) with SHA-256 {', '.join(h[:12] for h in p['images'])}"
+             f"{' (' + p['photo_note'] + ')' if p.get('photo_note') else ''}. Counted by {p['counter']} on the merchant's own machine. "
              f"Signed receipt {record['digest'][:16]} for order {p['order']} and capture {p['capture']}, verifiable offline with public key {record['public_key'][:16]}.")
     item = {"evidence_type": "OTHER", "notes": notes[:2000]}
     if assessment.documents:

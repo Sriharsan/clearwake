@@ -15,6 +15,14 @@
    "public_key": "6cf664b01eadc58ffac85fde3304ebc3bc1fe480c110f95d10818d4c6db512ed",
    "lines": 34,
    "ok_in_python": true
+  },
+  {
+   "file": "receipts/case-o-dispatch.ndjson",
+   "title": "Case o: dispatch proof counted by SAM 3, sent as evidence on a real sandbox dispute",
+   "public_key": "c0d2cba770398baf2861429583e5b558e06b988c64d8a0b8ede7603f7f8f7f6c",
+   "lines": 9,
+   "ok_in_python": true,
+   "recorded": "2026-11-03"
   }
  ]
 }

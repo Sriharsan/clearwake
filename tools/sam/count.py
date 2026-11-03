@@ -1,4 +1,4 @@
-"""Count the items in one packing photo with SAM, on this machine. Runs inside tools/sam/.venv (see tools/sam/README.md).
+r"""Count the items in one packing photo with SAM, on this machine. Runs inside tools/sam/.venv (see tools/sam/README.md).
 
   tools\sam\.venv\Scripts\python tools\sam\count.py photo.jpg --prompt "notebook" [--overlay out.png] [--save]
 
@@ -29,9 +29,24 @@ def main():
     args = parser.parse_args()
 
     import torch
+    import torch._dynamo  # noqa: F401  (loaded before any stand-in exists, so torch never mistakes it for a real Triton)
     from PIL import Image, ImageDraw
-    from sam3.model.sam3_image_processor import Sam3Processor
-    from sam3.model_builder import build_sam3_image_model
+    try:
+        import triton  # noqa: F401
+    except ImportError:
+        # No Triton build for Windows. Meta's code imports triton at load time for the video tracker, which counting a still photo
+        # never uses. Provide tools/sam/shim only while that code is imported, then take it away again.
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "shim"))
+        try:
+            from sam3.model.sam3_image_processor import Sam3Processor
+            from sam3.model_builder import build_sam3_image_model
+        finally:
+            sys.path.pop(0)
+            for name in [n for n in sys.modules if n == "triton" or n.startswith("triton.")]:
+                del sys.modules[name]
+    else:
+        from sam3.model.sam3_image_processor import Sam3Processor
+        from sam3.model_builder import build_sam3_image_model
 
     device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
     with open(args.image, "rb") as handle:

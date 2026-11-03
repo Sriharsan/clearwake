@@ -118,3 +118,9 @@ td.mono { font-size: 13px; color: var(--accent); word-break: break-all; }
   th, td { padding: 10px 12px; }
 }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+.pair figure { margin: 0; }
+.pair img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.pair figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; }
+@media (max-width: 760px) { .pair { grid-template-columns: 1fr; } }

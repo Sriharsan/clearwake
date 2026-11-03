@@ -43,10 +43,10 @@ def sha256_file(path):
 
 
 class Counter:
-    def __init__(self, backend="scripted", table=None, runner=None, python=None, offline=True):
+    def __init__(self, backend="scripted", table=None, runner=None, python=None, offline=True, save=False):
         if backend not in ("sam", "recorded", "scripted"):
             raise ValueError("Counter backend must be sam, recorded or scripted.")
-        self.backend, self.table, self.offline = backend, dict(table or {}), offline
+        self.backend, self.table, self.offline, self.save = backend, dict(table or {}), offline, save
         self.runner, self.python = runner or subprocess.run, Path(python) if python else SAM_PYTHON
 
     def count(self, image_path, prompt):
@@ -76,7 +76,7 @@ class Counter:
         env = {**os.environ, "HF_HUB_OFFLINE": "1" if self.offline else "0", "PYTHONIOENCODING": "utf-8",
                "HF_HOME": os.environ.get("CLEARWAKE_HF_HOME") or os.environ.get("HF_HOME") or str(ROOT.parent / "_hf")}
         env.pop("HF_TOKEN", None)   # counting never needs the token, so it never reaches the counter
-        done = self.runner([str(self.python), str(SAM_SCRIPT), str(path), "--prompt", prompt], capture_output=True, text=True,
+        done = self.runner([str(self.python), str(SAM_SCRIPT), str(path), "--prompt", prompt] + (["--save"] if self.save else []), capture_output=True, text=True,
                            encoding="utf-8", errors="replace", timeout=1800, env=env)
         if done.returncode != 0:
             raise CounterError("SAM did not finish: " + (done.stderr or "no message").strip().splitlines()[-1][:200])

@@ -29,10 +29,26 @@ Case m used scripted rules for the refund decisions and `qwen2.5-coder:3b` throu
 | Case | How it ran | Result |
 | --- | --- | --- |
 | o. Buyer says 2 of 3 items arrived | rehearsal; synthetic parcel pictures (`fixtures/dispatch/`); the count came from a scripted table, labelled "scripted count, not SAM" | PASS. Strong proof (3 of 3 counted, sealed, tracking shipped, log verifies): evidence sent with the photo, PayPal's rehearsal record read back and shows the dispatch proof. Weak proof (the photo shows 2 of 3): nothing sent, the policy settled by offer |
-| o | real SAM count on a photo | **not run**: needs the gated SAM 3 weights (`tools/sam/setup.ps1`) and a photo of an open parcel |
-| o | real sandbox | **not run**: needs a sandbox dispute where the buyer says items are missing |
+| o | **real SAM 3 count** on a photo, offline on this laptop's CPU | PASS: 3 of 3 counted (scores 0.70, 0.62, 0.59), 15.1 s to load and 55.7 s to count, signed dispatch receipt `8b92abb9e53a6244`. The photo is a CC0 test photo (`fixtures/dispatch/photos/CREDITS.md`), not a real parcel |
+| o | **real sandbox**, dispute `PP-R-UKF-10195772` (order `7RV99265V1496281G`, capture `4AN16499K3427771T`) | PASS on 3 November 2026. The buyer wrote "Only 2 of 3 notebooks arrived." The policy found strong proof and chose to fight with evidence. Try 1: refused by PayPal, `ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES`, nothing applied. Try 2: response lost, held as UNKNOWN, reading the dispute showed nothing had landed. Try 3, the same request id: accepted. PayPal's record (10:13 UTC) shows a PROOF_OF_FULFILLMENT submitted by the seller with the dispatch text, the UPS tracking and the packing photo as a document; the dispute moved to WAITING_FOR_BUYER_RESPONSE. The signed receipts of the whole run, including the refused try, are on the public site as the third log |
 
-Which model: still photos use SAM 3 (`facebook/sam3`). SAM 3.1 (`facebook/sam3.1`, 27 March 2026) is Meta's video tracker and is not claimed for photos. Meta lists a CUDA GPU as a prerequisite; this machine has none, so a CPU run is untested until the weights exist. Real timings will be added here from that run.
+Which model: still photos use SAM 3 (`facebook/sam3`). SAM 3.1 (`facebook/sam3.1`, 27 March 2026) is Meta's video tracker and is not claimed for photos. Meta lists a CUDA GPU as a prerequisite. This machine has none, so SAM runs on the CPU through a 20 line patch (`tools/sam/cpu.patch`).
+
+**Check that the CPU path is correct.** On Meta's own example image (four paper bags in a car boot), the prompt "paper bag" returned exactly 4 detections with scores 0.905, 0.901, 0.898 and 0.893; the next candidate was 0.13.
+
+**Every prompt tried on the notebook photo** (nothing was left out; the photo has three notebooks; the line is 0.5):
+
+| Prompt | Found at 0.5 | Scores |
+| --- | --- | --- |
+| notebook | 0 | 0.193, 0.175, 0.168, 0.165, 0.071, 0.05 |
+| notebooks | 1 | 0.634, 0.322, 0.245, 0.209, 0.206 |
+| book | **3** | 0.696, 0.618, 0.593, 0.491, 0.359 |
+| journal | 0 | none above 0.05 |
+| paper notebook | 2 | 0.627, 0.523, 0.494, 0.361, 0.305 |
+| booklet | 1 | 0.593, 0.498, 0.473, 0.335 |
+| kraft notebook | 0 | 0.163, 0.137, 0.135 |
+
+The prompt "book" was used for the receipt because it separated the three notebooks at the default confidence line. It was chosen after trying these, and the fourth candidate (0.491) just missed the line. Timings on the CPU with 12 threads: about 16 s to load the model, 45 to 49 s to encode a photo, 4 to 5 s for each further prompt on the same photo.
 
 Sandbox dispute creation by API was retried on 31 October: HTTP 400 "No permissions to set target_client_id" with the buyer's PayPal-Auth-Assertion, and `TRANSACTION_NOT_ELIGIBLE` without it. This app's token has no `disputes/update-buyer` scope, so accepting an offer as the buyer cannot be driven through the API either.
 

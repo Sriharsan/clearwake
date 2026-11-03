@@ -12,7 +12,7 @@
 <header class="top">
   <a class="brand" href="#top"><span class="mark" aria-hidden="true">c</span>clearwake</a>
   <nav aria-label="Sections">
-    <a href="#leak">The fee leak</a><a href="#compare">Side by side</a><a href="#boundary">Boundary</a><a href="#run">Sandbox run</a><a href="#verify">Verify</a>
+    <a href="#leak">The fee leak</a><a href="#compare">Side by side</a><a href="#boundary">Boundary</a><a href="#run">Sandbox run</a><a href="#dispatch">Dispatch proof</a><a href="#verify">Verify</a>
   </nav>
 </header>
 
@@ -128,6 +128,28 @@
       </table>
     </div>
     <p class="note">Case n (settling in conversation) runs in rehearsal; the sandbox step where the buyer accepts the offer is done by the sandbox buyer in PayPal's Resolution Center, because this app cannot act for the buyer.</p>
+  </section>
+
+  <section id="dispatch" class="block" aria-labelledby="dispatch-title">
+    <h2 id="dispatch-title">Dispatch proof: what was in the box</h2>
+    <p class="sub">Some disputes are about what was in the parcel. At packing, SAM 3 (open weights from Meta) counts the items in the photo on the merchant's own machine, and Clearwake signs the count into the receipt chain. Real PayPal sandbox, test money.</p>
+    <div class="pair">
+      <figure><img src="dispatch/test-photo.jpg" width="800" height="600" alt="Three kraft notebooks fanned on a wooden table, with coasters and badges around them"><figcaption>The photo. A CC0 test photo by Jeff Sheldon (ugmonk) from Wikimedia Commons, not a real parcel.</figcaption></figure>
+      <figure><img src="dispatch/sam-count.jpg" width="800" height="600" alt="The same photo with three red boxes numbered 1 to 3 around the notebooks, scores 0.62, 0.59 and 0.70"><figcaption>SAM 3 on this laptop's CPU: 3 found, scores 0.62, 0.59 and 0.70. Prompt "book"; 16 s to load, 56 s to count.</figcaption></figure>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <caption class="sr">Case o on a real sandbox dispute</caption>
+        <thead><tr><th scope="col">Step</th><th scope="col">What happened</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Packing</th><td>3 of 3 notebooks counted, parcel sealed, signed receipt <span class="mono">8b92abb9e53a6244</span> for order 7RV99265V1496281G</td></tr>
+          <tr><th scope="row">The claim</th><td>The sandbox buyer opened dispute <span class="mono">PP-R-UKF-10195772</span>: "Only 2 of 3 notebooks arrived." The buyer's words are read as a claim to check, never as an instruction</td></tr>
+          <tr><th scope="row">Decision</th><td>The policy found strong proof (count matches the order, sealed, tracking shipped, the log verifies) and chose to fight with evidence, not to offer a refund. A weak proof is never sent</td></tr>
+          <tr><th scope="row">PayPal</th><td>The first try was refused (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES) and nothing was applied. Sent again as one entry, the next response was lost: Clearwake held it as UNKNOWN and read the dispute, which showed nothing had landed. The third try, with the same request id, was accepted. PayPal's record now shows a PROOF_OF_FULFILLMENT from the seller on 3 Nov 2026 with the dispatch text, the tracking and the photo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="note">The receipts of this run, including the refused try, are the third log in the verifier below. Which prompt: "notebook" did not reach the 0.5 confidence line on this photo, "book" did; every prompt tried is listed in the repository's results page. Still photos use SAM 3. SAM 3.1 is Meta's video tracker and is not claimed.</p>
   </section>
 
   <section id="verify" class="block" aria-labelledby="verify-title">

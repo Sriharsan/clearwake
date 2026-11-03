@@ -17,3 +17,5 @@ output/
 *.key
 .vercel/
 node_modules/
+fixtures/dispatch/test-local/*
+!fixtures/dispatch/test-local/README.md

@@ -57,6 +57,7 @@ The PayPal AI Hackathon submission period opened on 1 October 2026 (9:15 am Paci
 | 2026-11-01 10:38 | `1d087a2` | Console screenshots show the dispute ledger and the fee leak gauge |
 | 2026-11-01 10:58 | `7f52a0e` | Read only helpers for the demo: show a sandbox dispute, print a saved network cut run, and a boundary only check |
 | 2026-11-01 11:22 | `426a0f5` | Dispatch proof: signed packing record, strong or weak check against a buyer's claim, evidence with the photo, case o |
+| 2026-11-01 11:32 | `0f79321` | Dispatch proof: validate order ids before they touch the file system, widen the ledger column, record case o in the docs, refresh screenshots and the change log |
 
 ## Relayloom core (pinned submodule, `vendor/relayloom`, public MIT repository)
 

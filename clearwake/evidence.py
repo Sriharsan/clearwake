@@ -64,7 +64,26 @@ def evidence_pack(view, order=None, trackers=(), mandate_receipt=None, dispatch=
         from .dispatch import evidence_item
         evidences.append(evidence_item(dispatch))
         sources.append(f"Dispatch receipt {dispatch.record['digest'][:16]} ({dispatch.summary})")
-    return evidences, sources
+    return merge_evidence(evidences), sources
+
+
+def merge_evidence(evidences):
+    """One evidence entry when there are several.
+
+    PayPal refuses more than one piece of evidence unless each names an item id (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES, seen on
+    the real sandbox), and the disputed item may not expose one. One entry holds the tracking, the notes and the documents together."""
+    if len(evidences) < 2:
+        return evidences
+    merged = {"evidence_type": "OTHER", "notes": ""}
+    for item in evidences:
+        if item.get("evidence_info"):
+            merged["evidence_type"], merged["evidence_info"] = item["evidence_type"], item["evidence_info"]
+        merged["notes"] = (merged["notes"] + " " + item.get("notes", "")).strip()
+        merged["documents"] = merged.get("documents", []) + item.get("documents", [])
+    if not merged["documents"]:
+        del merged["documents"]
+    merged["notes"] = merged["notes"][:2000]
+    return [merged]
 
 
 def propose(view, evidences, refund_limit_minor, clock):

@@ -100,6 +100,41 @@ class DispatchTests(unittest.TestCase):
         found = dispatch.assess(self.swarm, {"id": "O8"}, TRACKERS, {"received": 2, "of": 3})
         self.assertTrue(found.strong); self.assertEqual(found.documents, [])   # only photos whose hash the receipt lists are attached
 
+    def test_a_photo_note_is_signed_and_travels_with_the_evidence(self):
+        made = dispatch.pack(self.swarm, self.table, "O12", "CAP-O12", ITEM, [THREE], True, photo_note="test photo, CC0, not a real parcel")
+        self.assertEqual(dispatch.find(self.swarm, "O12")["params"]["photo_note"], "test photo, CC0, not a real parcel")
+        found = dispatch.assess(self.swarm, {"id": "O12"}, TRACKERS, {"received": 2, "of": 3})
+        self.assertIn("(test photo, CC0, not a real parcel)", dispatch.evidence_item(found)["notes"])
+        with self.assertRaises(ValueError):
+            dispatch.pack(self.swarm, self.table, "O13", "CAP-O13", ITEM, [THREE], True, photo_note="bad" + chr(10) + "note")
+
+    def test_an_inquiry_that_offers_provide_evidence_gets_the_proof_and_the_photo_through_it(self):
+        made = self.pack("O14")
+        d = self.dispute("O14", stage="INQUIRY", value="5.00", hours=240)
+        self.gateway._update_dispute(d, links=[{"rel": r, "method": "POST"} for r in ("send_message", "provide_evidence", "make_offer")])
+        result = self.swarm.handle_dispute(d, 2000, "buyer-o14", {"id": "O14"}, TRACKERS)
+        self.assertEqual((result.action, result.state), ("provide_evidence", VERIFIED))
+        record = self.gateway.dispute(d)
+        self.assertIn(made["digest"][:16], " ".join(e["notes"] for e in record["evidences"])); self.assertEqual(record["evidence_files"][0]["sha256"], sha256_file(THREE))
+        self.assertEqual([m["posted_by"] for m in record["messages"]], ["BUYER"])       # nothing was said in chat: the evidence went the evidence way
+        weak = self.dispute("O15", stage="INQUIRY", value="2.50", hours=240)
+        self.gateway._update_dispute(weak, links=[{"rel": "provide_evidence", "method": "POST"}, {"rel": "make_offer", "method": "POST"}])
+        self.pack("O15", TWO)
+        self.assertEqual(self.swarm.handle_dispute(weak, 2000, "buyer-o15", {"id": "O15"}, TRACKERS).proposal["decided"], "settle_by_offer")
+        self.assertNotIn("evidences", self.gateway.dispute(weak))
+
+    def test_several_pieces_of_evidence_are_sent_as_one_entry_because_paypal_wants_an_item_id_for_many(self):
+        from clearwake.evidence import merge_evidence
+        one = merge_evidence([{"evidence_type": "PROOF_OF_FULFILLMENT", "evidence_info": {"tracking_info": [{"tracking_number": "T1"}]}, "notes": "Tracking."},
+                              {"evidence_type": "OTHER", "notes": "Dispatch proof.", "documents": [{"name": "p.png"}]}])
+        self.assertEqual(len(one), 1)
+        self.assertEqual((one[0]["evidence_type"], one[0]["notes"], one[0]["documents"]), ("PROOF_OF_FULFILLMENT", "Tracking. Dispatch proof.", [{"name": "p.png"}]))
+        self.assertEqual(one[0]["evidence_info"]["tracking_info"][0]["tracking_number"], "T1")
+        self.assertEqual(merge_evidence([{"evidence_type": "OTHER", "notes": "x"}]), [{"evidence_type": "OTHER", "notes": "x"}])
+        self.pack("O16"); d = self.dispute("O16")
+        self.assertEqual(self.swarm.handle_dispute(d, 900, "buyer-o16", {"id": "O16"}, TRACKERS).state, VERIFIED)
+        self.assertEqual(len(self.gateway.dispute(d)["evidences"]), 1)             # tracking and dispatch proof arrived as one entry
+
     def test_an_order_id_that_is_not_a_plain_identifier_never_reaches_the_file_system(self):
         self.pack("O11")
         for bad in ("../O11", "O11/../O11", "O 11", "", None, "x" * 80):

@@ -71,14 +71,15 @@ python scripts/dispatch.py pack --order <order id> --capture <capture id> --item
 python scripts/cases.py --only o       # rehearsal: strong proof sends evidence, weak proof settles by offer
 ```
 
-Which model: still photos use **SAM 3** (`facebook/sam3`). Meta's **SAM 3.1** checkpoint is the video tracker, and Clearwake does not claim to count photos with it. The model name, device and milliseconds are written into every receipt. SAM and its weights are gated on Hugging Face and need a one time setup that you run yourself: [tools/sam/README.md](tools/sam/README.md). SAM Materials are under the SAM License; credits are in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md). What is real: the signed receipt, the strong and weak checks and the evidence path are covered by tests and run in rehearsal with synthetic parcel pictures counted by a scripted table, labelled "scripted count, not SAM". A real SAM count on a photo and a real sandbox dispute for case o have not been run yet (see Status).
+Which model: still photos use **SAM 3** (`facebook/sam3`). Meta's **SAM 3.1** checkpoint is the video tracker, and Clearwake does not claim to count photos with it. The model name, device and milliseconds are written into every receipt. SAM and its weights are gated on Hugging Face and need a one time setup that you run yourself: [tools/sam/README.md](tools/sam/README.md). SAM Materials are under the SAM License; credits are in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md). What is real: SAM 3 counted three notebooks in a photo offline on this laptop's CPU (15 s to load, 56 s to count), the signed receipt was written, and PayPal's sandbox accepted the evidence with the photo on dispute `PP-R-UKF-10195772`. Weak proof and the rest are covered by tests and run in rehearsal with a scripted count, labelled "scripted count, not SAM". A real SAM 3 count on a CC0 test photo (not a real parcel) and a real sandbox dispute were run on 3 November 2026: see Status and docs/RESULTS.md.
 
 ## Status
 
 | What | How it ran | Result |
 | --- | --- | --- |
 | Cases a to o (`scripts/cases.py`) | rehearsal, fake provider, invented records | 15 of 15 PASS (1 November) |
-| Case o, dispatch proof | rehearsal; synthetic parcel pictures, scripted count, not SAM | PASS: strong proof sent as evidence and read back; weak proof not sent, settled by offer instead. Real SAM count and real sandbox dispute: not run yet |
+| Case o, dispatch proof | **real sandbox**, SAM 3 on the CPU, CC0 test photo | PASS (3 November): 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo from the seller. First try refused by PayPal, second lost and held UNKNOWN, third accepted |
+| Case o, weak proof | rehearsal, scripted count | PASS: weak proof is not sent, the policy settles by offer instead |
 | Cases c, d, e (`scripts/cases.py --sandbox`) | real sandbox; e is an injected fault in sandbox | PASS, twice on 31 October. Latest refunds `6SN41486G5579815G` and `2NB27940EC188891M` VERIFIED |
 | Case m, network cut mid batch (`scripts/airgap.py`) | real sandbox, network isolated containers, egress gateway | PASS: refund `6PX35920F4587564U` before the cut; two refunds held offline; after reconnect `76C086475Y724052F` and `9C434129FA2384059` VERIFIED, no duplicate; receipts verified with networking disabled |
 | Case i (real PayPal dispute) | real sandbox | PASS on `PP-R-SLI-10195419`: tracking sent as the supporting info PayPal offered, read back VERIFIED |

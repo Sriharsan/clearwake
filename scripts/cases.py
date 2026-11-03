@@ -277,9 +277,20 @@ def run():
 
     # o: dispatch proof. The parcel was photographed and counted when it was packed; the buyer says items are missing.
     if want("o"):
-        if SANDBOX:
+        if SANDBOX and not (DISPUTE and ORDER):
             record("o", "Dispatch proof: buyer says 2 of 3 items arrived, evidence sent", None, "real sandbox",
-                   "Needs a sandbox dispute where the buyer says items are missing, and a dispatch receipt for that order: python scripts/dispatch.py pack ...")
+                   "Pass --dispute and --order. Needs a sandbox dispute where the buyer says items are missing, tracking on that order "
+                   "(scripts/add_tracking.py) and its dispatch receipt (scripts/dispatch.py pack --data data/sandbox/dispatch ...)")
+        elif SANDBOX:
+            os_ = MerchantSwarm(real, ROOT / "data" / "sandbox" / "dispatch", adapter)
+            order = real.order(ORDER)
+            trackers = [{"number": t["id"].split("-", 1)[-1], "carrier": "UPS", "status": t.get("status")}
+                        for unit in order.get("purchase_units", []) for t in unit.get("shipping", {}).get("trackers", [])]
+            r = os_.handle_dispute(DISPUTE, 2000, "sandbox-buyer", {"id": ORDER}, trackers)
+            found = dispatch.find(os_, ORDER)
+            record("o", "Dispatch proof: buyer says 2 of 3 items arrived, evidence sent", r.state == VERIFIED and r.action == "provide_evidence",
+                   "real sandbox; " + (found["params"]["counter"] if found else "no dispatch receipt"),
+                   f"dispute {DISPUTE}: {r.action}, {r.state}. {r.detail} Dispatch proof: {r.proposal.get('dispatch')}")
         else:
             fixtures = ROOT / "fixtures" / "dispatch"
             og = RehearsalGateway(work / "o.sqlite3"); os_ = MerchantSwarm(og, work / "o", adapter)

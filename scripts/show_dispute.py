@@ -28,8 +28,14 @@ def main():
     for note in record.get("supporting_info", []):
         print(f"  note    {note.get('source')} at {note.get('provided_time')}")
         print(f"          {note.get('notes')}")
-    if not record.get("supporting_info"):
-        print("  no supporting info from the seller")
+    for item in record.get("evidences", []):
+        if item.get("source") == "SUBMITTED_BY_SELLER":
+            print(f"  evidence {item.get('evidence_type')} from the seller at {item.get('date')}")
+            print(f"          {str(item.get('notes', ''))[:400]}")
+            for document in item.get("documents", []):
+                print(f"          document {document.get('name')}")
+    if not record.get("supporting_info") and not any(i.get("source") == "SUBMITTED_BY_SELLER" for i in record.get("evidences", [])):
+        print("  nothing from the seller yet")
 
 
 if __name__ == "__main__":

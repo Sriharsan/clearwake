@@ -17,6 +17,15 @@ Clearwake counts the items in a packing photo with Meta's Segment Anything Model
 
 It installs CPU PyTorch from download.pytorch.org and Meta's code from https://github.com/facebookresearch/sam3, both into `tools/sam/.venv`, and downloads about 3.5 GB of weights to a folder next to the repository (`..\_hf`).
 
+## Two things Meta's code needs that it does not list
+
+* `einops`, `pycocotools` and `psutil` are imported at load time but are not in its dependency list; `setup.ps1` installs them.
+* Meta imports `triton` at load time, and Triton has no Windows build. It is used by the video tracker and by GPU fallbacks, not by counting items in a still photo. `tools/sam/shim/` holds a stand-in that `count.py` puts on the path only while Meta's code is imported and removes afterwards. Calling a Triton kernel through it raises an error instead of pretending to work. On a machine with a real Triton the stand-in is not used.
+
+## A small CPU patch
+
+Meta's code assumes a GPU in a few places: it creates tensors on `"cuda"`, pins memory, and forces a bfloat16 kernel for one layer. `tools/sam/cpu.patch` (about 20 lines, in 5 files of Meta's `sam3` package) makes those pick the CPU when there is no GPU, and use plain float32 there. `setup.ps1` applies it to the local clone only. On a machine with a GPU the original code paths still run. Clearwake does not redistribute Meta's code, only this patch, which is its own work.
+
 ## CPU only
 
 Meta's README lists a CUDA GPU as a prerequisite. This code path takes `device="cpu"` and Clearwake uses it, so on a machine without a GPU counting is slower. Real timings from the run on this machine are in `docs/RESULTS.md`. Nothing about the receipt depends on speed.

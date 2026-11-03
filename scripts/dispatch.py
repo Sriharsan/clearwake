@@ -39,6 +39,8 @@ def main():
     pack.add_argument("--photo", action="append", required=True, type=Path)
     pack.add_argument("--sealed", action="store_true"); pack.add_argument("--counter", default="sam", choices=("sam", "recorded", "scripted"))
     pack.add_argument("--table", default="", help="scripted counter only: file=count,file=count")
+    pack.add_argument("--save-count", action="store_true", help="sam only: also write <photo>.count.json, the recorded run for the recorded counter")
+    pack.add_argument("--photo-note", default="", help='say what the photo is when it is not this parcel, e.g. "test photo, CC0, not a real parcel"')
     show = commands.add_parser("show"); show.add_argument("--order")
     for sub in (pack, show):
         sub.add_argument("--data", default=str(ROOT / "data" / "dispatch"))
@@ -61,7 +63,8 @@ def main():
         items[sku] = {"ordered": int(quantity), "prompt": prompt}
     table = dict(pair.split("=") for pair in args.table.split(",") if pair)
     try:
-        made = dispatch.pack(swarm, Counter(args.counter, table=table), args.order, args.capture, items, args.photo, args.sealed)
+        made = dispatch.pack(swarm, Counter(args.counter, table=table, save=args.save_count), args.order, args.capture, items, args.photo, args.sealed,
+                             photo_note=args.photo_note)
     except (CounterError, ValueError) as error:
         sys.exit(f"Not recorded: {error}")
     print(f"counted {made['counted']} of ordered {made['ordered']} by {made['counter']} in {made['count_ms']} ms")

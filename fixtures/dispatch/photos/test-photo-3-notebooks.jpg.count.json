@@ -1,0 +1,39 @@
+{
+ "count": 3,
+ "prompt": "book",
+ "threshold_milli": 500,
+ "scores_milli": [
+  618,
+  593,
+  695
+ ],
+ "boxes": [
+  [
+   211,
+   537,
+   857,
+   1009
+  ],
+  [
+   300,
+   494,
+   906,
+   954
+  ],
+  [
+   380,
+   362,
+   1023,
+   908
+  ]
+ ],
+ "image_sha256": "893632548b14c5d54c10c4e1b788cee466dfd06900edd21135dd3b35444311f8",
+ "model": "facebook/sam3 sam3.pt",
+ "device": "cpu",
+ "load_ms": 15089,
+ "milliseconds": 55714,
+ "torch": "2.15.0+cpu",
+ "threads": 12,
+ "overlay": null,
+ "recorded": "2026-11-03"
+}

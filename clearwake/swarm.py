@@ -8,6 +8,8 @@ Offline: an action the egress gateway could not send is held as "held, offline" 
 On reconnect PayPal's record is read first, then the action resumes with the same request id.
 """
 from dataclasses import asdict, dataclass, field
+import hashlib
+import json
 from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -322,6 +324,9 @@ class MerchantSwarm:
                  "dispatch": dispatch_found.summary if dispatch_found else None, "claim": dispatch_found.claim if dispatch_found else None}
         self.receipt(f"{dispute_id}:decision", "clearwake.dispute.decision", {"dispute": dispute_id, "stage": "INQUIRY", "proposed": proposed,
                      "decided": decided, "offer_minor": offer_minor, "model": proposal.model}, True)
+        offered = {link.get("rel") for link in view.raw.get("links", []) if isinstance(link, dict)}
+        if decided == "fight_with_evidence" and "provide_evidence" in offered and dispatch_found is not None and dispatch_found.strong:
+            return self.inquiry_evidence(view, args, evidences, dispatch_found, shown)   # PayPal offers provide-evidence on this inquiry
         if decided == "fight_with_evidence":
             message = ("Thank you for reaching out. Here is what our PayPal records show: " + "; ".join(sources) + ". "
                        + " ".join(e.get("notes", "") for e in evidences))[:2000]
@@ -385,6 +390,37 @@ class MerchantSwarm:
         self.invariants.commit(reservation)
         self.receipt(f"{dispute_id}:offer", "clearwake.dispute.offer_sent", {"dispute": dispute_id, "offer_minor": offer_minor, "currency": view.currency}, True)
         return self.settlement(dispute_id, shown)
+
+    def inquiry_evidence(self, view, args, evidences, dispatch_found, shown):
+        """Send the dispatch proof (with the photo) through provide-evidence while the case is still an inquiry.
+
+        Only PayPal's own record can confirm it: the dispute is read back and the proof counts as sent only when its receipt digest
+        appears in an evidence note PayPal now holds."""
+        dispute_id = view.id
+        if not decide(self.policy, "provide_evidence", 0).allowed:
+            return Result(dispute_id, "provide_evidence", "refused", "Policy does not allow sending evidence.", proposal=shown)
+        request_id = self.invariants.request_id(f"dispute:{dispute_id}:provide_evidence:" + hashlib.sha256(json.dumps(evidences, sort_keys=True).encode()).hexdigest()[:12])
+        try:
+            self.gateway.provide_evidence(dispute_id, evidences, request_id, dispatch_found.documents)
+        except Offline:
+            return self.hold(f"dispute:{dispute_id}", "dispute", request_id, args, dispute_id, shown)
+        except ProviderRefused as refused:
+            self.receipt(f"{dispute_id}:evidence-refused", "clearwake.dispute.refused_by_paypal", {"dispute": dispute_id, "reason": str(refused)[:200]}, False)
+            return Result(dispute_id, "provide_evidence", "refused by PayPal", f"{refused} Nothing was applied.", proposal=shown)
+        except GatewayError:
+            self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN)
+            return Result(dispute_id, "provide_evidence", UNKNOWN, "Evidence response lost. Read the dispute before doing anything else.", proposal=shown)
+        note = dispatch_found.record["digest"][:16]
+        try:
+            record = self.gateway.dispute(dispute_id)
+        except (GatewayError, ProviderRefused, Offline):
+            record = {}
+        seen = any(note in str(e.get("notes", "")) for e in record.get("evidences", []) or [])
+        self.receipt(f"{dispute_id}:evidence-check", "clearwake.dispute.evidence_checked", {"dispute": dispute_id, "status": record.get("status") or "",
+                     "stage": record.get("dispute_life_cycle_stage") or "", "dispatch_evidence_seen": seen}, seen)
+        return Result(dispute_id, "provide_evidence", VERIFIED if seen else UNKNOWN,
+                      f"PayPal's record shows the dispatch proof ({record.get('status')}, {record.get('dispute_life_cycle_stage')})." if seen
+                      else "Sent, but PayPal's record does not show the dispatch proof yet. Not counted as verified.", proposal=shown)
 
     def settlement(self, dispute_id, shown=None):
         """Checker for settling in conversation. "Settled, no fee" only when PayPal shows RESOLVED while still an INQUIRY."""
