@@ -34,8 +34,8 @@ if (-not (Test-Path $source)) {
     git -C $source checkout --quiet FETCH_HEAD
 }
 $patch = Join-Path $PSScriptRoot 'cpu.patch'
-git -C $source apply --check $patch 2>$null
-if ($LASTEXITCODE -eq 0) { git -C $source apply $patch; Write-Host 'Applied tools/sam/cpu.patch' } else { Write-Host 'cpu.patch is already applied (or does not fit this checkout)' }
+git -C $source apply --ignore-whitespace --check $patch 2>$null
+if ($LASTEXITCODE -eq 0) { git -C $source apply --ignore-whitespace $patch; Write-Host 'Applied tools/sam/cpu.patch' } else { Write-Host 'cpu.patch is already applied (or does not fit this checkout)' }
 & $py -m pip install -e $source pillow einops pycocotools psutil   # Meta's code imports these but lists them only under extras or not at all
 if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
 
