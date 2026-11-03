@@ -101,6 +101,40 @@ class SettleTests(unittest.TestCase):
         self.assertEqual(self.swarm.handle_dispute(d, 2000, "buyer-n7").state, "awaiting approval")
 
 
+class OfferOrderTests(SettleTests):
+    """Seen on the real sandbox: a seller message moves the case to waiting for the buyer, and an offer is refused after it."""
+
+    def test_an_offer_after_a_seller_message_is_refused_the_way_paypal_refuses_it(self):
+        from clearwake.paypal import ProviderRefused
+        d = self.inquiry("CAP-N8")
+        self.gateway.send_message(d, "Hello.", "12345678-1234-4234-8234-123456789abc")
+        self.assertEqual(self.gateway.dispute(d)["status"], "WAITING_FOR_BUYER_RESPONSE")
+        with self.assertRaisesRegex(ProviderRefused, "ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE"):
+            self.gateway.make_offer(d, "Offer.", "2.50", "USD", "22345678-1234-4234-8234-123456789abc")
+
+    def test_the_swarm_sends_the_offer_alone_and_its_note_is_the_only_seller_message(self):
+        d = self.inquiry("CAP-N9")
+        result = self.swarm.handle_dispute(d, 2000, "buyer-n9")
+        self.assertEqual((result.proposal["decided"], result.state), ("settle_by_offer", PENDING))
+        record = self.gateway.dispute(d)
+        self.assertEqual([m["posted_by"] for m in record["messages"]], ["BUYER", "SELLER"])
+        self.assertIn("2.50 USD", record["messages"][1]["content"]); self.assertEqual(record["offer"]["seller_offered_amount"]["value"], "2.50")
+
+    def test_a_refused_offer_is_receipted_and_never_described_as_applied_and_it_frees_the_reservation(self):
+        from clearwake.paypal import ProviderRefused
+        d = self.inquiry("CAP-N10")
+        real = self.gateway.make_offer
+        self.gateway.make_offer = lambda *a: (_ for _ in ()).throw(ProviderRefused("PayPal refused it (422 ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE)."))
+        result = self.swarm.handle_dispute(d, 2000, "buyer-n10")
+        self.assertEqual(result.state, "refused by PayPal"); self.assertIn("was not applied", result.detail)
+        lines = [json.loads(l) for l in Path(self.swarm.receipts.path).read_text(encoding="utf-8").splitlines()]
+        refused = [l for l in lines if l["action_id"] == "clearwake.dispute.refused_by_paypal"][0]
+        self.assertEqual((refused["params"]["action"], refused["success"]), ("make_offer", False))
+        self.assertEqual([m["posted_by"] for m in self.gateway.dispute(d)["messages"]], ["BUYER"])   # nothing reached the buyer
+        self.gateway.make_offer = real
+        self.assertEqual(self.swarm.handle_dispute(d, 2000, "buyer-n10").state, PENDING)             # a later try is not blocked
+
+
 class NetworkCutTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); root = Path(self.folder.name)

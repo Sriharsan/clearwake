@@ -383,20 +383,26 @@ class RehearsalGateway:
             raise GatewayError("The fake provider accepted the claim but the response was lost.")
         return {"links": []}
 
-    def send_message(self, dispute_id, message, request_id):
-        body = self.dispute(dispute_id)
+    def _seller_may_act(self, body):
+        """PayPal's rule, seen on the real sandbox: an offer or message is allowed only in an inquiry that waits for the seller."""
         if body.get("dispute_life_cycle_stage") != "INQUIRY":
             raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY NOT_IN_INQUIRY).")
-        if not any(m.get("request_id") == request_id for m in body.get("messages", [])):
-            self._update_dispute(dispute_id, messages=body.get("messages", []) + [{"posted_by": "SELLER", "content": message[:2000], "request_id": request_id}])
+        if body.get("status") not in ("OPEN", "WAITING_FOR_SELLER_RESPONSE"):
+            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE).")
+
+    def send_message(self, dispute_id, message, request_id):
+        body = self.dispute(dispute_id)
+        if any(m.get("request_id") == request_id for m in body.get("messages", [])):
+            return {"links": []}   # the same request id replays the first answer
+        self._seller_may_act(body)
+        self._update_dispute(dispute_id, status="WAITING_FOR_BUYER_RESPONSE", messages=body.get("messages", []) + [{"posted_by": "SELLER", "content": message[:2000], "request_id": request_id}])
         return {"links": []}
 
     def make_offer(self, dispute_id, note, offer_value, currency, request_id):
         body = self.dispute(dispute_id)
-        if body.get("dispute_life_cycle_stage") != "INQUIRY":
-            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY NOT_IN_INQUIRY).")
         if (body.get("offer") or {}).get("request_id") != request_id:
-            self._update_dispute(dispute_id, status="WAITING_FOR_BUYER_RESPONSE", offer={"offer_type": "REFUND", "request_id": request_id,
+            self._seller_may_act(body)
+            self._update_dispute(dispute_id, status="WAITING_FOR_BUYER_RESPONSE", messages=body.get("messages", []) + [{"posted_by": "SELLER", "content": note[:2000], "request_id": request_id}], offer={"offer_type": "REFUND", "request_id": request_id,
                                  "buyer_requested_amount": body["dispute_amount"], "seller_offered_amount": {"currency_code": currency, "value": offer_value}})
         if self.outcome == "lost-response":
             raise GatewayError("The fake provider recorded the offer but the response was lost.")

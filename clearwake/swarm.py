@@ -376,14 +376,16 @@ class MerchantSwarm:
                 + (" (full amount)." if offer_minor >= view.amount_minor else "."))
         offer_id = self.invariants.request_id(f"dispute:{dispute_id}:offer")
         try:
-            self.gateway.send_message(dispute_id, note, self.invariants.request_id(f"dispute:{dispute_id}:message"))
+            # The offer alone. Its note is what the buyer reads. PayPal moves the case to "waiting for the buyer" after any seller
+            # message, and an offer is no longer allowed then (seen on the real sandbox), so a message must never go first.
             self.gateway.make_offer(dispute_id, note, money(offer_minor), view.currency, offer_id)
         except Offline:
             self.invariants.release(reservation)
             return self.hold(f"dispute:{dispute_id}", "dispute", offer_id, args, dispute_id, shown)
         except ProviderRefused as refused:
             self.invariants.release(reservation)
-            return Result(dispute_id, decided, "refused by PayPal", f"{refused} Nothing was applied.", proposal=shown)
+            self.receipt(f"{dispute_id}:offer-refused", "clearwake.dispute.refused_by_paypal", {"dispute": dispute_id, "action": "make_offer", "reason": str(refused)[:200]}, False)
+            return Result(dispute_id, decided, "refused by PayPal", f"{refused} The offer was not applied.", proposal=shown)
         except GatewayError:
             self.outcomes.record(f"dispute:{dispute_id}", UNKNOWN); self.held[f"dispute:{dispute_id}"] = reservation
             return Result(dispute_id, decided, UNKNOWN, "Offer response lost. Held; read the dispute before anything else.", proposal=shown)
