@@ -7,6 +7,7 @@
 <title>Clearwake console</title>
 <link rel="stylesheet" href="/theme.css">
 <link rel="stylesheet" href="/console.css">
+<script src="/console-theme.js"></script>
 <script src="/vendor/ag-grid-community.min.js" defer></script>
 <script src="/console-lib.js" defer></script>
 <script src="/console.js" type="module"></script>
@@ -14,16 +15,17 @@
 <body>
 <a class="skip" href="#main">Skip to the screen</a>
 <header class="top">
-  <a class="brand" href="/console#buyer" aria-label="Clearwake console home"><span class="brand-mark" aria-hidden="true">c</span>clearwake<span class="brand-dot">.</span></a>
+  <a class="brand" href="/console#buyer" aria-label="Clearwake console home">Clearwake<span class="brand-sub">Control Room</span></a>
   <nav class="tabs" aria-label="Screens">
     <a class="tab" href="#buyer" data-screen="buyer"><span class="tab-num">1</span><span class="tab-full">Buyer agent</span><span class="tab-short" aria-hidden="true">Buyer</span></a>
     <a class="tab" href="#merchant" data-screen="merchant"><span class="tab-num">2</span><span class="tab-full">Merchant control room</span><span class="tab-short" aria-hidden="true">Merchant</span></a>
     <a class="tab" href="#verify" data-screen="verify"><span class="tab-num">3</span><span class="tab-full">Receipt verifier</span><span class="tab-short" aria-hidden="true">Verifier</span></a>
   </nav>
   <div class="top-meta">
-    <span class="pill rehearsal" id="mode-pill">Rehearsal, invented records</span>
+    <span class="pill rehearsal" id="mode-pill">Rehearsal data</span>
     <span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: loading</span>
     <a class="workroom-link" href="/">Workroom</a>
+    <button class="theme" type="button" aria-label="Switch to the light theme">Light</button>
   </div>
 </header>
 
@@ -34,7 +36,7 @@
   <section id="screen-buyer" class="screen" aria-labelledby="buyer-title" hidden>
     <div class="screen-head">
       <div><p class="eyebrow">Buyer agent</p><h1 id="buyer-title">Spend only inside the owner's mandate.</h1></div>
-      <p class="screen-note">The agent may only name a product. The mandate check reads numbers and ids, never the agent's words. Every purchase it allows gets a signed receipt. Rehearsal: no PayPal checkout runs here and the order ids are invented.</p>
+      <p class="screen-note">The agent may only name a product. The mandate check reads numbers and ids, never the agent's words. Every purchase it allows gets a signed receipt. Rehearsal: no PayPal checkout runs here, and the order ids are made up for the rehearsal.</p>
     </div>
     <div class="buyer-grid">
       <article class="card mandate" aria-labelledby="mandate-title">
@@ -51,7 +53,7 @@
           <div><dt>Categories</dt><dd id="mandate-categories"></dd></div>
           <div><dt>Currency</dt><dd id="mandate-currency" class="mono"></dd></div>
         </dl>
-        <h3 class="mini-title">Store catalogue <span class="tag">invented</span></h3>
+        <h3 class="mini-title">Store catalogue <span class="tag">rehearsal</span></h3>
         <ul class="catalog" id="catalog"></ul>
       </article>
 
@@ -94,7 +96,7 @@
         <article id="receipt-card" class="card receipt" aria-labelledby="receipt-title" hidden>
           <div class="receipt-head"><h2 id="receipt-title" class="card-title">Signed mandate receipt</h2><span class="status-chip" id="receipt-status"></span></div>
           <dl class="facts receipt-facts">
-            <div><dt>Order (invented)</dt><dd id="receipt-order" class="mono"></dd></div>
+            <div><dt>Order (rehearsal)</dt><dd id="receipt-order" class="mono"></dd></div>
             <div><dt>Digest, SHA-256 of the line</dt><dd id="receipt-digest" class="mono"></dd></div>
             <div><dt>Buyer agent public key</dt><dd id="receipt-key" class="mono"></dd></div>
           </dl>
@@ -114,7 +116,7 @@
   <section id="screen-merchant" class="screen" aria-labelledby="merchant-title" hidden>
     <div class="screen-head">
       <div><p class="eyebrow">Merchant control room</p><h1 id="merchant-title">Every refund held to its limit and its record.</h1></div>
-      <p class="screen-note">Rehearsal: a fake provider in a local data folder stands in for PayPal, and every record here is invented. The flow is the same one the sandbox run uses: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
+      <p class="screen-note">Rehearsal: a stand-in provider in a local data folder plays PayPal, and every record here is rehearsal data. The flow is the one the sandbox run uses: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
     </div>
 
     <form class="card runner" id="case-form" aria-labelledby="runner-title">
@@ -177,13 +179,13 @@
     </div>
 
     <section class="card ledger" aria-labelledby="ledger-title">
-      <div class="ledger-head"><h2 id="ledger-title" class="card-title">Ledger</h2><span class="tag">rehearsal, invented records</span></div>
+      <div class="ledger-head"><h2 id="ledger-title" class="card-title">Ledger</h2><span class="tag">rehearsal data</span></div>
       <div id="ledger-grid" class="grid-host"></div>
       <p class="empty-line" id="ledger-empty">No money movements yet.</p>
     </section>
 
     <section class="card ledger" aria-labelledby="fees-title">
-      <div class="ledger-head"><h2 id="fees-title" class="card-title">Dispute ledger and fee leak</h2><span class="tag" id="fees-label">rehearsal, invented records</span></div>
+      <div class="ledger-head"><h2 id="fees-title" class="card-title">Dispute ledger and fee leak</h2><span class="tag" id="fees-label">rehearsal data</span></div>
       <div class="fee-strip" id="fee-strip">
         <div class="fee-cell"><span class="fee-k">Dispute rate, 3 months</span><span class="fee-v" id="fee-rate">none yet</span>
           <div class="rate-bar" aria-hidden="true"><span class="rate-fill" id="rate-fill"></span><span class="rate-line"></span></div><span class="fee-note">PayPal's High Volume line: 1.50%</span></div>
@@ -206,7 +208,7 @@
 
     <div class="verify-grid">
       <section class="card" aria-labelledby="logs-title">
-        <div class="ledger-head"><h2 id="logs-title" class="card-title">This rehearsal's logs</h2><span class="tag">rehearsal, invented records</span></div>
+        <div class="ledger-head"><h2 id="logs-title" class="card-title">This rehearsal's logs</h2><span class="tag">rehearsal data</span></div>
         <div class="log-cards" id="log-cards"></div>
         <div class="verify-actions">
           <button class="button primary" id="verify-all" type="button">Verify both logs</button>
@@ -236,6 +238,6 @@
     </section>
   </section>
 </main>
-<footer class="foot"><p>Loopback only. Default runs make no provider or model calls. An outcome is called verified only when it matches PayPal's own record. Rehearsal outcomes are checked against a fake provider record, so this console shows them as "matches rehearsal record".</p></footer>
+<footer class="foot"><p>Loopback only. Default runs make no provider or model calls. An outcome is called verified only when it matches PayPal's own record. Rehearsal outcomes are checked against the stand-in provider record, so this console shows them as "matches rehearsal record".</p></footer>
 </body>
 </html>

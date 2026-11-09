@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearwake Control Room</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="The recorded sandbox run of Clearwake as a time river of disputes: every mark is a signed receipt line. Recorded, not live.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="room.css">
+<script src="theme.js"></script>
+<script src="room.js" defer></script>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="/">Clearwake</a>
+    <nav aria-label="Pages">
+      <a href="/control-room" aria-current="page">Control Room</a>
+      <a href="/developers">Developers</a>
+      <button class="theme" type="button" aria-label="Switch theme">Light</button>
+    </nav>
+  </div>
+</header>
+
+<nav class="index" aria-label="On this page">
+  <div class="wrap index-in">
+    <a href="#today">Today</a><a href="#river-s">River</a><a href="#disputes">Disputes</a><a href="#refunds">Refunds</a><a href="#dispatch">Dispatch proof</a><a href="#approvals">Approvals</a><a href="#receipts">Receipts</a><a href="#settings">Settings</a>
+  </div>
+</nav>
+
+<main>
+  <section id="today" class="hero wrap" aria-labelledby="h-today">
+    <p class="eyebrow">Control Room, recorded <span class="tag amber">not live</span></p>
+    <h1 id="h-today" class="sr">Control Room</h1>
+    <div class="hero-grid">
+      <div class="fee">
+        <p class="fee-label" id="fee-label">Fee if this case had escalated to a claim</p>
+        <p class="fee-num tnum" id="fee-num" aria-live="polite" aria-labelledby="fee-label"><span class="cur">USD</span> 0.00</p>
+        <p class="fee-case" id="fee-case">Case o, PP-R-UKF-10195772</p>
+        <p class="fee-note" id="fee-note">Claim of USD 5.00 is under USD 30.00, so no Standard fee. Above 1.5% and 100 sales it would be USD 30.00.</p>
+        <button type="button" class="toggle" id="hv" aria-pressed="false"><kbd>H</kbd> High volume what-if</button>
+      </div>
+      <dl class="today">
+        <div><dt>Settled before escalation</dt><dd class="tnum">1</dd><dd class="sub">Case n, real sandbox, RESOLVED at INQUIRY. Source: docs/RESULTS.md.</dd></div>
+        <div><dt>Network</dt><dd class="word">Online, holding 0</dd><dd class="sub">At the end of the recorded run. Case m was cut and resumed, see the river.</dd></div>
+        <div><dt>Approvals waiting</dt><dd class="tnum amber-t">0</dd><dd class="sub">Case d needed one and got it. See Approvals.</dd></div>
+        <div><dt>Deadlines</dt><dd class="word">None recorded</dd><dd class="sub">No deadline of a real sandbox dispute was saved. Rehearsal case k escalated with 4 h 59 min left.</dd></div>
+      </dl>
+    </div>
+    <div class="rate">
+      <svg viewBox="0 0 1000 56" class="rate-svg" role="img" aria-label="Rolling 3 month dispute rate scale, 0 to 3 percent, amber line at 1.5 percent, no rate recorded">
+        <line class="rt" x1="0" y1="30" x2="1000" y2="30"/><line class="rl" x1="500" y1="14" x2="500" y2="46"/>
+        <text class="rx" x="0" y="56">0%</text><text class="rx rm" x="510" y="22">1.5% line</text><text class="rx" x="1000" y="56" text-anchor="end">3%</text>
+      </svg>
+      <p class="note">Rolling 3 month dispute rate: no reading was recorded for the sandbox run, so none is drawn. A seller pays the High Volume fee only with more than 100 sales and a rate of 1.5% or more (<code>clearwake/fees.py</code>). Rule: <a href="https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350">PayPal Help Center, help350</a> (UK edition). Fees: <a href="https://www.paypal.com/us/business/paypal-business-fees">PayPal Merchant Fees, US</a>, 1 Oct 2026.</p>
+    </div>
+  </section>
+
+  <section id="river-s" class="band" aria-labelledby="h-river">
+    <div class="wrap">
+      <div class="band-head">
+        <h2 id="h-river">The river of recorded disputes</h2>
+        <p class="keys" aria-hidden="false"><kbd>&larr;</kbd><kbd>&rarr;</kbd> step <kbd>&uarr;</kbd><kbd>&darr;</kbd> lane <kbd>H</kbd> high volume <kbd>1</kbd> to <kbd>8</kbd> sections</p>
+      </div>
+      <p class="lede">Each mark is a line of a signed receipt log, or a PayPal record where noted. They flow from opened to resolved. Order is exact; spacing is for reading and is not to scale. Teal was done, coral was refused or held.</p>
+      <div class="river-wrap" tabindex="-1"><svg class="river" id="river" viewBox="0 0 1000 350" role="group" aria-label="Time river of the recorded disputes, one lane per case"><g class="lane" data-lane="o" data-std="0.00" data-hv="30.00" data-note="Claim of USD 5.00 is under USD 30.00, so no Standard fee. Above 1.5% and 100 sales it would be USD 30.00." data-title="Case o PP-R-UKF-10195772"><text class="lane-t" x="0" y="64">Case o</text><text class="lane-s" x="0" y="82">PP-R-UKF-10195772</text><line class="lane-l" x1="140" y1="70" x2="970" y2="70"/><path class="lane-a" d="M970 70 l-9 -6 m9 6 l-9 6"/><g class="mark ok d0" tabindex="0" role="button" data-i="0" data-lane="o" data-label="Parcel photo counted and sealed: 3 of 3 notebooks" data-why="Counted on this machine, sealed before any dispute step." data-time="3 Nov 2026 10:09:29 UTC" data-ok="recorded as success" data-sig="ee8b207cfa77" data-prev="none, first " aria-label="Case o, step 1 of 9: Parcel photo counted and sealed: 3 of 3 notebooks"><circle class="hit" cx="150.0" cy="70" r="22"/><circle class="dot" cx="150.0" cy="70" r="7"/><circle class="ring" cx="150.0" cy="70" r="13"/></g><g class="mark ok d1" tabindex="0" role="button" data-i="1" data-lane="o" data-label="Dispatch proof checked against the buyer&#x27;s claim" data-why="Buyer says 2 of 3 arrived. Proof is strong: 3 of 3 counted, sealed, tracking shipped." data-time="3 Nov 2026 10:09:49 UTC" data-ok="recorded as success" data-sig="422f9217b338" data-prev="8b92abb9e53a" aria-label="Case o, step 2 of 9: Dispatch proof checked against the buyer&#x27;s claim"><circle class="hit" cx="240.2" cy="54" r="22"/><circle class="dot" cx="240.2" cy="54" r="7"/><circle class="ring" cx="240.2" cy="54" r="13"/></g><g class="mark ok d2" tabindex="0" role="button" data-i="2" data-lane="o" data-label="Policy decision: fight with evidence" data-why="Stage INQUIRY. The policy chose evidence, not an offer." data-time="3 Nov 2026 10:09:49 UTC" data-ok="recorded as success" data-sig="b7b222f7b117" data-prev="8348269b3bbb" aria-label="Case o, step 3 of 9: Policy decision: fight with evidence"><circle class="hit" cx="300.2" cy="70" r="22"/><circle class="dot" cx="300.2" cy="70" r="7"/><circle class="ring" cx="300.2" cy="70" r="13"/></g><g class="mark bad d3" tabindex="0" role="button" data-i="3" data-lane="o" data-label="PayPal refused the evidence" data-why="400 ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES. Nothing was applied. The refusal is receipted." data-time="3 Nov 2026 10:09:53 UTC" data-ok="recorded as not done" data-sig="6fbba6d2e491" data-prev="f75a9407ab42" aria-label="Case o, step 4 of 9: PayPal refused the evidence"><circle class="hit" cx="366.3" cy="54" r="22"/><circle class="dot" cx="366.3" cy="54" r="7"/><circle class="ring" cx="366.3" cy="54" r="13"/></g><g class="mark ok d4" tabindex="0" role="button" data-i="4" data-lane="o" data-label="Dispatch proof checked against the buyer&#x27;s claim" data-why="Buyer says 2 of 3 arrived. Proof is strong: 3 of 3 counted, sealed, tracking shipped." data-time="3 Nov 2026 10:12:15 UTC" data-ok="recorded as success" data-sig="4c352be20d3a" data-prev="a82393bd6480" aria-label="Case o, step 5 of 9: Dispatch proof checked against the buyer&#x27;s claim"><circle class="hit" cx="638.7" cy="70" r="22"/><circle class="dot" cx="638.7" cy="70" r="7"/><circle class="ring" cx="638.7" cy="70" r="13"/></g><g class="mark ok d5" tabindex="0" role="button" data-i="5" data-lane="o" data-label="Policy decision: fight with evidence" data-why="Stage INQUIRY. The policy chose evidence, not an offer." data-time="3 Nov 2026 10:12:15 UTC" data-ok="recorded as success" data-sig="df8e875efeb8" data-prev="f5a23ad85392" aria-label="Case o, step 6 of 9: Policy decision: fight with evidence"><circle class="hit" cx="698.7" cy="54" r="22"/><circle class="dot" cx="698.7" cy="54" r="7"/><circle class="ring" cx="698.7" cy="54" r="13"/></g><g class="mark ok d6" tabindex="0" role="button" data-i="6" data-lane="o" data-label="Dispatch proof checked against the buyer&#x27;s claim" data-why="Buyer says 2 of 3 arrived. Proof is strong: 3 of 3 counted, sealed, tracking shipped." data-time="3 Nov 2026 10:12:57 UTC" data-ok="recorded as success" data-sig="51cc03c535aa" data-prev="db58f1a95506" aria-label="Case o, step 7 of 9: Dispatch proof checked against the buyer&#x27;s claim"><circle class="hit" cx="821.0" cy="70" r="22"/><circle class="dot" cx="821.0" cy="70" r="7"/><circle class="ring" cx="821.0" cy="70" r="13"/></g><g class="mark ok d7" tabindex="0" role="button" data-i="7" data-lane="o" data-label="Policy decision: fight with evidence" data-why="Stage INQUIRY. The policy chose evidence, not an offer." data-time="3 Nov 2026 10:12:57 UTC" data-ok="recorded as success" data-sig="9c03d0e3df3b" data-prev="46f58e268e32" aria-label="Case o, step 8 of 9: Policy decision: fight with evidence"><circle class="hit" cx="881.1" cy="54" r="22"/><circle class="dot" cx="881.1" cy="54" r="7"/><circle class="ring" cx="881.1" cy="54" r="13"/></g><g class="mark ok d8" tabindex="0" role="button" data-i="8" data-lane="o" data-label="PayPal record read back: UNDER_REVIEW" data-why="Dispatch evidence seen on PayPal&#x27;s record. Try 3, same request id, was accepted." data-time="3 Nov 2026 10:13:03 UTC" data-ok="recorded as success" data-sig="cd905a14391d" data-prev="e425cfa34b5a" aria-label="Case o, step 9 of 9: PayPal record read back: UNDER_REVIEW"><circle class="hit" cx="950.0" cy="70" r="22"/><circle class="dot" cx="950.0" cy="70" r="7"/><circle class="ring" cx="950.0" cy="70" r="13"/></g></g><g class="lane" data-lane="n" data-std="0.00" data-hv="" data-note="Fee avoided USD 0.00: PayPal charges no Standard fee on claims below USD 30.00 and the case never became a claim." data-title="Case n PP-R-OBG-10196144"><text class="lane-t" x="0" y="144">Case n</text><text class="lane-s" x="0" y="162">PP-R-OBG-10196144</text><line class="lane-l" x1="140" y1="150" x2="970" y2="150"/><path class="lane-a" d="M970 150 l-9 -6 m9 6 l-9 6"/><g class="mark ok d0" tabindex="0" role="button" data-i="0" data-lane="n" data-label="Policy decision: settle by offer of USD 2.50" data-why="Stage INQUIRY. Offer is inside the USD 5.00 limit and below the USD 3.00 approval line." data-time="3 Nov 2026 11:04:21 UTC" data-ok="recorded as success" data-sig="ad48c4d8c528" data-prev="none, first " aria-label="Case n, step 1 of 5: Policy decision: settle by offer of USD 2.50"><circle class="hit" cx="150.0" cy="150" r="22"/><circle class="dot" cx="150.0" cy="150" r="7"/><circle class="ring" cx="150.0" cy="150" r="13"/></g><g class="mark ok d1" tabindex="0" role="button" data-i="1" data-lane="n" data-label="Policy decision: settle by offer of USD 2.50" data-why="Stage INQUIRY. Offer is inside the USD 5.00 limit and below the USD 3.00 approval line." data-time="3 Nov 2026 11:11:48 UTC" data-ok="recorded as success" data-sig="ccdc1af48cea" data-prev="7a0e3d9bd676" aria-label="Case n, step 2 of 5: Policy decision: settle by offer of USD 2.50"><circle class="hit" cx="513.6" cy="134" r="22"/><circle class="dot" cx="513.6" cy="134" r="7"/><circle class="ring" cx="513.6" cy="134" r="13"/></g><g class="mark ok d2" tabindex="0" role="button" data-i="2" data-lane="n" data-label="Offer USD 2.50 sent alone" data-why="Sent as one call. PayPal had refused a message plus offer in the first try." data-time="3 Nov 2026 11:11:52 UTC" data-ok="recorded as success" data-sig="f2e8845b5eb4" data-prev="30f0a49a4b61" aria-label="Case n, step 3 of 5: Offer USD 2.50 sent alone"><circle class="hit" cx="635.8" cy="150" r="22"/><circle class="dot" cx="635.8" cy="150" r="7"/><circle class="ring" cx="635.8" cy="150" r="13"/></g><g class="mark bad d3" tabindex="0" role="button" data-i="3" data-lane="n" data-label="PayPal reads UNDER_REVIEW: waiting for the buyer" data-why="Not settled yet. The buyer accepts in the Resolution Center." data-time="3 Nov 2026 11:11:54 UTC" data-ok="recorded as not done" data-sig="99a4aa95677c" data-prev="56402226f143" aria-label="Case n, step 4 of 5: PayPal reads UNDER_REVIEW: waiting for the buyer"><circle class="hit" cx="756.6" cy="134" r="22"/><circle class="dot" cx="756.6" cy="134" r="7"/><circle class="ring" cx="756.6" cy="134" r="13"/></g><g class="mark ok d4" tabindex="0" role="button" data-i="4" data-lane="n" data-label="PayPal reads RESOLVED_BUYER_FAVOUR" data-why="RESOLVED at the INQUIRY stage, never a claim. Refund 0TB11858A85953644, USD 2.50. No fee." data-time="3 Nov 2026 11:14:08 UTC" data-ok="recorded as success" data-sig="d08d3946dffb" data-prev="3bbc2ccc51ea" aria-label="Case n, step 5 of 5: PayPal reads RESOLVED_BUYER_FAVOUR"><circle class="hit" cx="950.0" cy="150" r="22"/><circle class="dot" cx="950.0" cy="150" r="7"/><circle class="ring" cx="950.0" cy="150" r="13"/></g></g><g class="lane" data-lane="m" data-std="" data-hv="" data-note="Refunds, not disputes, so no dispute fee applies." data-title="Case m Three refunds"><text class="lane-t" x="0" y="224">Case m</text><text class="lane-s" x="0" y="242">Three refunds</text><line class="lane-l" x1="140" y1="230" x2="970" y2="230"/><path class="lane-a" d="M970 230 l-9 -6 m9 6 l-9 6"/><rect class="cut" x="360.3" y="196" width="291.6" height="68" rx="4"/><text class="cut-t" x="506.0" y="190" text-anchor="middle">network cut: nothing sent</text><g class="mark ok d0" tabindex="0" role="button" data-i="0" data-lane="m" data-label="Agent proposes a refund (m1)" data-why="Scripted rules, not a model. The policy decides, not the proposal." data-time="31 Oct 2026 17:06:54 UTC" data-ok="recorded as success" data-sig="58e8318ce89a" data-prev="none, first " aria-label="Case m, step 1 of 12: Agent proposes a refund (m1)"><circle class="hit" cx="150.0" cy="230" r="22"/><circle class="dot" cx="150.0" cy="230" r="7"/><circle class="ring" cx="150.0" cy="230" r="13"/></g><g class="mark ok d1" tabindex="0" role="button" data-i="1" data-lane="m" data-label="Refund 6PX35920F4587564U VERIFIED, USD 1.00" data-why="Read back from PayPal&#x27;s own record." data-time="31 Oct 2026 17:06:59 UTC" data-ok="recorded as success" data-sig="5f95a3914cd8" data-prev="51c66d19ebc6" aria-label="Case m, step 2 of 12: Refund 6PX35920F4587564U VERIFIED, USD 1.00"><circle class="hit" cx="239.2" cy="214" r="22"/><circle class="dot" cx="239.2" cy="214" r="7"/><circle class="ring" cx="239.2" cy="214" r="13"/></g><g class="mark ok d2" tabindex="0" role="button" data-i="2" data-lane="m" data-label="Agent proposes a refund (m2)" data-why="Scripted rules, not a model. The policy decides, not the proposal." data-time="31 Oct 2026 17:07:04 UTC" data-ok="recorded as success" data-sig="bb3322a0e1e9" data-prev="b143b0298068" aria-label="Case m, step 3 of 12: Agent proposes a refund (m2)"><circle class="hit" cx="325.6" cy="230" r="22"/><circle class="dot" cx="325.6" cy="230" r="7"/><circle class="ring" cx="325.6" cy="230" r="13"/></g><g class="mark bad d3" tabindex="0" role="button" data-i="3" data-lane="m" data-label="Held while offline: refund m2" data-why="The gateway is cut. Nothing is sent. The request is kept." data-time="31 Oct 2026 17:07:04 UTC" data-ok="recorded as not done" data-sig="af42d399ddd7" data-prev="3667f748a9fb" aria-label="Case m, step 4 of 12: Held while offline: refund m2"><circle class="hit" cx="370.3" cy="214" r="22"/><circle class="dot" cx="370.3" cy="214" r="7"/><circle class="ring" cx="370.3" cy="214" r="13"/></g><g class="mark ok d4" tabindex="0" role="button" data-i="4" data-lane="m" data-label="Agent proposes a refund (m3)" data-why="Scripted rules, not a model. The policy decides, not the proposal." data-time="31 Oct 2026 17:07:04 UTC" data-ok="recorded as success" data-sig="0c0d4a301744" data-prev="a43a54edc521" aria-label="Case m, step 5 of 12: Agent proposes a refund (m3)"><circle class="hit" cx="414.8" cy="230" r="22"/><circle class="dot" cx="414.8" cy="230" r="7"/><circle class="ring" cx="414.8" cy="230" r="13"/></g><g class="mark bad d5" tabindex="0" role="button" data-i="5" data-lane="m" data-label="Held while offline: refund m3" data-why="The gateway is cut. Nothing is sent. The request is kept." data-time="31 Oct 2026 17:07:04 UTC" data-ok="recorded as not done" data-sig="2996776a3023" data-prev="4616a9b2080a" aria-label="Case m, step 6 of 12: Held while offline: refund m3"><circle class="hit" cx="459.5" cy="214" r="22"/><circle class="dot" cx="459.5" cy="214" r="7"/><circle class="ring" cx="459.5" cy="214" r="13"/></g><g class="mark ok d6" tabindex="0" role="button" data-i="6" data-lane="m" data-label="Reconciled with PayPal: refund m2" data-why="PayPal&#x27;s capture was read first (PARTIALLY_REFUNDED), then the refund was sent." data-time="31 Oct 2026 17:07:21 UTC" data-ok="recorded as success" data-sig="77cab9d2e21b" data-prev="65d10bc46d35" aria-label="Case m, step 7 of 12: Reconciled with PayPal: refund m2"><circle class="hit" cx="641.8" cy="230" r="22"/><circle class="dot" cx="641.8" cy="230" r="7"/><circle class="ring" cx="641.8" cy="230" r="13"/></g><g class="mark ok d7" tabindex="0" role="button" data-i="7" data-lane="m" data-label="Agent proposes a refund (m2)" data-why="Scripted rules, not a model. The policy decides, not the proposal." data-time="31 Oct 2026 17:07:21 UTC" data-ok="recorded as success" data-sig="7994b8e8bf7c" data-prev="4e035461cec1" aria-label="Case m, step 8 of 12: Agent proposes a refund (m2)"><circle class="hit" cx="686.0" cy="214" r="22"/><circle class="dot" cx="686.0" cy="214" r="7"/><circle class="ring" cx="686.0" cy="214" r="13"/></g><g class="mark ok d8" tabindex="0" role="button" data-i="8" data-lane="m" data-label="Refund 76C086475Y724052F VERIFIED, USD 1.00" data-why="Read back from PayPal&#x27;s own record." data-time="31 Oct 2026 17:07:26 UTC" data-ok="recorded as success" data-sig="7f06912485f7" data-prev="9b8c62e8ca56" aria-label="Case m, step 9 of 12: Refund 76C086475Y724052F VERIFIED, USD 1.00"><circle class="hit" cx="771.8" cy="230" r="22"/><circle class="dot" cx="771.8" cy="230" r="7"/><circle class="ring" cx="771.8" cy="230" r="13"/></g><g class="mark ok d9" tabindex="0" role="button" data-i="9" data-lane="m" data-label="Reconciled with PayPal: refund m3" data-why="PayPal&#x27;s capture was read first (PARTIALLY_REFUNDED), then the refund was sent." data-time="31 Oct 2026 17:07:27 UTC" data-ok="recorded as success" data-sig="29cf92e986dd" data-prev="51bda4d506bc" aria-label="Case m, step 10 of 12: Reconciled with PayPal: refund m3"><circle class="hit" cx="824.5" cy="214" r="22"/><circle class="dot" cx="824.5" cy="214" r="7"/><circle class="ring" cx="824.5" cy="214" r="13"/></g><g class="mark ok d10" tabindex="0" role="button" data-i="10" data-lane="m" data-label="Agent proposes a refund (m3)" data-why="Scripted rules, not a model. The policy decides, not the proposal." data-time="31 Oct 2026 17:07:27 UTC" data-ok="recorded as success" data-sig="d5dd2a965ac2" data-prev="1680d307266a" aria-label="Case m, step 11 of 12: Agent proposes a refund (m3)"><circle class="hit" cx="868.7" cy="230" r="22"/><circle class="dot" cx="868.7" cy="230" r="7"/><circle class="ring" cx="868.7" cy="230" r="13"/></g><g class="mark ok d11" tabindex="0" role="button" data-i="11" data-lane="m" data-label="Refund 9C434129FA2384059 VERIFIED, USD 1.00" data-why="Read back from PayPal&#x27;s own record." data-time="31 Oct 2026 17:07:31 UTC" data-ok="recorded as success" data-sig="0593ced9dd42" data-prev="bd724b3f31c7" aria-label="Case m, step 12 of 12: Refund 9C434129FA2384059 VERIFIED, USD 1.00"><circle class="hit" cx="950.0" cy="214" r="22"/><circle class="dot" cx="950.0" cy="214" r="7"/><circle class="ring" cx="950.0" cy="214" r="13"/></g></g><g class="lane lane-plain" data-lane="i" data-std="0.00" data-hv="30.00" data-note="Claim amount not recorded. Item not received is a counted reason. The case stayed under review and no fee was charged in the sandbox." data-title="Case i PP-R-SLI-10195419"><text class="lane-t" x="0" y="304">Case i</text><text class="lane-s" x="0" y="322">PP-R-SLI-10195419</text><line class="lane-l" x1="140" y1="310" x2="970" y2="310"/><path class="lane-a" d="M970 310 l-9 -6 m9 6 l-9 6"/><g class="mark ok d0" tabindex="0" role="button" data-i="0" data-lane="i" data-label="Tracking sent as supporting info, read back VERIFIED" data-why="PayPal had moved the case to UNDER_REVIEW and offered only supporting info. PayPal record shows the note SUBMITTED_BY_SELLER. From PayPal, not a signed log." data-time="31 Oct 2026 10:31:38 UTC" data-ok="read back from PayPal" data-sig="no signed log" data-prev="no signed log" aria-label="Case i, step 1 of 1: tracking sent, read back VERIFIED"><circle class="hit" cx="560" cy="310" r="22"/><circle class="dot" cx="560" cy="310" r="7"/><circle class="ring" cx="560" cy="310" r="13"/></g></g><text class="axis" x="150" y="342">opened</text><text class="axis" x="970" y="342" text-anchor="end">resolved</text></svg></div>
+      <div class="detail" id="detail" aria-live="polite">
+        <p class="d-meta" id="d-meta">Select a mark, or press an arrow key in the river.</p>
+        <p class="d-label" id="d-label"></p>
+        <p class="d-why" id="d-why"></p>
+        <p class="d-hash"><span>Signature</span> <code id="d-sig"></code> <span>Previous line</span> <code id="d-prev"></code></p>
+      </div>
+      <details class="steps">
+        <summary>All receipt lines as a table</summary>
+        <div class="scroll-x"><table>
+          <thead><tr><th scope="col">Case</th><th scope="col">Step</th><th scope="col">Time</th><th scope="col">What happened</th><th scope="col">Result</th><th scope="col">Signature starts</th></tr></thead>
+          <tbody>
+<tr><td>Case o</td><td class="num-c">1</td><td>3 Nov 2026 10:09:29 UTC</td><td>Parcel photo counted and sealed: 3 of 3 notebooks</td><td>done</td><td class="id">ee8b207cfa77</td></tr>
+<tr><td>Case o</td><td class="num-c">2</td><td>3 Nov 2026 10:09:49 UTC</td><td>Dispatch proof checked against the buyer&#x27;s claim</td><td>done</td><td class="id">422f9217b338</td></tr>
+<tr><td>Case o</td><td class="num-c">3</td><td>3 Nov 2026 10:09:49 UTC</td><td>Policy decision: fight with evidence</td><td>done</td><td class="id">b7b222f7b117</td></tr>
+<tr><td>Case o</td><td class="num-c">4</td><td>3 Nov 2026 10:09:53 UTC</td><td>PayPal refused the evidence</td><td>not done</td><td class="id">6fbba6d2e491</td></tr>
+<tr><td>Case o</td><td class="num-c">5</td><td>3 Nov 2026 10:12:15 UTC</td><td>Dispatch proof checked against the buyer&#x27;s claim</td><td>done</td><td class="id">4c352be20d3a</td></tr>
+<tr><td>Case o</td><td class="num-c">6</td><td>3 Nov 2026 10:12:15 UTC</td><td>Policy decision: fight with evidence</td><td>done</td><td class="id">df8e875efeb8</td></tr>
+<tr><td>Case o</td><td class="num-c">7</td><td>3 Nov 2026 10:12:57 UTC</td><td>Dispatch proof checked against the buyer&#x27;s claim</td><td>done</td><td class="id">51cc03c535aa</td></tr>
+<tr><td>Case o</td><td class="num-c">8</td><td>3 Nov 2026 10:12:57 UTC</td><td>Policy decision: fight with evidence</td><td>done</td><td class="id">9c03d0e3df3b</td></tr>
+<tr><td>Case o</td><td class="num-c">9</td><td>3 Nov 2026 10:13:03 UTC</td><td>PayPal record read back: UNDER_REVIEW</td><td>done</td><td class="id">cd905a14391d</td></tr>
+<tr><td>Case n</td><td class="num-c">1</td><td>3 Nov 2026 11:04:21 UTC</td><td>Policy decision: settle by offer of USD 2.50</td><td>done</td><td class="id">ad48c4d8c528</td></tr>
+<tr><td>Case n</td><td class="num-c">2</td><td>3 Nov 2026 11:11:48 UTC</td><td>Policy decision: settle by offer of USD 2.50</td><td>done</td><td class="id">ccdc1af48cea</td></tr>
+<tr><td>Case n</td><td class="num-c">3</td><td>3 Nov 2026 11:11:52 UTC</td><td>Offer USD 2.50 sent alone</td><td>done</td><td class="id">f2e8845b5eb4</td></tr>
+<tr><td>Case n</td><td class="num-c">4</td><td>3 Nov 2026 11:11:54 UTC</td><td>PayPal reads UNDER_REVIEW: waiting for the buyer</td><td>not done</td><td class="id">99a4aa95677c</td></tr>
+<tr><td>Case n</td><td class="num-c">5</td><td>3 Nov 2026 11:14:08 UTC</td><td>PayPal reads RESOLVED_BUYER_FAVOUR</td><td>done</td><td class="id">d08d3946dffb</td></tr>
+<tr><td>Case m</td><td class="num-c">1</td><td>31 Oct 2026 17:06:54 UTC</td><td>Agent proposes a refund (m1)</td><td>done</td><td class="id">58e8318ce89a</td></tr>
+<tr><td>Case m</td><td class="num-c">2</td><td>31 Oct 2026 17:06:59 UTC</td><td>Refund 6PX35920F4587564U VERIFIED, USD 1.00</td><td>done</td><td class="id">5f95a3914cd8</td></tr>
+<tr><td>Case m</td><td class="num-c">3</td><td>31 Oct 2026 17:07:04 UTC</td><td>Agent proposes a refund (m2)</td><td>done</td><td class="id">bb3322a0e1e9</td></tr>
+<tr><td>Case m</td><td class="num-c">4</td><td>31 Oct 2026 17:07:04 UTC</td><td>Held while offline: refund m2</td><td>not done</td><td class="id">af42d399ddd7</td></tr>
+<tr><td>Case m</td><td class="num-c">5</td><td>31 Oct 2026 17:07:04 UTC</td><td>Agent proposes a refund (m3)</td><td>done</td><td class="id">0c0d4a301744</td></tr>
+<tr><td>Case m</td><td class="num-c">6</td><td>31 Oct 2026 17:07:04 UTC</td><td>Held while offline: refund m3</td><td>not done</td><td class="id">2996776a3023</td></tr>
+<tr><td>Case m</td><td class="num-c">7</td><td>31 Oct 2026 17:07:21 UTC</td><td>Reconciled with PayPal: refund m2</td><td>done</td><td class="id">77cab9d2e21b</td></tr>
+<tr><td>Case m</td><td class="num-c">8</td><td>31 Oct 2026 17:07:21 UTC</td><td>Agent proposes a refund (m2)</td><td>done</td><td class="id">7994b8e8bf7c</td></tr>
+<tr><td>Case m</td><td class="num-c">9</td><td>31 Oct 2026 17:07:26 UTC</td><td>Refund 76C086475Y724052F VERIFIED, USD 1.00</td><td>done</td><td class="id">7f06912485f7</td></tr>
+<tr><td>Case m</td><td class="num-c">10</td><td>31 Oct 2026 17:07:27 UTC</td><td>Reconciled with PayPal: refund m3</td><td>done</td><td class="id">29cf92e986dd</td></tr>
+<tr><td>Case m</td><td class="num-c">11</td><td>31 Oct 2026 17:07:27 UTC</td><td>Agent proposes a refund (m3)</td><td>done</td><td class="id">d5dd2a965ac2</td></tr>
+<tr><td>Case m</td><td class="num-c">12</td><td>31 Oct 2026 17:07:31 UTC</td><td>Refund 9C434129FA2384059 VERIFIED, USD 1.00</td><td>done</td><td class="id">0593ced9dd42</td></tr>
+          </tbody></table></div>
+      </details>
+    </div>
+  </section>
+
+  <section id="disputes" class="wrap sec" aria-labelledby="h-disputes">
+    <p class="eyebrow">Disputes, recorded</p>
+    <h2 id="h-disputes">Dispute ledger</h2>
+    <p class="lede">Real sandbox rows ran against <code>api-m.sandbox.paypal.com</code>. Rehearsal rows ran on rehearsal records and say so. A dash means the run did not record it.</p>
+    <div class="tools" role="group" aria-label="Filter the ledger">
+      <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="chip" data-filter="sandbox" aria-pressed="false">Real sandbox</button>
+      <button type="button" class="chip" data-filter="rehearsal" aria-pressed="false">Rehearsal</button>
+      <span class="note count" id="ledger-count" aria-live="polite"></span>
+    </div>
+    <div class="ledger-wrap">
+    <table class="ledger" id="ledger">
+      <caption class="sr">Dispute ledger. Use the column buttons to sort.</caption>
+      <thead><tr>
+        <th scope="col"><button type="button" class="sort" data-key="case">Case</button></th>
+        <th scope="col">Id</th><th scope="col">Reason</th>
+        <th scope="col"><button type="button" class="sort" data-key="amount">Amount (USD)</button></th>
+        <th scope="col">Stage</th><th scope="col">Policy decision</th><th scope="col">Outcome</th><th scope="col">Fee</th><th scope="col">Dispatch proof</th>
+      </tr></thead>
+      <tbody>
+        <tr data-source="sandbox" data-case="c" data-amount="1.50"><td data-label="Case"><b>c</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">6SN41486G5579815G</td><td data-label="Reason">Refund under the limit</td><td data-label="Amount (USD)" class="tnum">1.50</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Refund inside the USD 5.00 limit, executed</td><td data-label="Outcome">Refund VERIFIED at PayPal</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
+        <tr data-source="sandbox" data-case="d" data-amount="3.50"><td data-label="Case"><b>d</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">2NB27940EC188891M</td><td data-label="Reason">Refund above the approval line</td><td data-label="Amount (USD)" class="tnum">3.50</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Above USD 2.00, held for approval</td><td data-label="Outcome">Approved, refund VERIFIED at PayPal</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
+        <tr data-source="sandbox" data-case="e" data-amount="1.50"><td data-label="Case"><b>e</b> <span class="tag">real sandbox, fault injected</span></td><td data-label="Id" class="id">&ndash;</td><td data-label="Reason">Lost response, held as UNKNOWN</td><td data-label="Amount (USD)" class="tnum">1.50</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Read PayPal before any retry; second attempt sent nothing</td><td data-label="Outcome">One refund at PayPal, VERIFIED by reconciliation</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
+        <tr data-source="sandbox" data-case="i" data-amount=""><td data-label="Case"><b>i</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">PP-R-SLI-10195419</td><td data-label="Reason">Item not received</td><td data-label="Amount (USD)" class="tnum">&ndash;</td><td data-label="Stage">UNDER_REVIEW</td><td data-label="Policy decision">Send the tracking as the supporting info PayPal offered</td><td data-label="Outcome">Tracking note SUBMITTED_BY_SELLER, VERIFIED</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
+        <tr data-source="sandbox" data-case="m" data-amount="3.00"><td data-label="Case"><b>m</b> <span class="tag">real sandbox, network cut</span></td><td data-label="Id" class="id">6PX35920F4587564U<br>76C086475Y724052F<br>9C434129FA2384059</td><td data-label="Reason">Three refunds across a network cut</td><td data-label="Amount (USD)" class="tnum">1.00 each</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">First sent; two held while offline, sent after restore</td><td data-label="Outcome">All three VERIFIED at PayPal</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
+        <tr data-source="sandbox" data-case="n" data-amount="2.50"><td data-label="Case"><b>n</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">PP-R-OBG-10196144</td><td data-label="Reason">&ndash;</td><td data-label="Amount (USD)" class="tnum">2.50</td><td data-label="Stage">INQUIRY</td><td data-label="Policy decision">Settle by offer of USD 2.50</td><td data-label="Outcome">RESOLVED_BUYER_FAVOUR, refund 0TB11858A85953644 paid</td><td data-label="Fee">None, never a claim</td><td data-label="Dispatch proof">&ndash;</td></tr>
+        <tr data-source="sandbox" data-case="o" data-amount="5.00"><td data-label="Case"><b>o</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">PP-R-UKF-10195772</td><td data-label="Reason">Item not received, buyer says 2 of 3 arrived</td><td data-label="Amount (USD)" class="tnum">5.00</td><td data-label="Stage">INQUIRY</td><td data-label="Policy decision">Fight with evidence</td><td data-label="Outcome">PROOF_OF_FULFILLMENT on PayPal's record; WAITING_FOR_BUYER_RESPONSE</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof"><a href="#dispatch">3 of 3 counted, sealed</a></td></tr>
+        <tr data-source="rehearsal" data-case="k" data-amount=""><td data-label="Case"><b>k</b> <span class="tag amber">rehearsal</span></td><td data-label="Id" class="id">&ndash;</td><td data-label="Reason">Near deadline escalation</td><td data-label="Amount (USD)" class="tnum">&ndash;</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Escalate to the approval inbox</td><td data-label="Outcome">Escalated with 4 h 59 min left</td><td data-label="Fee">&ndash;</td><td data-label="Dispatch proof">&ndash;</td></tr>
+        <tr data-source="rehearsal" data-case="l" data-amount=""><td data-label="Case"><b>l</b> <span class="tag amber">rehearsal</span></td><td data-label="Id" class="id">10 disputes</td><td data-label="Reason">4 not received, 4 not as described, 2 unauthorised</td><td data-label="Amount (USD)" class="tnum">&ndash;</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Evidence, refund or escalate by reason</td><td data-label="Outcome">4 evidenced, 4 refunded, 2 escalated</td><td data-label="Fee">&ndash;</td><td data-label="Dispatch proof">&ndash;</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note">Sources: <code>docs/RESULTS.md</code>, <code>docs/SANDBOX_RUN.md</code> and the signed logs in Receipts. Cases a, b, f, g, h and j are not disputes and are not listed. In the run files k and l were SKIPPED on the real sandbox because no answerable dispute was open.</p>
+  </section>
+
+  <section id="refunds" class="wrap sec" aria-labelledby="h-refunds">
+    <p class="eyebrow">Refunds, recorded</p>
+    <h2 id="h-refunds">Refunds PayPal confirmed</h2>
+    <p class="lede">Real sandbox money movements, sandbox test money only. A refund counts as done only when PayPal's own record says so.</p>
+    <div class="scroll-x">
+    <table class="plain-table">
+      <caption class="sr">Refunds</caption>
+      <thead><tr><th scope="col">Where</th><th scope="col">Refund id</th><th scope="col">USD</th><th scope="col">PayPal record</th></tr></thead>
+      <tbody>
+        <tr class="lead-row"><td>Case n, settlement paid after the offer</td><td class="id">0TB11858A85953644</td><td class="tnum">2.50</td><td>Confirmed, case RESOLVED</td></tr>
+        <tr><td>Case m, before the cut</td><td class="id">6PX35920F4587564U</td><td class="tnum">1.00</td><td>VERIFIED</td></tr>
+        <tr><td>Case m, held offline, then resumed</td><td class="id">76C086475Y724052F</td><td class="tnum">1.00</td><td>VERIFIED</td></tr>
+        <tr><td>Case m, held offline, then resumed</td><td class="id">9C434129FA2384059</td><td class="tnum">1.00</td><td>VERIFIED</td></tr>
+        <tr><td>Evening run, case c</td><td class="id">6SN41486G5579815G</td><td class="tnum">1.50</td><td>VERIFIED</td></tr>
+        <tr><td>Evening run, case d, after approval</td><td class="id">2NB27940EC188891M</td><td class="tnum">3.50</td><td>VERIFIED</td></tr>
+        <tr><td>Evening run, case e, injected fault</td><td class="id">not written to the run file</td><td class="tnum">1.50</td><td>VERIFIED by reconciliation</td></tr>
+        <tr><td>Case runner, case c</td><td class="id">34A6137827870312B</td><td class="tnum">1.50</td><td>VERIFIED</td></tr>
+        <tr><td>Case runner, case d, after approval</td><td class="id">0X757409L5274794C</td><td class="tnum">3.50</td><td>VERIFIED</td></tr>
+        <tr><td>Case runner, case e, injected fault</td><td class="id">not written to the run file</td><td class="tnum">1.50</td><td>VERIFIED by reconciliation</td></tr>
+        <tr><td>Four case check, case a</td><td class="id">79R527888E694933F</td><td class="tnum">1.00</td><td>COMPLETED</td></tr>
+        <tr><td>Four case check, case c, after an injected fault</td><td class="id">7A545589JM079780C</td><td class="tnum">1.00</td><td>COMPLETED</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note">The refunds other than case n drew on one sandbox capture, <code>1PH921107B839311S</code>, USD 20.00. Amounts for c, d and e are the ones set in <code>scripts/cases.py</code>. Source: <code>docs/RESULTS.md</code>.</p>
+  </section>
+
+  <section id="dispatch" class="wrap sec dispatch" aria-labelledby="h-dispatch">
+    <div class="d-copy">
+      <p class="eyebrow">Dispatch proof, case o, real sandbox</p>
+      <h2 id="h-dispatch">3 of 3 counted on this machine</h2>
+      <p class="lede">The sandbox buyer wrote &ldquo;Only 2 of 3 notebooks arrived.&rdquo; Before the case, the parcel photo was counted offline and sealed. The policy found strong proof and sent it as evidence.</p>
+      <dl class="facts">
+        <dt>Dispute</dt><dd class="id">PP-R-UKF-10195772</dd>
+        <dt>Order</dt><dd class="id">7RV99265V1496281G</dd>
+        <dt>Count</dt><dd>3 of 3 <code>notebook-a5</code> (SAM 3, prompt &ldquo;book&rdquo;, scores 0.70, 0.62, 0.59)</dd>
+        <dt>Image hash</dt><dd class="id wrap-any">893632548b14c5d54c10c4e1b788cee466dfd06900edd21135dd3b35444311f8</dd>
+        <dt>Sealed</dt><dd>Yes, 3 Nov 2026 10:09:29 UTC</dd>
+        <dt>Receipt</dt><dd class="id">8b92abb9e53a6244</dd>
+        <dt>Signature starts</dt><dd class="id">ee8b207cfa77</dd>
+        <dt>Counted by</dt><dd>facebook/sam3, local, CPU, 55.7 s to count</dd>
+        <dt>PayPal record</dt><dd>PROOF_OF_FULFILLMENT, SUBMITTED_BY_SELLER, 10:13 UTC; status WAITING_FOR_BUYER_RESPONSE</dd>
+      </dl>
+      <p class="note">Try 1 was refused by PayPal, try 2 lost its response and was held as UNKNOWN, try 3 with the same request id was accepted. All of it is in the signed log, on the river above. Weak proof, such as a photo showing 2 of 3, sends nothing and the policy settles by offer (rehearsal).</p>
+    </div>
+    <figure class="photos">
+      <img class="p1" src="dispatch/test-photo.jpg" width="1600" height="1200" alt="Three stacked paper notebooks on a wooden desk, the packing photo">
+      <img class="p2" src="dispatch/sam-count.jpg" width="1600" height="1200" alt="The same photo with three red boxes around the counted notebooks">
+      <figcaption class="note">The photo, and the count laid over it. A CC0 test photo by Jeff Sheldon, not a real parcel. Source: <code>fixtures/dispatch/photos/CREDITS.md</code>.</figcaption>
+    </figure>
+  </section>
+
+  <section id="approvals" class="wrap sec" aria-labelledby="h-approvals">
+    <p class="eyebrow">Approvals, recorded</p>
+    <h2 id="h-approvals">Nothing waiting. Two on record.</h2>
+    <ol class="rules">
+      <li><span class="tag amber">Case d, real sandbox</span><h3>Refund USD 3.50</h3><p>Above the USD 2.00 refund approval line. Held, approved, sent. Refund <span class="id">2NB27940EC188891M</span> VERIFIED at PayPal.</p></li>
+      <li><span class="tag amber">Case k, rehearsal</span><h3>Near deadline</h3><p>Escalated to the approval inbox with 4 h 59 min left, on rehearsal records.</p></li>
+      <li><span class="tag">Limits in force</span><h3>Refund, offer, day</h3><p>Refund up to USD 5.00, approval above USD 2.00. Offer up to USD 5.00, approval above USD 3.00. Per customer per day USD 6.00. From the policy file below.</p></li>
+    </ol>
+  </section>
+
+  <section id="receipts" class="wrap sec" aria-labelledby="h-receipts">
+    <p class="eyebrow">Receipts</p>
+    <h2 id="h-receipts">Four signed logs, checked in your browser</h2>
+    <p class="lede">Every line is signed and chained to the line before it. Download a log and check it offline, or read how in the <a href="/developers#verify-receipts-offline">Developers guide to verifying receipts offline</a>. The verifier runs in your browser with WebCrypto and sends nothing.</p>
+    <ul class="logs">
+      <li><h3>Case o: dispatch proof</h3><p>Counted by SAM 3, sent as evidence on a real sandbox dispute. Recorded 3 Nov 2026. 9 lines.</p><p class="id wrap-any">key c0d2cba770398baf2861429583e5b558e06b988c64d8a0b8ede7603f7f8f7f6c</p><a class="btn" href="/receipts/case-o-dispatch.ndjson">Open the raw log</a></li>
+      <li><h3>Case n: settled in conversation</h3><p>Real sandbox dispute, offer sent alone, PayPal reads RESOLVED. Recorded 3 Nov 2026. 5 lines.</p><p class="id wrap-any">key 93980b0de422af30f7bfaaab14c16c06209e71b296119e84d6b02c4c8517e6f9</p><a class="btn" href="/receipts/case-n-settle.ndjson">Open the raw log</a></li>
+      <li><h3>Case m: merchant agents</h3><p>Refunds through the gateway. Recorded 31 Oct 2026. 12 lines.</p><p class="id wrap-any">key 5fec32e4b3ff4300cfda35105e2924f935adc501a9dc486aa26b295e861bb769</p><a class="btn" href="/receipts/case-m-merchant.ndjson">Open the raw log</a></li>
+      <li><h3>Egress gateway</h3><p>Every request that tried to leave, including the one refused with 403. Recorded 31 Oct 2026. 34 lines.</p><p class="id wrap-any">key 6cf664b01eadc58ffac85fde3304ebc3bc1fe480c110f95d10818d4c6db512ed</p><a class="btn" href="/receipts/egress-gateway.ndjson">Open the raw log</a></li>
+    </ul>
+    <p class="note">Source: <code>receipts/manifest.json</code>. Each log verified in Python before it was published.</p>
+  </section>
+
+  <section id="settings" class="wrap sec" aria-labelledby="h-settings">
+    <p class="eyebrow">Settings, read only</p>
+    <h2 id="h-settings">Policy in effect</h2>
+    <p class="lede">The file <code>policy/merchant.yaml</code>. The server reads it, a model never does, and its hash is written into every receipt. A prompt, a buyer message or a model reply cannot change it. This page cannot edit it.</p>
+    <pre class="codeblock" tabindex="0">version: 1
+operations:
+  refund:
+    level: Execute within Limits
+    max_amount_minor: 500
+    approval_above_minor: 200
+    currency: USD
+    retry: never
+  accept_claim:
+    level: Execute within Limits
+    max_amount_minor: 500
+    approval_above_minor: 200
+    currency: USD
+    retry: never
+  provide_evidence:
+    level: Execute within Limits
+    retry: safe
+  make_offer:
+    level: Execute within Limits
+    max_amount_minor: 500
+    approval_above_minor: 300
+    currency: USD
+    retry: never
+  send_message:
+    level: Execute within Limits
+    retry: safe
+  propose_resolution:
+    level: Draft
+    retry: never
+caps:
+  per_customer_per_day_minor: 600
+egress:
+  allow_hosts:
+    - api-m.sandbox.paypal.com</pre>
+    <p class="note">Amounts are in cents. Comments in the file are left out here. The receipts of cases n and o carry policy hash <span class="id wrap-any">396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271</span>.</p>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>Clearwake. PayPal sandbox only, no real money. The public site runs no agents.</span>
+    <a href="https://github.com/Sriharsan/clearwake">Repository</a>
+    <a href="/receipts/manifest.json">Receipts</a>
+    <a href="https://github.com/Sriharsan/clearwake/blob/main/LICENSE">Licences</a>
+  </div>
+</footer>
+</body>
+</html>

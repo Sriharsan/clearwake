@@ -52,7 +52,7 @@ class ConsoleHTTPTests(unittest.TestCase):
     def run_case(self, key):
         status, value = self.post("/console/api/case", {"case": key})
         self.assertEqual(status, 200, value)
-        self.assertEqual(value["label"], "rehearsal, invented records")
+        self.assertEqual(value["label"], "rehearsal data")
         return value["entries"]
 
     def test_mutations_need_the_console_csrf_token_and_same_origin(self):
@@ -177,6 +177,16 @@ class ConsoleHTTPTests(unittest.TestCase):
         self.assertEqual((status, headers["Content-Type"]), (200, "text/javascript; charset=utf-8"))
         self.assertIn(b"styleNonce", grid); self.assertNotIn("nonce-", headers["Content-Security-Policy"])
         self.assertNotIn("nonce-", self.request("GET", "/console.js")[1]["Content-Security-Policy"])
+
+    def test_fonts_are_served_from_this_origin_and_the_policy_allows_them(self):
+        status, headers, font = self.request("GET", "/fonts/Figtree-var.woff2")
+        self.assertEqual((status, headers["Content-Type"]), (200, "font/woff2"))
+        self.assertEqual(font[:4], b"wOF2")
+        self.assertIn("font-src 'self'", headers["Content-Security-Policy"])
+        self.assertIn("font-src 'self' data:", self.request("GET", "/console")[1]["Content-Security-Policy"])  # AG Grid's icon font
+        self.assertNotIn("data:", headers["Content-Security-Policy"])
+        for gone in ("/fonts/Inter-400.woff2", "/fonts/../console.html", "/fonts/"):
+            self.assertEqual(self.request("GET", gone)[0], 404, gone)
 
     def test_reset_opens_a_new_folder_and_keeps_the_old_one(self):
         self.run_case("c")

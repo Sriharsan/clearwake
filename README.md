@@ -86,7 +86,7 @@ Which model: still photos use **SAM 3** (`facebook/sam3`). Meta's **SAM 3.1** ch
 | Case n, settled in conversation | rehearsal; the buyer's acceptance is simulated | PASS. Real sandbox: PASS on dispute PP-R-OBG-10196144. The policy chose an offer of USD 2.50, PayPal accepted it and paid the settlement (refund 0TB11858A85953644), the case read UNDER_REVIEW first and then RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage, never a claim, no fee. The sandbox buyer opened the dispute in the Resolution Center (this app cannot act for the buyer) |
 | Cases k, l (real PayPal disputes) | real sandbox | SKIPPED: k needs a dispute close to its deadline, l needs ten real disputes |
 | Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox | 4 of 4 PASS. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED |
-| The console at `/console` | rehearsal, invented records | runs locally, AG Grid dispute ledger and fee leak gauge |
+| The console at `/console` | rehearsal data | runs locally, AG Grid dispute ledger and fee leak gauge |
 | Public site, https://clearwake-mu.vercel.app (`site/`) | static on Vercel, recorded sandbox run | verifies the real case m receipts in the browser |
 | Offline tests | fake transports | 109 Python and 12 UI tests pass (1 November) |
 

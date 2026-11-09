@@ -42,7 +42,11 @@ CONSOLE_ASSETS = {
     "/console-lib.js": ("console-lib.js", "text/javascript"),
     # AG Grid Community 35.3.1, MIT, vendored unchanged (docs/THIRD_PARTY_UI.txt). Its styles carry the page's nonce.
     "/vendor/ag-grid-community.min.js": ("vendor/ag-grid-community-35.3.1.min.js", "text/javascript"),
+    "/console-theme.js": ("theme.js", "text/javascript"),
 }
+# Self hosted fonts (SIL OFL 1.1, docs/THIRD_PARTY.md). Only this file is reachable under /fonts/.
+FONT_FILES = ("Figtree-var",)
+CONSOLE_ASSETS.update({f"/fonts/{name}.woff2": (f"fonts/{name}.woff2", "font/woff2") for name in FONT_FILES})
 
 
 def core_script():
@@ -91,6 +95,12 @@ class ClearwakeHandler(Handler):
         # The console page lets in only styles carrying this response's nonce (AG Grid's); everything else stays 'self'.
         if keyword.lower() == "content-security-policy" and self.style_nonce:
             value = value.replace("style-src 'self'", f"style-src 'self' 'nonce-{self.style_nonce}' {AG_GRID_STYLE_HASHES}", 1)
+        # Fonts come from this origin only; the base policy has no font-src, so default-src 'none' would block them.
+        if keyword.lower() == "content-security-policy" and "font-src" not in value:
+            value = value.replace("img-src 'self';", "img-src 'self'; font-src 'self';", 1)
+        # AG Grid 35.3.1 embeds its icon font as a data: URI; only the console page, which loads the grid, allows that.
+        if keyword.lower() == "content-security-policy" and self.style_nonce:
+            value = value.replace("font-src 'self'", "font-src 'self' data:", 1) if "font-src" in value else value
         # Cookies are scoped by host, not port. Keep separate local apps from
         # overwriting each other's sessions while retaining upstream attributes.
         if keyword.lower() == "set-cookie" and value.startswith(COOKIE + "="):
@@ -132,7 +142,7 @@ class ClearwakeHandler(Handler):
             self.local_origin()
             body = read()
             self.send_response(200); self.headers_common()
-            self.send_header("Content-Type", kind + "; charset=utf-8")
+            self.send_header("Content-Type", kind if kind.startswith("font/") else kind + "; charset=utf-8")
             self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
         except Rejected as error:
             self.response(error.status, {"error": str(error)})
@@ -166,7 +176,7 @@ class ClearwakeHandler(Handler):
                 raise Rejected("The console is not configured on this server.", 404)
             if path == "/console/api/session":
                 sid = self.console_sid() or secrets.token_hex(32)
-                return self.console_reply(200, {"csrf": console.csrf_for(sid), "label": "rehearsal, invented records"}, sid)
+                return self.console_reply(200, {"csrf": console.csrf_for(sid), "label": "rehearsal data"}, sid)
             if path == "/console/api/state":
                 return self.console_reply(200, console.state())
             if path == "/console/api/receipts":

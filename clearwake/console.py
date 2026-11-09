@@ -1,6 +1,6 @@
 """Console controller behind /console: the buyer agent, the merchant swarm and both receipt logs.
 
-Rehearsal by default: one RehearsalGateway in a data folder, invented records, zero network calls.
+Rehearsal by default: one RehearsalGateway in a data folder, rehearsal records, zero network calls.
 Each case runs the same steps as scripts/cases.py; this module only keeps the bookkeeping the screens need.
 """
 from concurrent.futures import ThreadPoolExecutor
@@ -30,8 +30,8 @@ from .paypal import GatewayError, LIMIT, NetworkSwitch, RehearsalGateway
 from .swarm import Case, MerchantSwarm, money
 
 # The same owner mandate as scripts/cases.py: USD 102 budget, one store, two categories.
-MANDATE = Mandate("Synthetic shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))
-REHEARSAL = "rehearsal, invented records"
+MANDATE = Mandate("Rehearsal shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))
+REHEARSAL = "rehearsal data"
 INJECTION_LABEL = "injection test: a fixed fake model reply asking for a refund, no model call"
 TRACKERS = [{"number": "SYNTH1Z999AA10123456", "carrier": "UPS", "status": "SHIPPED"}]
 
@@ -353,7 +353,7 @@ class Console:
         return rows
 
     def fee_state(self):
-        """The fee leak gauge on this rehearsal folder's invented records: sales are the captures behind its cases."""
+        """The fee leak gauge on this rehearsal folder's records: sales are the captures behind its cases."""
         sales = {}
         for e in self.entries:
             if e.get("capture"):

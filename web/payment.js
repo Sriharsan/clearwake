@@ -54,7 +54,7 @@
     const key = `${state.room.revision}:${grant.id}:${payment.case.capture}`;
     if (key !== approvalKey) { $('payment-ack').checked = false; approvalKey = key; }
     $('payment-panel').hidden = false;
-    $('payment-mode').textContent = payment.mode === 'rehearsal' ? 'Rehearsal · invented records · no PayPal calls' : 'PayPal sandbox · test money only';
+    $('payment-mode').textContent = payment.mode === 'rehearsal' ? 'Rehearsal data, no PayPal calls' : 'PayPal sandbox · test money only';
     $('payment-mode').className = `payment-mode ${payment.mode === 'rehearsal' ? 'rehearsal' : 'sandbox'}`;
     gauge(payment);
     $('payment-amount').textContent = `${payment.case.currency} ${payment.case.amount}`;

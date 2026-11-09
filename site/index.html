@@ -4,183 +4,334 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clearwake</title>
-<meta name="description" content="Clearwake settles PayPal disputes before they turn into fees. Sandbox only.">
-<link rel="stylesheet" href="style.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="Clearwake settles PayPal disputes before they turn into fees. Shown from recorded runs on the real PayPal sandbox.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="home.css">
+<script src="theme.js"></script>
 <script src="app.js" type="module"></script>
 </head>
 <body>
-<header class="top">
-  <a class="brand" href="#top"><span class="mark" aria-hidden="true">c</span>clearwake</a>
-  <nav aria-label="Sections">
-    <a href="#leak">The fee leak</a><a href="#compare">Side by side</a><a href="#boundary">Boundary</a><a href="#run">Sandbox run</a><a href="#dispatch">Dispatch proof</a><a href="#verify">Verify</a>
-  </nav>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="/">Clearwake</a>
+    <nav aria-label="Pages">
+      <a href="/control-room">Control Room</a>
+      <a href="/developers">Developers</a>
+      <button class="theme" type="button" aria-label="Switch theme">Light</button>
+    </nav>
+  </div>
 </header>
 
 <main id="top">
-  <section class="hero">
-    <p class="pill">PayPal sandbox only. No real money.</p>
-    <h1>Clearwake settles PayPal disputes before they turn into fees.</h1>
-    <p class="lede">Agents running inside the merchant's own network resolve each case with the buyer inside the owner's limits, fight only the cases worth fighting, and never call a refund done until PayPal's own record says so.</p>
-    <div class="cta">
-      <a class="button primary" href="https://github.com/Sriharsan/clearwake">Source on GitHub</a>
-      <a class="button" href="#run-it">Run it on your machine</a>
+  <section class="hero" aria-labelledby="h1">
+    <img class="wave" src="img/hokusai-great-wave.jpg" width="600" height="403" alt="Hokusai's woodblock print The Great Wave: a huge wave with foam like claws curls over three boats, with Mount Fuji small in the distance">
+    <div class="hero-in wrap">
+      <p class="eyebrow">PayPal sandbox, test money</p>
+      <h1 id="h1">Settle PayPal disputes before they turn into fees.</h1>
+      <div class="hero-row">
+        <p class="lede">Agents inside your own network resolve each case with the buyer, inside your limits, and never call a refund done until PayPal's record says so.</p>
+        <div class="cta">
+          <a class="btn primary" href="/control-room">Open the Control Room</a>
+          <a class="btn" href="/developers">Read the developer docs</a>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section id="leak" class="block" aria-labelledby="leak-title">
-    <h2 id="leak-title">Where the money leaks</h2>
-    <p class="sub">PayPal's own rules. Each card links to the page it comes from.</p>
-    <div class="cards">
-      <article class="card">
-        <span class="num">1</span>
-        <h3>Cases that escalate pay a fee</h3>
-        <p>PayPal charges no Standard Dispute Fee when a case is resolved directly between seller and buyer and not escalated to a claim. Sellers who answer late, or only with evidence, let the case escalate.</p>
-        <p class="figure"><span>USD 15.00</span> Standard Dispute Fee, US</p>
-        <p class="src">Rule: <a href="https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350">PayPal Help Center, help350</a> (UK edition; the US edition was not reachable when checked). Fee: <a href="https://www.paypal.com/us/business/paypal-business-fees">PayPal Merchant Fees, US</a>, updated 1 Oct 2026.</p>
-      </article>
-      <article class="card">
-        <span class="num">2</span>
-        <h3>A high dispute rate doubles it</h3>
-        <p>A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays the High Volume Dispute Fee on every dispute.</p>
-        <p class="figure"><span>USD 30.00</span> High Volume Dispute Fee, US</p>
-        <p class="src">Rule: <a href="https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350">help350</a>. Fee: <a href="https://www.paypal.com/us/business/paypal-business-fees">PayPal Merchant Fees, US</a>.</p>
-      </article>
-      <article class="card">
-        <span class="num">3</span>
-        <h3>A refund sent twice, or one that silently failed</h3>
-        <p>Either costs money or a customer. Clearwake gives each refund one stable request id, holds any reply it cannot confirm as UNKNOWN, and only reports a refund once PayPal's refund record matches.</p>
-        <p class="figure"><span>1</span> request per refund, checked against PayPal</p>
-        <p class="src">Shown in the recorded sandbox run below.</p>
-      </article>
+  <section class="wrap lanes-sec" aria-label="Recorded cases">
+    <div class="lanes" role="group" aria-label="Real recorded sandbox cases, sorted into three lanes">
+      <div class="lane teal">
+        <h2 class="lane-title">Settled before escalation</h2>
+        <ul class="marks">
+          <li class="mark c1"><b>Settled in conversation</b><span class="mono">Case n, USD 2.50 offer</span><span class="mono dim">PP-R-OBG-10196144, RESOLVED at INQUIRY</span></li>
+          <li class="mark c2"><b>Refund under the limit</b><span class="mono">Case c, USD 1.50</span><span class="mono dim">6SN41486G5579815G, VERIFIED</span></li>
+        </ul>
+      </div>
+      <div class="lane blue">
+        <h2 class="lane-title">Evidence sent</h2>
+        <ul class="marks">
+          <li class="mark c3"><b>Item not received</b><span class="mono">Case i, tracking</span><span class="mono dim">PP-R-SLI-10195419, read back VERIFIED</span></li>
+          <li class="mark c4"><b>Buyer says 2 of 3 arrived</b><span class="mono">Case o, dispatch proof</span><span class="mono dim">PP-R-UKF-10195772, 3 of 3 counted</span></li>
+        </ul>
+      </div>
+      <div class="lane amber">
+        <h2 class="lane-title">Needs you</h2>
+        <ul class="marks">
+          <li class="mark c5"><b>Refund above the approval line</b><span class="mono">Case d, USD 3.50</span><span class="mono dim">2NB27940EC188891M, after approval</span></li>
+        </ul>
+      </div>
     </div>
-    <p class="note">The Standard fee is also not charged on claims below twice the fee or on unauthorised transactions, so Clearwake counts a fee avoided only when PayPal's rule would otherwise have charged it.</p>
+    <p class="lanes-note">Recorded real sandbox runs, 31 Oct and 3 Nov 2026. Test money, PayPal's own ids.</p>
   </section>
 
-  <section id="compare" class="block" aria-labelledby="compare-title">
-    <h2 id="compare-title">Without Clearwake and with it</h2>
-    <div class="table-wrap">
-      <table>
-        <caption class="sr">Without Clearwake compared with Clearwake</caption>
-        <thead><tr><th scope="col">Moment</th><th scope="col">Without Clearwake</th><th scope="col">With Clearwake</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">A buyer opens a case</th><td>No reply in time; the case escalates and the dispute fee is charged</td><td>Settled in conversation: a message and an offer inside the owner's limit while PayPal still calls it an inquiry</td></tr>
-          <tr><th scope="row">A case worth fighting</th><td>Deadline missed; evidence never sent</td><td>Tracking and order facts from PayPal's own records, sent before the deadline; near deadlines go to the owner</td></tr>
-          <tr><th scope="row">A refund reply is lost</th><td>Sent twice, or marked done when it failed</td><td>One request id, held as UNKNOWN, reconciled from PayPal's record</td></tr>
-          <tr><th scope="row">Dispute text and buyer details</th><td>Pasted into an outside AI service</td><td>Read by a local model inside the merchant's network</td></tr>
-          <tr><th scope="row">The network drops mid batch</th><td>Retries fire blindly</td><td>Money actions wait as "held, offline"; on reconnect PayPal is read first, then they finish with no duplicate</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section id="boundary" class="block" aria-labelledby="boundary-title">
-    <h2 id="boundary-title">The boundary</h2>
-    <p class="sub">The live system runs in a network isolated container network on the merchant's own machine. One gateway is the only way out.</p>
-    <figure class="diagram">
-      <svg viewBox="0 0 800 300" role="img" aria-labelledby="dg-title dg-desc">
-        <title id="dg-title">Clearwake boundary</title>
-        <desc id="dg-desc">Agents, policy, checks, receipts and the local model sit inside the merchant's network. The egress gateway is the only path out and reaches only the PayPal sandbox API.</desc>
-        <rect class="zone" x="10" y="20" width="480" height="260" rx="14"/>
-        <text class="zone-label" x="30" y="48">Inside the merchant's network (no route out)</text>
-        <rect class="box" x="30" y="70" width="200" height="56" rx="8"/><text class="t" x="130" y="96">Agents</text><text class="s" x="130" y="114">Intake, Evidence, Decider, Checker</text>
-        <rect class="box" x="250" y="70" width="220" height="56" rx="8"/><text class="t" x="360" y="96">Policy and approvals</text><text class="s" x="360" y="114">limits a model cannot change</text>
-        <rect class="box" x="30" y="146" width="200" height="56" rx="8"/><text class="t" x="130" y="172">Local model</text><text class="s" x="130" y="190">Ollama, dispute text stays here</text>
-        <rect class="box" x="250" y="146" width="220" height="56" rx="8"/><text class="t" x="360" y="172">Signed receipts</text><text class="s" x="360" y="190">verify with no network</text>
-        <rect class="box gate" x="380" y="222" width="190" height="46" rx="8"/><text class="t" x="475" y="250">Egress gateway</text>
-        <rect class="box ext" x="600" y="210" width="150" height="70" rx="8"/><text class="t" x="675" y="240">PayPal sandbox</text><text class="s" x="675" y="258">api-m.sandbox.paypal.com</text>
-        <line class="flow" x1="570" y1="245" x2="600" y2="245"/>
-        <path class="flow route" d="M470 98 H510 V222"/>
-        <text class="s left" x="600" y="196">only allowed host</text>
-        <text class="s left blocked" x="560" y="60">any other host: blocked, receipted</text>
-        <line class="flow blocked" x1="500" y1="56" x2="552" y2="56"/>
+  <section class="band wrap settled" id="settled" aria-labelledby="settled-h">
+    <p class="bignum tnum" aria-label="1 of 3">1</p>
+    <div class="settled-text">
+      <p class="eyebrow">Settled before escalation</p>
+      <h2 id="settled-h">of 3 real sandbox disputes was settled in conversation.</h2>
+      <svg class="dots" viewBox="0 0 220 60" role="img" aria-label="Three disputes: n settled before escalation, i and o answered with evidence">
+        <circle class="d-on" cx="28" cy="22" r="16"/><circle class="d-off" cx="110" cy="22" r="16"/><circle class="d-off" cx="192" cy="22" r="16"/>
+        <text x="28" y="56" class="d-t">n</text><text x="110" y="56" class="d-t">i</text><text x="192" y="56" class="d-t">o</text>
       </svg>
-    </figure>
-    <div class="table-wrap">
-      <table>
-        <caption class="sr">What stays inside and what crosses the gateway</caption>
-        <thead><tr><th scope="col">Stays inside</th><th scope="col">Crosses the gateway</th><th scope="col">Why</th></tr></thead>
-        <tbody>
-          <tr><td>Dispute text, buyer messages, evidence drafts</td><td>Only what PayPal's API needs for the step: a message, an offer amount, tracking facts</td><td>Customer data and dispute evidence stay inside the merchant's environment</td></tr>
-          <tr><td>Policy file, approvals, limits</td><td>Nothing</td><td>A buyer message or a model reply cannot change a limit</td></tr>
-          <tr><td>Signed receipts and the verifier</td><td>Nothing</td><td>Proof that does not depend on any outside service</td></tr>
-          <tr><td>The model</td><td>Nothing</td><td>Runs through Ollama in its own container on the isolated network</td></tr>
-          <tr><td>Sandbox keys</td><td>Inside the TLS tunnel only; the gateway sees host names and byte counts</td><td>The gateway can log every request without reading it</td></tr>
-        </tbody>
-      </table>
+      <p class="lede">The recorded runs hold three real sandbox disputes. PayPal read case n RESOLVED while it was still an inquiry, so it never became a claim and carried no dispute fee. Cases i and o were answered with evidence. Source: docs/RESULTS.md.</p>
+      <p>PayPal charges no Standard Dispute Fee when a case is resolved directly between seller and buyer and not escalated to a claim. <a href="https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350">PayPal's rule, help350</a> (UK edition; the US edition was not reachable when checked).</p>
     </div>
   </section>
 
-  <section id="run" class="block" aria-labelledby="run-title">
-    <h2 id="run-title">Recorded sandbox run, 31 Oct</h2>
-    <p class="sub">Real PayPal sandbox records with test money. IDs are PayPal's own.</p>
-    <div class="table-wrap">
-      <table>
-        <caption class="sr">Recorded sandbox run</caption>
-        <thead><tr><th scope="col">Case</th><th scope="col">What happened</th><th scope="col">PayPal IDs</th></tr></thead>
-        <tbody id="run-rows">
-          <tr><th scope="row">Setup</th><td>Order approved by the sandbox buyer and captured, USD 20.00</td><td class="mono">order 1DW875094F275773J, capture 1PH921107B839311S</td></tr>
-          <tr><th scope="row">c</th><td>Refund under the limit, matched to PayPal's refund record</td><td class="mono">34A6137827870312B</td></tr>
-          <tr><th scope="row">d</th><td>Above the approval threshold: waited in the owner's inbox, then refunded and matched</td><td class="mono">0X757409L5274794C</td></tr>
-          <tr><th scope="row">e</th><td>Reply withheld on purpose after a real refund: held as UNKNOWN, the second attempt sent nothing, reconciled from PayPal</td><td class="mono">one refund at PayPal</td></tr>
-          <tr><th scope="row">i</th><td>Item not received: tracking from PayPal's order record sent as supporting info; PayPal's dispute record shows it from the seller</td><td class="mono">dispute PP-R-SLI-10195419</td></tr>
-          <tr><th scope="row">m</th><td>In the isolated network: one refund verified, the gateway cut off, two refunds held offline, the network restored, PayPal read first, both refunds verified, the rerun sent nothing</td><td class="mono">6PX35920F4587564U, 76C086475Y724052F, 9C434129FA2384059</td></tr>
-        </tbody>
-      </table>
+  <section class="band wrap gauge" id="gauge" aria-labelledby="gauge-h">
+    <div class="gauge-copy">
+      <p class="eyebrow">The 1.5% line</p>
+      <h2 id="gauge-h">Drag the mercury. Watch the fee double.</h2>
+      <p class="lede">A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays the High Volume Dispute Fee on every dispute: USD 30.00 instead of USD 15.00. PayPal Merchant Fees, US, updated 1 Oct 2026. The rule and both fees are the ones in <span class="mono">clearwake/fees.py</span>.</p>
+      <p class="note">The recorded sandbox has a handful of test orders, far under 100 sales, so the rule does not apply to it. The figures here are example values for you to change. They are not Clearwake results.</p>
+      <form class="inputs" id="g-form">
+        <label>Sales, 3 months<input id="g-sales" type="number" inputmode="numeric" min="0" value="500"></label>
+        <label>Net sales, USD<input id="g-net" type="number" inputmode="decimal" min="1" value="25000"></label>
+        <label>Counted disputes now<input id="g-count" type="number" inputmode="numeric" min="0" value="3"></label>
+        <label>Average disputed, USD<input id="g-avg" type="number" inputmode="decimal" min="0" value="40"></label>
+      </form>
     </div>
-    <p class="note">Case n (settling in conversation) also ran on a real sandbox dispute: the policy chose an offer of USD 2.50, PayPal paid the settlement and read the case RESOLVED at the inquiry stage, never a claim. The sandbox buyer opened the dispute in PayPal's Resolution Center, because this app cannot act for the buyer. The signed log is in the receipt list above.</p>
+    <div class="gauge-scene">
+      <svg class="thermo" id="thermo" viewBox="0 0 200 380" role="img" aria-labelledby="gt gd">
+        <title id="gt">Dispute rate against the 1.5% line</title>
+        <desc id="gd">A vertical gauge from 0 to 3 percent. The fill is the dispute rate. A dashed amber line marks 1.5 percent. Drag the handle to change how many more disputes escalate.</desc>
+        <rect class="g-track" x="60" y="30" width="44" height="320" rx="22"/>
+        <rect id="g-fill" class="g-fill" x="60" y="350" width="44" height="0"/>
+        <line class="g-line" x1="30" y1="190" x2="190" y2="190"/>
+        <text class="g-label" x="112" y="182">1.5% PayPal line</text>
+        <text class="g-end" x="14" y="354">0%</text><text class="g-end" x="14" y="38">3%</text>
+        <g id="g-handle" class="g-handle" tabindex="0" role="slider" aria-label="More disputes that escalate" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
+          <circle cx="82" cy="350" r="22" class="g-hit"/><circle cx="82" cy="350" r="12" class="g-knob"/>
+        </g>
+      </svg>
+      <div class="gauge-read">
+        <p class="rate"><span id="g-rate" class="num tnum">0.48%</span></p>
+        <p><span id="g-state" class="pill">Under the line</span></p>
+        <label class="slider" for="g-n">What if <b id="g-n-out" class="tnum">0</b> more disputes escalate</label>
+        <input id="g-n" type="range" min="0" max="20" value="0">
+        <p class="result-box" id="g-msg" aria-live="polite"></p>
+      </div>
+    </div>
   </section>
 
-  <section id="dispatch" class="block" aria-labelledby="dispatch-title">
-    <h2 id="dispatch-title">Dispatch proof: what was in the box</h2>
-    <p class="sub">Some disputes are about what was in the parcel. At packing, SAM 3 (open weights from Meta) counts the items in the photo on the merchant's own machine, and Clearwake signs the count into the receipt chain. Real PayPal sandbox, test money.</p>
-    <div class="pair">
-      <figure><img src="dispatch/test-photo.jpg" width="800" height="600" alt="Three kraft notebooks fanned on a wooden table, with coasters and badges around them"><figcaption>The photo. A CC0 test photo by Jeff Sheldon (ugmonk) from Wikimedia Commons, not a real parcel.</figcaption></figure>
-      <figure><img src="dispatch/sam-count.jpg" width="800" height="600" alt="The same photo with three red boxes numbered 1 to 3 around the notebooks, scores 0.62, 0.59 and 0.70"><figcaption>SAM 3 on this laptop's CPU: 3 found, scores 0.62, 0.59 and 0.70. Prompt "book"; 16 s to load, 56 s to count.</figcaption></figure>
+  <section class="band wake" id="wake" aria-labelledby="wake-h">
+    <div class="wrap">
+      <p class="eyebrow">Settled in conversation</p>
+      <h2 id="wake-h">The wake of one dispute. Each ring is a signed step.</h2>
+      <p class="lede">Case n, a recorded real sandbox run on 3 Nov 2026. Scroll, and the rings follow the five signed receipts of dispute PP-R-OBG-10196144. Pick any step and change one value in it: your browser checks every signature and hash with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
     </div>
-    <div class="table-wrap">
-      <table>
-        <caption class="sr">Case o on a real sandbox dispute</caption>
-        <thead><tr><th scope="col">Step</th><th scope="col">What happened</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">Packing</th><td>3 of 3 notebooks counted, parcel sealed, signed receipt <span class="mono">8b92abb9e53a6244</span> for order 7RV99265V1496281G</td></tr>
-          <tr><th scope="row">The claim</th><td>The sandbox buyer opened dispute <span class="mono">PP-R-UKF-10195772</span>: "Only 2 of 3 notebooks arrived." The buyer's words are read as a claim to check, never as an instruction</td></tr>
-          <tr><th scope="row">Decision</th><td>The policy found strong proof (count matches the order, sealed, tracking shipped, the log verifies) and chose to fight with evidence, not to offer a refund. A weak proof is never sent</td></tr>
-          <tr><th scope="row">PayPal</th><td>The first try was refused (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES) and nothing was applied. Sent again as one entry, the next response was lost: Clearwake held it as UNKNOWN and read the dispute, which showed nothing had landed. The third try, with the same request id, was accepted. PayPal's record now shows a PROOF_OF_FULFILLMENT from the seller on 3 Nov 2026 with the dispatch text, the tracking and the photo</td></tr>
-        </tbody>
-      </table>
+    <div class="wake-scene wrap" id="wake-scene">
+      <div class="wake-sticky">
+        <svg id="wake-svg" viewBox="0 0 300 300" role="img" aria-labelledby="wk-t wk-d">
+          <title id="wk-t">Five rings around a dispute</title>
+          <desc id="wk-d">Each ring is one signed receipt of case n. A ring turns red when its signature or hash link fails.</desc>
+          <circle class="w-core" cx="150" cy="150" r="9"/>
+        </svg>
+        <p class="result-box" id="chain-msg" aria-live="polite">Checking the receipts.</p>
+        <p class="mono dim wrap-any small" id="chain-key"></p>
+      </div>
+      <ol class="wake-steps" id="wake-steps">
+        <li class="step" data-i="-1">
+          <p class="eyebrow">Buyer</p>
+          <h3>A dispute opens.</h3>
+          <p>The sandbox buyer opened PP-R-OBG-10196144 in PayPal's Resolution Center. The buyer's own words were not saved in the recorded run, so none are shown.</p>
+        </li>
+        <li class="step" data-i="0">
+          <p class="eyebrow">Receipt 1, decision</p>
+          <h3>The policy decides.</h3>
+          <p>The agent proposes settle_by_offer (scripted, not AI). The policy agrees: offer USD 2.50, inside the owner's limit of USD 5.00, no approval needed (approval above USD 3.00, from policy/merchant.yaml).</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="1">
+          <p class="eyebrow">Receipt 2, decision</p>
+          <h3>The same decision, recorded again.</h3>
+          <p>The run was repeated before the offer went out, and the decision came out the same. The policy hash is identical in both receipts.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="2">
+          <p class="eyebrow">Receipt 3, offer sent</p>
+          <h3>One offer, sent alone.</h3>
+          <p>"We are sorry about this order. To settle it now, we offer a refund of 2.50 USD". Wording from <span class="mono">clearwake/swarm.py</span>. It goes as an offer alone, because PayPal refuses an offer after a seller message.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="3">
+          <p class="eyebrow">Receipt 4, PayPal read</p>
+          <h3>Not yet.</h3>
+          <p>PayPal's record reads UNDER_REVIEW at INQUIRY. Clearwake receipts this as not successful, and counts nothing as settled.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="4">
+          <p class="eyebrow">Receipt 5, PayPal read</p>
+          <h3>Resolved, no claim, no fee.</h3>
+          <p>The buyer accepted in PayPal's Resolution Center, because this app cannot act for the buyer. PayPal paid refund 0TB11858A85953644 and reads RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+      </ol>
     </div>
-    <p class="note">The receipts of this run, including the refused try, are the third log in the verifier below. Which prompt: "notebook" did not reach the 0.5 confidence line on this photo, "book" did; every prompt tried is listed in the repository's results page. Still photos use SAM 3. SAM 3.1 is Meta's video tracker and is not claimed.</p>
+    <div class="wrap wake-foot">
+      <button class="btn" type="button" id="chain-reset">Restore the original</button>
+      <a class="btn" href="receipts/case-n-settle.ndjson" download>Download the log</a>
+    </div>
   </section>
 
-  <section id="verify" class="block" aria-labelledby="verify-title">
-    <h2 id="verify-title">Verify the receipts yourself</h2>
-    <p class="sub">The verdock-core verifier runs in this page with WebCrypto. Nothing is uploaded; a file you drop in is read only by your browser.</p>
-    <div class="verify">
-      <div class="logs" id="logs"></div>
-      <form class="own" id="own">
-        <h3>Check any receipt log</h3>
+  <section class="band wrap dispatch" id="dispatch" aria-labelledby="dispatch-h">
+    <p class="eyebrow">Dispatch proof</p>
+    <h2 id="dispatch-h">Counted on your own machine, before the parcel leaves.</h2>
+    <p class="lede">SAM 3 (open weights from Meta) counted the items in the packing photo on a laptop CPU with no network, and Clearwake signed the count. Case o, recorded real sandbox, 3 Nov 2026.</p>
+    <div class="dispatch-stage">
+      <figure class="photo"><img src="dispatch/sam-count.jpg" width="800" height="600" alt="A photo of three kraft notebooks on a wooden table with three numbered boxes drawn around the notebooks, scores 0.62, 0.59 and 0.70"><figcaption>SAM 3 found 3. Prompt "book"; 16 s to load, 56 s to count. A CC0 test photo by Jeff Sheldon, not a real parcel.</figcaption></figure>
+      <div class="proof" id="proof">
+        <dl>
+          <div><dt>Order</dt><dd class="mono">7RV99265V1496281G</dd></div>
+          <div><dt>Items</dt><dd class="mono">3 of 3 counted (notebook-a5)</dd></div>
+          <div><dt>Image sha256</dt><dd class="mono wrap-any">893632548b14c5d54c10c4e1b788cee466dfd06900edd21135dd3b35444311f8</dd></div>
+          <div><dt>Sealed at</dt><dd class="mono">2026-11-03 10:09:29 UTC</dd></div>
+          <div><dt>Signature</dt><dd class="mono wrap-any">ee8b207cfa776968d8c90d20&hellip;</dd></div>
+          <div><dt>Receipt id</dt><dd class="mono">8b92abb9e53a6244</dd></div>
+        </dl>
+        <button class="btn" type="button" id="proof-check">Check this signature in your browser</button>
+        <p class="result" id="proof-result" aria-live="polite"></p>
+      </div>
+    </div>
+    <p class="after">The buyer then wrote "Only 2 of 3 notebooks arrived." on dispute PP-R-UKF-10195772. The policy found strong proof and sent evidence. PayPal refused the first try (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES) and nothing was applied. The next reply was lost, so Clearwake held it as UNKNOWN and read the dispute. The third try, with the same request id, was accepted, and PayPal's record shows a PROOF_OF_FULFILLMENT from the seller.</p>
+  </section>
+
+  <section class="band wrap orders" id="orders" aria-labelledby="orders-h">
+    <div class="orders-head">
+      <p class="eyebrow">Orders placed by agents</p>
+      <h2 id="orders-h">A signed mandate, and the dispute it answers.</h2>
+      <p class="lede">A buyer agent can only buy inside a mandate its owner signed. If that order is later disputed as unauthorised, the receipt goes in as evidence.</p>
+    </div>
+    <div class="slip">
+      <p><span class="pill amber">Rehearsal, not PayPal</span></p>
+      <dl>
+        <div><dt>Mandate receipt, order</dt><dd class="mono">ORDER-J-759afa</dd></div>
+        <div><dt>Merchant</dt><dd class="mono">clearwake-demo-store</dd></div>
+        <div><dt>Item</dt><dd class="mono">notebook-a5, USD 9.00</dd></div>
+        <div><dt>Budget</dt><dd class="mono">USD 102.00, home and stationery</dd></div>
+        <div><dt>Public key</dt><dd class="mono wrap-any">2665b8c1c02fba86&hellip;</dd></div>
+        <div><dt>Signature</dt><dd class="mono wrap-any">1e1985094ee566cc&hellip;</dd></div>
+      </dl>
+      <p class="slip-arrow" aria-hidden="true">answers</p>
+      <dl>
+        <div><dt>Dispute, case j</dt><dd class="mono">UNAUTHORISED, USD 9.00</dd></div>
+        <div><dt>Buyer says</dt><dd>"I did not buy this."</dd></div>
+        <div><dt>Policy</dt><dd>Evidence with the mandate receipt attached</dd></div>
+        <div><dt>Record</dt><dd class="mono">UNDER_REVIEW, VERIFIED</dd></div>
+      </dl>
+      <p class="note">From the 1 Nov rehearsal run in <span class="mono">data/console/</span>. No real sandbox dispute of this kind was run, and the receipt is not on the public site, so it is not checkable here.</p>
+    </div>
+  </section>
+
+  <section class="band wrap cable" id="cable" aria-labelledby="cable-h">
+    <p class="eyebrow">Pull the cable</p>
+    <h2 id="cable-h">Drag the plug out. Money waits.</h2>
+    <p class="lede">Case m, recorded real sandbox in network isolated containers, 31 Oct 2026. Drag the plug left, or focus it and press the left arrow. Press the right arrow to plug it back in.</p>
+    <svg id="cable-svg" class="cable-svg" viewBox="0 0 640 130" role="group" aria-label="Cable between the agents and the egress gateway">
+      <text class="c-t" x="10" y="22">Agents</text>
+      <text class="c-t right" x="630" y="22">Egress gateway</text>
+      <circle class="c-end" cx="30" cy="74" r="10"/>
+      <rect class="c-socket" x="560" y="52" width="70" height="44" rx="6"/>
+      <path id="cable-path" class="cable-line" d="M30 74 C 200 120 380 120 520 74"/>
+      <g id="plug" class="plug" tabindex="0" role="slider" aria-label="Network plug" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1" aria-valuetext="Connected">
+        <rect class="plug-hit" x="-10" y="40" width="90" height="70" rx="8"/>
+        <rect class="plug-body" x="0" y="58" width="48" height="32" rx="5"/><rect class="plug-pin" x="48" y="66" width="22" height="6"/><rect class="plug-pin" x="48" y="76" width="22" height="6"/>
+      </g>
+    </svg>
+    <div class="cable-top"><span class="pill" id="net-pill">Network up</span><button class="btn" type="button" id="cable-retry" hidden>Retry the held refunds</button></div>
+    <ol class="queue" id="queue">
+      <li data-q="1"><span class="mono">6PX35920F4587564U</span><span>Refund USD 1.00</span><span class="qs">Verified before the cut</span></li>
+      <li data-q="2"><span class="mono">76C086475Y724052F</span><span>Refund USD 1.00</span><span class="qs">Queued</span></li>
+      <li data-q="3"><span class="mono">9C434129FA2384059</span><span>Refund USD 1.00</span><span class="qs">Queued</span></li>
+    </ol>
+    <p class="result-box" id="cable-msg" aria-live="polite">Refund 1 is verified against PayPal's record. Two more are queued.</p>
+  </section>
+
+  <section class="band wrap boundary" id="boundary" aria-labelledby="boundary-h">
+    <p class="eyebrow">Inside and outside</p>
+    <h2 id="boundary-h">One gateway out, and only to the PayPal sandbox.</h2>
+    <svg class="bsvg" viewBox="0 0 700 300" role="img" aria-labelledby="bt bd">
+      <title id="bt">Clearwake boundary</title>
+      <desc id="bd">Agents, policy and limits, the local model and the signed receipts are inside a dashed boundary with no route out. One egress gateway in the boundary reaches only api-m.sandbox.paypal.com. A request to example.com is refused with 403 and receipted.</desc>
+      <rect class="b-zone" x="6" y="6" width="420" height="288" rx="14"/>
+      <text class="b-h" x="28" y="42">Inside the network, no route out</text>
+      <text class="b-i" x="28" y="92">Agents</text><text class="b-i" x="28" y="132">Policy file, approvals, limits</text>
+      <text class="b-i" x="28" y="172">Local model (Ollama)</text><text class="b-i" x="28" y="212">Signed receipts</text>
+      <rect class="b-gate" x="372" y="120" width="108" height="56" rx="6"/>
+      <text class="b-g" x="426" y="154">Gateway</text>
+      <line class="b-ok" x1="480" y1="148" x2="540" y2="148"/><path class="b-ok" d="M532 141 L544 148 L532 155"/>
+      <text class="b-ok-t" x="550" y="144">api-m.sandbox</text><text class="b-ok-t" x="550" y="164">.paypal.com</text>
+      <line class="b-no" x1="470" y1="176" x2="540" y2="236"/>
+      <text class="b-no-t" x="550" y="238">example.com</text><text class="b-no-t" x="550" y="258">403, receipted</text>
+    </svg>
+    <div class="cols">
+      <div>
+        <h3>Inside</h3>
+        <ul>
+          <li>Dispute text, buyer messages and evidence drafts</li>
+          <li>The policy file, the approvals and the limits</li>
+          <li>The local model and the signed receipts</li>
+        </ul>
+        <p class="note">Agents have no route out. In case m their DNS lookups fail.</p>
+      </div>
+      <div>
+        <h3>Outside, through one gateway</h3>
+        <ul>
+          <li>Only <span class="mono">api-m.sandbox.paypal.com</span> is allowed (policy/merchant.yaml)</li>
+          <li>Only what the PayPal call needs: a message, an offer amount, tracking facts</li>
+          <li>Any other host is refused and receipted. In case m, example.com got a 403</li>
+        </ul>
+        <p class="note">The gateway's 34 receipts from that run are published with the others. The hosted site you are reading runs no agents and is not inside this boundary.</p>
+      </div>
+    </div>
+    <details class="own">
+      <summary>Check any receipt log yourself</summary>
+      <form id="own">
         <label for="own-file">NDJSON file</label>
         <input id="own-file" type="file" accept=".ndjson,.jsonl,.txt">
         <label for="own-key">Trusted public key, 64 hex characters</label>
         <input id="own-key" class="mono" maxlength="64" autocomplete="off" spellcheck="false">
-        <button class="button primary" type="submit">Verify</button>
+        <button class="btn primary" type="submit">Verify</button>
         <p class="result" id="own-result" aria-live="polite"></p>
       </form>
+      <p class="note">All recorded logs: <a href="receipts/case-m-merchant.ndjson">case m merchant</a>, <a href="receipts/egress-gateway.ndjson">egress gateway</a>, <a href="receipts/case-o-dispatch.ndjson">case o dispatch</a>, <a href="receipts/case-n-settle.ndjson">case n settle</a>, and <a href="receipts/manifest.json">the manifest with public keys</a>.</p>
+    </details>
+  </section>
+
+  <section class="band wrap runit" id="run-it" aria-labelledby="run-h">
+    <div>
+      <p class="eyebrow">Run it on your machine</p>
+      <h2 id="run-h">Python 3.12 or newer. Nothing to install.</h2>
+      <p class="lede">It starts in rehearsal with rehearsal records and makes no network calls.</p>
+    </div>
+    <div>
+      <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
+cd clearwake
+python -m clearwake --port 8810</pre>
+      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. The network isolated run (case m) needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
     </div>
   </section>
 
-  <section id="run-it" class="block" aria-labelledby="runit-title">
-    <h2 id="runit-title">Run it on your machine</h2>
-    <p class="sub">Python 3.12 or newer, nothing to install. Starts in rehearsal with invented records and makes no network calls.</p>
-    <pre class="code"><code>git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
-cd clearwake
-python -m clearwake --port 8810</code></pre>
-    <p class="sub">Then open 127.0.0.1:8810/console. The isolated network run is <code>python scripts/airgap.py</code> (Docker and your own sandbox keys).</p>
+  <section class="closing" aria-labelledby="close-h">
+    <img class="wave" src="img/hokusai-great-wave.jpg" width="600" height="403" alt="" loading="lazy">
+    <div class="wrap closing-in">
+      <h2 id="close-h">Disputes that end in a conversation do not end in a fee.</h2>
+      <div class="cta">
+        <a class="btn primary" href="/control-room">Open the Control Room</a>
+        <a class="btn" href="/developers">Read the developer docs</a>
+      </div>
+    </div>
   </section>
 </main>
 
 <footer class="foot">
-  <p>Sandbox only. No real money. The live system runs inside the merchant's network; this site does not.</p>
+  <div class="wrap">
+    <p>Sandbox only. No real money. Every case on this page is a recorded run.</p>
+    <p><a href="https://github.com/Sriharsan/clearwake">Repository</a> &nbsp; <a href="receipts/manifest.json">Receipts</a> &nbsp; <a href="https://github.com/Sriharsan/clearwake/blob/main/LICENSE">Licences</a></p>
+    <p class="credit">Art: Katsushika Hokusai, Under the Wave off Kanagawa (The Great Wave), ca. 1830 to 1832, The Metropolitan Museum of Art, H. O. Havemeyer Collection, public domain (Open Access, CC0). Type: Figtree, SIL OFL 1.1.</p>
+  </div>
 </footer>
 </body>
 </html>

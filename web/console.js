@@ -100,7 +100,7 @@ function countdown(due) {
 
 function renderFees() {
   const f = data.fees;
-  $('fees-label').textContent = f.label;
+  $('fees-label').textContent = String(f.label);
   const rate = f.rate_percent === null ? null : Number(f.rate_percent);
   $('fee-rate').textContent = rate === null ? 'no sales yet' : `${f.rate_percent}%`;
   $('rate-fill').style.width = rate === null ? '0' : Math.min(100, rate / 3 * 100).toFixed(1) + '%';
@@ -117,7 +117,7 @@ function renderFees() {
 // 1. Buyer agent ---------------------------------------------------------------------------------
 function renderBuyer() {
   const m = data.mandate;
-  $('mandate-owner').textContent = `${m.owner} (invented). Budget for this rehearsal folder.`;
+  $('mandate-owner').textContent = `${m.owner} (rehearsal). Budget for this rehearsal folder.`;
   $('mandate-remaining').textContent = `${m.currency} ${m.remaining}`;
   $('mandate-budget').textContent = `${m.currency} ${m.budget}`;
   $('mandate-spent').textContent = `${m.currency} ${m.spent}`;
