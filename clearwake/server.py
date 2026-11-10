@@ -55,8 +55,19 @@ FONT_FILES = ("Figtree-var",)
 CONSOLE_ASSETS.update({f"/fonts/{name}.woff2": (f"fonts/{name}.woff2", "font/woff2") for name in FONT_FILES})
 
 
+# The voice page (mobile first). Plain files under the base policy: script-src 'self', style-src 'self'.
+VOICE_ASSETS = {"/voice": ("voice.html", "text/html"), "/voice/": ("voice.html", "text/html"),
+                "/voice.css": ("voice.css", "text/css"), "/voice.js": ("voice.js", "text/javascript")}
+VOICE_TRANSCRIBE = "/console/api/voice/transcribe"
+
+
 TOTALS = Path(__file__).resolve().parent.parent / "site" / "data" / "totals.json"
 HOSTED_ENV = "CLEARWAKE_HOSTED"
+
+
+# Extension points: each block below registers one handler and returns None for actions that are not its own.
+POST_EXTENSIONS = []   # handler(console, action, body) -> dict or None
+GET_EXTENSIONS = []    # handler(console, path) -> dict or None
 
 
 class RateLimiter:
@@ -92,6 +103,22 @@ class ClearwakeHandler(Handler):
     # Hosted mode (CLEARWAKE_HOSTED=1, e.g. on Render): other hosts allowed by name, Secure cookie, per client rate limits.
     def local_origin(self, mutation=False):
         server = self.server
+        lan = getattr(server, "lan_hosts", None)   # python -m clearwake --voice-lan: the laptop's own LAN address, over https only
+        if lan:
+            try:
+                host = (self.headers.get("Host") or "").lower()
+                if host not in lan:
+                    raise ValueError()
+                origin = self.headers.get("Origin")
+                if origin:
+                    parsed = urlsplit(origin)
+                    if parsed.scheme != "https" or parsed.netloc.lower() != host or parsed.path or parsed.query or parsed.fragment:
+                        raise ValueError()
+                if mutation and self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site"):
+                    raise ValueError()
+            except (ValueError, TypeError):
+                raise Rejected("Use this console's own address and same-origin page.", 403)
+            return
         if not getattr(server, "hosted", False) or not server.allowed_hosts:
             return super().local_origin(mutation)
         try:
@@ -161,6 +188,9 @@ class ClearwakeHandler(Handler):
                 finally:
                     self.style_nonce = None
             return self.send_asset(lambda: source.read_bytes(), kind)
+        if path in VOICE_ASSETS:  # the phone page: its own strict policy, no inline script or style, no nonce
+            name, kind = VOICE_ASSETS[path]
+            return self.send_asset(lambda: (ASSETS / name).read_bytes(), kind)
         if path == "/healthz":  # for Render's health check and a keep-warm ping: no data, no origin check, never rate limited
             return self.health()
         if path == "/":  # the refund workroom is not a product page any more
@@ -210,7 +240,7 @@ class ClearwakeHandler(Handler):
         if retry_after:
             self.send_header("Retry-After", str(retry_after))
         if sid:
-            secure = "; Secure" if getattr(self.server, "hosted", False) else ""
+            secure = "; Secure" if getattr(self.server, "hosted", False) or getattr(self.server, "lan_hosts", None) else ""
             self.send_header("Set-Cookie", f"{CONSOLE_COOKIE}={sid}; Path=/console; HttpOnly; SameSite=Strict; Max-Age=28800{secure}")
         self.end_headers(); self.wfile.write(body)
 
@@ -235,6 +265,10 @@ class ClearwakeHandler(Handler):
                     return self.console_reply(200, [])
             if path == "/console/api/receipts":
                 return self.console_reply(200, console.receipts())
+            for handler in GET_EXTENSIONS:
+                answer = handler(console, path)
+                if answer is not None:
+                    return self.console_reply(200, answer)
             raise Rejected("This page was not found.", 404)
         except (Rejected, ConsoleError) as error:
             self.console_reply(error.status, {"error": str(error)}, retry_after=getattr(error, "retry_after", None))
@@ -249,7 +283,8 @@ class ClearwakeHandler(Handler):
             length = int(self.headers.get("Content-Length") or 0)
         except ValueError:
             length = 0
-        if 0 < length <= MAX_BODY:
+        bound = (5 << 20) if urlsplit(self.path).path == VOICE_TRANSCRIBE else MAX_BODY   # a recording may be up to 5 MB
+        if 0 < length <= bound:
             self.rfile = io.BytesIO(original.read(length))
         try:
             self.route_post()
@@ -266,10 +301,17 @@ class ClearwakeHandler(Handler):
             if console is None:
                 raise Rejected("The console is not configured on this server.", 404)
             self.rate_limit("write")
+            if path == VOICE_TRANSCRIBE:   # audio bytes, not JSON: same origin, rate limit and CSRF checks as every console POST
+                console.check_csrf(self.console_sid(), self.headers.get("X-Clearwake-CSRF", ""))
+                from . import voice
+                return self.console_reply(200, voice.handle_transcribe(self, console))
             body = self.body()
             console.check_csrf(self.console_sid(), self.headers.get("X-Clearwake-CSRF", ""))
             action = path[len("/console/api/"):]
-            if action == "buy":
+            result = next((r for r in (handler(console, action, body) for handler in POST_EXTENSIONS) if r is not None), None)
+            if result is not None:
+                pass  # an extension block (below) answered
+            elif action == "buy":
                 result = console.buy(body.get("request"))
             elif action == "case":
                 result = console.run_case(body.get("case"))
@@ -315,4 +357,38 @@ class ClearwakeServer(LocalServer):
         self.allowed_hosts = set(names + ([render] if render else []))
         # Per client address and minute. Writes run a case or a purchase, so they get the smaller allowance.
         self.limiter = RateLimiter({"read": int(os.environ.get("CLEARWAKE_RATE_READ", "120")),
-                                    "write": int(os.environ.get("CLEARWAKE_RATE_WRITE", "20"))}, clock) if self.hosted else None
+                                    "write": int(os.environ.get("CLEARWAKE_RATE_WRITE", "20")),
+                                    "voice": int(os.environ.get("CLEARWAKE_RATE_VOICE", "6"))}, clock) if self.hosted else None
+
+
+# ===== BEGIN plain words rules routes (typed path). A voice block can sit below this one and append its own handlers. =====
+def rules_post(console, action, body):
+    if action == "rules/propose":
+        return console.rules_propose(body.get("text"), body.get("role", "merchant"))
+    if action == "rules/confirm":
+        return console.rules_confirm(body.get("role", "merchant"), body.get("rules_hash"), "typed", None)
+    return None
+
+
+POST_EXTENSIONS.append(rules_post)
+# ===== END plain words rules routes =====
+
+
+# ===== BEGIN voice routes (clearwake/voice.py): status, turn (a transcript or typed text in, one answer out), answer (Yes or No tap). =====
+def voice_post(console, action, body):
+    if not action.startswith("voice/"):
+        return None
+    from . import voice
+    return voice.post_extension(console, action, body)
+
+
+def voice_get(console, path):
+    if not path.startswith("/console/api/voice/"):
+        return None
+    from . import voice
+    return voice.get_extension(console, path)
+
+
+POST_EXTENSIONS.append(voice_post)
+GET_EXTENSIONS.append(voice_get)
+# ===== END voice routes =====

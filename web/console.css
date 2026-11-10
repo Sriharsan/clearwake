@@ -489,3 +489,11 @@ h1{font-weight:700;font-size:clamp(2.4rem,5.4vw,4.6rem);line-height:.98;max-widt
 .step-log .dim{color:var(--cw-muted);overflow-wrap:anywhere}
 .hosted-line{margin:0 0 1rem;padding:.55rem 0;border-block:1px solid var(--cw-line);color:var(--cw-muted);font-size:.95rem}
 .hosted-line[hidden]{display:none}
+
+/* Say your rules */
+.rules-text{width:100%;box-sizing:border-box;margin:12px 0;padding:12px;border-radius:8px;border:1px solid var(--cw-line-strong);background:var(--cw-raised);color:var(--cw-text);font:inherit;font-size:16px;resize:vertical}
+.rules-role{min-height:44px;margin-top:12px;padding:6px 10px;border-radius:8px;border:1px solid var(--cw-line-strong);background:var(--cw-raised);color:var(--cw-text);font:inherit}
+.rules-h{font-size:15px;margin:16px 0 6px;color:var(--cw-text)}
+.rules-readback,.rules-diff{margin:0 0 8px;padding-left:20px;font-size:15px;color:var(--cw-text)}
+.rules-diff li.same{color:var(--cw-muted)}
+.rules-question{margin:12px 0;padding:10px 12px;border-left:3px solid var(--cw-accent);color:var(--cw-text)}

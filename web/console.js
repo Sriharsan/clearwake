@@ -518,11 +518,47 @@ async function start() {
 
 function render() {
   if (!data) return;
+  renderRulesLast();
   $('hosted-line').hidden = !data.hosted;
   $('model-pill').textContent = 'Agents: ' + data.model;
   renderBuyer();
   renderMerchant();
   if (!$('screen-verify').hidden && logs.length === 0) loadReceipts().catch(e => showError(e.message));
 }
+
+// Say your rules: the sentence goes to the server, the readback comes from code, Confirm signs it.
+let pendingRules = null;
+function renderRulesLast() {
+  const last = (data && data.rules && data.rules.last) || {};
+  const parts = Object.entries(last).map(([role, r]) => `${role}: ${r.rules_hash} (${r.source})`);
+  $('rules-last').textContent = 'Last signed rule hash: ' + (parts.length ? parts.join('; ') : 'none yet.');
+}
+function showRules(view) {
+  pendingRules = view.ok ? view : null;
+  $('rules-label').textContent = view.label ? `Read by: ${view.label}` + (view.latency_ms >= 0 ? `, ${view.latency_ms} ms` : '') : '';
+  $('rules-question').hidden = !view.question; $('rules-question').textContent = view.question || '';
+  $('rules-result').hidden = !view.ok;
+  const readback = $('rules-readback'), diff = $('rules-diff');
+  readback.replaceChildren(...view.readback.map(t => el('li', { text: t })));
+  diff.replaceChildren(...view.diff.map(d => el('li', { class: d.changed ? '' : 'same', text: `${d.field}: ${d.before} to ${d.after}${d.changed ? '' : ' (unchanged)'}` })));
+  $('rules-changes').textContent = [...view.changes, ...view.rejected].join(' ');
+  if (!view.ok && !view.question) $('rules-question').hidden = false, $('rules-question').textContent = (view.rejected || []).join(' ') || 'These rules were not accepted. Please write them again.';
+}
+$('rules-propose').addEventListener('click', async () => {
+  showError('');
+  const button = $('rules-propose'), started = Date.now();
+  button.disabled = true; $('rules-result').hidden = true; $('rules-question').hidden = true;
+  const tick = setInterval(() => { $('rules-label').textContent = `Reading your sentence on this machine... ${Math.round((Date.now() - started) / 1000)} s. The local model can take up to a minute.`; }, 500);
+  $('rules-label').textContent = 'Reading your sentence on this machine...';
+  try { showRules(await call('/console/api/rules/propose', { text: $('rules-text').value, role: $('rules-role').value })); }
+  catch (e) { $('rules-label').textContent = ''; showError(e.message); }
+  finally { clearInterval(tick); button.disabled = false; }
+});
+$('rules-confirm').addEventListener('click', async () => {
+  if (!pendingRules) return;
+  showError('');
+  try { await call('/console/api/rules/confirm', { role: pendingRules.role, rules_hash: pendingRules.rules_hash }); $('rules-result').hidden = true; pendingRules = null; logs = []; await refresh(); }
+  catch (e) { showError(e.message); }
+});
 
 start();

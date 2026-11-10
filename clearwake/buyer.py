@@ -191,6 +191,19 @@ def mandate_receipt(log, mandate, product, merchant_id, order_id, ts_ms=None, pr
             "cap": f"{mandate.currency} {mandate.per_item_cap_minor / 100:.2f}", "digest": line_hash(line), "line": line, "public_key": log.public_key}
 
 
+def claim_allowed(mandate, ask_minor, order_total_minor, placed_by_agent=True):
+    """The buyer agent's own claim rule: it may claim only for an order it placed, up to what that order cost. Returns (ok, reason)."""
+    if mandate.dispute_rule is None:
+        return False, "The mandate has no dispute rule: the agent may not open a dispute."
+    if not placed_by_agent:
+        return False, "This order was not placed by this agent: the agent may claim only for orders it placed."
+    if type(ask_minor) is not int or type(order_total_minor) is not int or ask_minor <= 0 or order_total_minor <= 0:
+        return False, "The claim and the order amount must be positive whole numbers."
+    if ask_minor > order_total_minor:
+        return False, f"The claim of {ask_minor / 100:.2f} is more than the {order_total_minor / 100:.2f} the order cost: outside the mandate."
+    return True, "Inside the mandate: an order this agent placed, up to its amount."
+
+
 # What a model may do with the buyer's decision. The rule's action is the ceiling: a model may be more cautious, never bolder.
 PERMITTED = {"accept": ("accept", "escalate"), "counter": ("counter", "escalate"), "escalate": ("escalate",), "wait": ("wait",)}
 NUMBER = re.compile(r"\d+(?:[.,]\d+)?")

@@ -21,3 +21,7 @@ fixtures/dispatch/test-local/*
 !fixtures/dispatch/test-local/README.md
 
 postman/*.local.json
+
+# Self signed certificate and key for the phone voice page (made locally by clearwake/voice_lan.py)
+data/voice-tls/
+*.crt

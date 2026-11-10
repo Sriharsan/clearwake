@@ -235,6 +235,12 @@ class MerchantSwarm:
             except Offline:
                 return self.hold(f"dispute:{dispute_id}", "dispute", "", args, dispute_id, {})
             offered = {link.get("rel") for link in view.raw.get("links", []) if isinstance(link, dict)}
+            if getattr(self, "only_item_not_received", False) and "NOT_RECEIVED" not in view.reason:   # honest scope: every other reason goes to the owner untouched
+                ask = self.approvals.request("dispute_other_reason", f"dispute {dispute_id} ({view.reason}) is not an item not received case: nothing was sent",
+                                             dispute_id, view.amount_minor, view.currency, view.amount_minor, owner, 3600)
+                self.receipt(f"{dispute_id}:out-of-scope", "clearwake.dispute.out_of_scope", {"dispute": dispute_id, "reason": view.reason, "approval": ask,
+                             "sent_anything": False}, True)
+                return Result(dispute_id, "escalate", "awaiting approval", f"{view.reason} is outside item not received: handed to the owner, no offer and no evidence sent.", approval_id=ask)
             if view.status == "UNDER_REVIEW" and "provide_supporting_info" in offered:
                 return self.supporting_info(view, order, trackers, mandate_receipt)
             if view.raw.get("dispute_life_cycle_stage") == "INQUIRY":

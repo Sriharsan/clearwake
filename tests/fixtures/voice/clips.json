@@ -1,0 +1,57 @@
+{
+  "rules": {
+    "say": "Refund anything under $30 that hasn't arrived in 10 days. Ask me above that. Never refund twice.",
+    "words": "Refund anything under $30 that hasn't arrived in 10 days. Ask me above that. Never refund twice.",
+    "intent": "set_rules"
+  },
+  "ask": {
+    "say": "What happened with my disputes today?",
+    "words": "What happened with my disputes today?",
+    "intent": "ask"
+  },
+  "approve": {
+    "say": "Approve the sixty four dollar one.",
+    "words": "Approve the sixty four dollar one.",
+    "intent": "approve"
+  },
+  "yes": {
+    "say": "Yes.",
+    "words": "Yes.",
+    "intent": "yes"
+  },
+  "no": {
+    "say": "No, cancel that.",
+    "words": "No, cancel that.",
+    "intent": "no"
+  },
+  "unclear": {
+    "say": "The weather in Chennai is lovely this afternoon.",
+    "words": "The weather in Chennai is lovely this afternoon.",
+    "intent": "unclear"
+  },
+  "clip5": {
+    "say": "Which disputes are waiting for my approval today, and how much is each one?",
+    "words": "Which disputes are waiting for my approval today, and how much is each one?",
+    "intent": "ask"
+  },
+  "clip10": {
+    "say": "Refund anything under $20 that has not arrived in 14 days. Ask me for anything above that amount, and never refund the same order twice.",
+    "words": "Refund anything under $20 that has not arrived in 14 days. Ask me for anything above that amount, and never refund the same order twice.",
+    "intent": "set_rules"
+  },
+  "film_rules": {
+    "say": "Refund anything under thirty dollars that hasn't arrived in ten days. Ask me above that. Never refund twice.",
+    "words": "Refund anything under thirty dollars that hasn't arrived in ten days. Ask me above that. Never refund twice.",
+    "intent": "set_rules"
+  },
+  "film_ask": {
+    "say": "What happened with my disputes today?",
+    "words": "What happened with my disputes today?",
+    "intent": "ask"
+  },
+  "film_approve": {
+    "say": "Approve the sixty four dollar one.",
+    "words": "Approve the sixty four dollar one.",
+    "intent": "approve"
+  }
+}

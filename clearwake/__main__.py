@@ -10,6 +10,13 @@ from .server import ClearwakeServer
 
 
 def main():
+    import sys
+    if "--phone" in sys.argv[1:]:   # phone voice mode, like Relayloom's phone alerts: a separate small server on the LAN address
+        from .voice_phone import main as phone
+        return phone([a for a in sys.argv[1:] if a != "--phone"])
+    if "--voice-lan" in sys.argv[1:]:   # the phone microphone page over https on the private LAN: clearwake/voice_lan.py
+        from .voice_lan import main as voice_lan
+        return voice_lan([a for a in sys.argv[1:] if a != "--voice-lan"])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="127.0.0.1", help="Address to listen on. Anything but loopback is accepted only with CLEARWAKE_HOSTED=1 (hosted mode)")
     parser.add_argument("--port", type=int, default=None, help="Default 8810; in hosted mode the PORT variable the host provides")

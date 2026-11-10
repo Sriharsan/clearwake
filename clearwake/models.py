@@ -40,7 +40,7 @@ class Adapter:
             raise ValueError("Model backend must be ollama, meta or scripted.")
         if self.backend == "meta" and os.environ.get("CLEARWAKE_META_ACK") != "I_CONFIRM_META_CREDIT_TERMS":
             raise ValueError("The Meta backend is off until Sri confirms the credit terms (CLEARWAKE_META_ACK).")
-        self.model = model or os.environ.get("CLEARWAKE_MODEL", {"ollama": "qwen2.5-coder:3b", "meta": "muse-spark-1.3", "scripted": "scripted"}[self.backend])
+        self.model = model or os.environ.get("CLEARWAKE_MODEL", {"ollama": "qwen3.5:4b", "meta": "muse-spark-1.3", "scripted": "scripted"}[self.backend])
         self.send, self.timeout = send or self._send, timeout
         self.options = {"max_tokens": 300, "reasoning_effort": "none"}  # bound the reply; reasoning off (the native route also sets think false)
 
@@ -52,7 +52,7 @@ class Adapter:
         native = self.backend == "ollama" and url.endswith("/v1/chat/completions")
         if native:  # Ollama's own chat route accepts the thread count and switches reasoning off; the OpenAI route accepts neither
             url = url.replace("/v1/chat/completions", "/api/chat")
-            payload = {"model": payload["model"], "stream": False, "format": "json", "think": False, "messages": payload["messages"],
+            payload = {"model": payload["model"], "stream": False, "format": payload.get("ollama_format") or "json", "think": False, "keep_alive": "30m", "messages": payload["messages"],
                        "options": {"temperature": 0, "num_predict": payload.get("max_tokens", 400), "num_thread": int(os.environ.get("CLEARWAKE_OLLAMA_THREADS", "6"))}}
         with opener.open(Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json", **headers}, method="POST"), timeout=self.timeout) as response:
             reply = json.loads(response.read(1 << 20))
@@ -61,8 +61,10 @@ class Adapter:
                     "usage": {"prompt_tokens": reply.get("prompt_eval_count"), "completion_tokens": reply.get("eval_count")}}
         return reply
 
-    def propose(self, system, user, fields, scripted, required=None):
-        """Ask for a JSON object with `fields` (`required` keys must all be present, default all). `scripted` is the rule used when backend is scripted."""
+    def propose(self, system, user, fields, scripted, required=None, schema=None, max_tokens=None):
+        """Ask for a JSON object with `fields` (`required` keys must all be present, default all). `scripted` is the rule used when backend is scripted.
+
+        schema: a JSON schema; on Ollama it is sent as the native `format`, so the reply always matches it. max_tokens bounds the reply for this call."""
         if self.backend == "scripted":
             return Proposal("scripted", "scripted", self.label(), scripted())
         url, headers = (ollama_url(), {}) if self.backend == "ollama" else (META, {"Authorization": "Bearer " + os.environ.get("META_API_KEY", "")})
@@ -71,6 +73,10 @@ class Adapter:
                                 {"role": "user", "content": user}]}
         if self.backend == "ollama":
             payload.update(self.options)
+            if schema is not None:
+                payload["ollama_format"] = schema
+            if max_tokens:
+                payload["max_tokens"] = max_tokens
         call = {"prompt_sha256": hashlib.sha256(json.dumps(payload["messages"], sort_keys=True).encode()).hexdigest()}
         started = time.perf_counter()
         try:

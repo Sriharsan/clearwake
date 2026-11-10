@@ -100,3 +100,29 @@ PASS    g. Prompt injection cannot move a limit; the receipt shows the refusal  
 The toolkit is a tool layer, not a policy layer. It turns a tool call into one PayPal request and returns or raises whatever comes back, which is what it is built to do. It does not claim to enforce limits or handle unknown outcomes. In these runs it set no `PayPal-Request-Id`, passed no timeout, kept no record of an unknown outcome, and checked no amount or count. The comparison shows where Clearwake adds those pieces: per merchant limits checked before any PayPal call, stable request ids (one `PayPal-Request-Id` per action across any retry, set in `clearwake/paypal.py` line 128), an UNKNOWN hold instead of a blind retry, and a check against PayPal's record before a refund counts as done.
 
 Limits of this comparison: all toolkit results come from a local fake PayPal, injected fault. How real PayPal answers a repeated accept, or an accept whose disputed amount exceeds what remains on a capture, was not tested here. Clearwake's runs are rehearsal runs with its own fake provider, on capture refunds rather than dispute accepts.
+
+## Two hundred item not received episodes: an agent using PayPal's Agent Toolkit directly versus Clearwake
+
+Added 2026-11-10. The three cases above are single runs. This section runs the behaviour recorded above through 200 seeded item not received episodes (20 each of: delivered with proof, in transit, not shipped, lost in transit, two of three items arrived, injected instruction in the buyer's message, buyer agent claiming outside its mandate, lost PayPal response, over limit offer, duplicate delivery) on the local PayPal layer, next to Clearwake's real guarded code path. Seed 20261110, `python scripts/baseline.py`, saved in `data/runs/baseline-20261110-172506.json`. Method, scenarios and limits are in `docs/BASELINE.md`.
+
+The toolkit side in the harness (`ToolkitSurface` in `clearwake/baseline.py`) does what the table on this page records: no `PayPal-Request-Id` (line 41), no timeout (line 42), no retry inside the toolkit (line 43), only the note sent (line 44), amount and limit dropped (lines 73 and 88), no limit (line 45), a repeated call after a lost answer pays again (line 56). The lost response happens after the refund is recorded, as in case e. Nothing in the results below changes what the table above says about the real toolkit; it only counts the effect over many cases.
+
+Each cell: an agent using PayPal's Agent Toolkit directly / Clearwake.
+
+| Scenario | n | Overpaid (USD) | Double refunds | Wrongly accepted claims | Fee carrying claims reached | Fees (USD) | Final record matches owner's intent |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| delivered with proof | 20 | 602.00 / 0.00 | 0 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| in transit | 20 | 443.25 / 0.00 | 0 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| not shipped | 20 | 0.00 / 0.00 | 0 / 0 | 0 / 0 | 0 / 0 | 0.00 / 0.00 | 20 / 20 |
+| lost in transit | 20 | 0.00 / 0.00 | 0 / 0 | 0 / 0 | 0 / 0 | 0.00 / 0.00 | 20 / 20 |
+| two of three arrived | 20 | 180.00 / 0.00 | 0 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| injected instruction | 20 | 666.50 / 0.00 | 0 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| buyer agent outside its mandate | 20 | 180.00 / 0.00 | 0 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| lost PayPal response | 20 | 108.75 / 0.00 | 32 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| over limit offer | 20 | 352.00 / 0.00 | 0 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| duplicate delivery | 20 | 100.75 / 0.00 | 29 / 0 | 20 / 0 | 0 / 0 | 0.00 / 0.00 | 0 / 20 |
+| **Total** | **200** | **2633.25 / 0.00** | **61 / 0** | **160 / 0** | **0 / 0** | **0.00 / 0.00** | **40 / 200** |
+
+With the page's second variant (a 422 on an accept of an already resolved dispute) the toolkit agent totals USD 2423.75 overpaid, 0 double refunds, 120 wrongly accepted claims, and 80 of 200 final records matching the owner's intent. Clearwake needed the owner's approval on 88 of 200 episodes. No claim was escalated on either side, so fees are USD 0.00 in both columns.
+
+Limits: the toolkit side is its recorded behaviour driven by fixed rules, with no language model choosing calls; the layer is a local PayPal layer, not PayPal; and the page records only `accept_dispute_claim` as the toolkit's money returning dispute action. See `docs/BASELINE.md`.

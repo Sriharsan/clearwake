@@ -109,6 +109,20 @@ class DecisionTests(unittest.TestCase):
                     self.assertEqual(got.action, "counter", (requested, offer))
 
 
+class ClaimRuleTests(unittest.TestCase):
+    def test_a_claim_is_allowed_only_for_an_order_the_agent_placed_up_to_its_amount(self):
+        from clearwake.buyer import claim_allowed
+        mandate = Mandate("o", 10000, 10000, ("m",), ("c",), dispute_rule=RULE)
+        self.assertTrue(claim_allowed(mandate, 900, 900)[0])
+        self.assertTrue(claim_allowed(mandate, 300, 900)[0])
+        ok, why = claim_allowed(mandate, 2000, 900)
+        self.assertFalse(ok); self.assertIn("more than the 9.00", why)
+        self.assertFalse(claim_allowed(mandate, 500, 900, placed_by_agent=False)[0])
+        self.assertFalse(claim_allowed(Mandate("o", 10000, 10000, ("m",), ("c",)), 500, 900)[0])
+        for bad in ((0, 900), (-1, 900), (500, 0), (5.5, 900)):
+            self.assertFalse(claim_allowed(mandate, *bad)[0])
+
+
 class ModelCheckTests(unittest.TestCase):
     def test_the_model_may_only_pick_among_actions_the_rule_permits(self):
         from clearwake.buyer import final_action

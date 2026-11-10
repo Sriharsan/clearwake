@@ -5,6 +5,7 @@ Each case runs the same steps as scripts/cases.py; this module only keeps the bo
 """
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
+import dataclasses
 from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
@@ -19,7 +20,7 @@ import time
 import uuid
 
 from verdock_core.outcome import UNKNOWN, VERIFIED
-from verdock_core.policy import decide
+from verdock_core.policy import decide, load_policy, policy_hash
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed, verify_log
 
 from . import dispatch
@@ -27,6 +28,7 @@ from .buyer import BuyerAgent, Mandate, load_catalog, mandate_receipt
 from .counter import Counter
 from .fees import fee_if_escalated, gauge as fee_gauge
 from .models import Adapter
+from . import rules_nl
 from .paypal import GatewayError, LIMIT, NetworkSwitch, RehearsalGateway
 from .swarm import Case, MerchantSwarm, money
 
@@ -88,7 +90,8 @@ def policy_view(policy, entry):
 
 
 class Console:
-    def __init__(self, root, backend="scripted", clock=None):
+    def __init__(self, root, backend="scripted", clock=None, policy_path=None):
+        self.policy_path_override = Path(policy_path) if policy_path else None
         if backend not in ("scripted", "ollama"):
             raise ValueError("The console model must be scripted or ollama.")
         self.root, self.backend = Path(root), backend
@@ -111,7 +114,14 @@ class Console:
         (self.root / "current.txt").write_text(name, encoding="utf-8")
         self.adapter = Adapter(self.backend)
         self.gateway = RehearsalGateway(self.data / "provider.sqlite3")
-        self.swarm = MerchantSwarm(self.gateway, self.data / "merchant", self.adapter, clock=self.clock)
+        # The rules the owner confirms in plain words are written to this folder's own copy of the policy, never to a shared file.
+        self.policy_path = self.policy_path_override or self.data / "policy" / "merchant.yaml"
+        if not self.policy_path.exists():
+            self.policy_path.parent.mkdir(parents=True, exist_ok=True)
+            self.policy_path.write_text(rules_nl.POLICY.read_text(encoding="utf-8"), encoding="utf-8")
+        self.swarm = MerchantSwarm(self.gateway, self.data / "merchant", self.adapter, policy_path=self.policy_path, clock=self.clock)
+        self.pending_rules = {}
+        self.buyer_rule = rules_nl.load_current("buyer", self.policy_path).dispute_rule if self.policy_path.with_name("buyer.rules.json").exists() else None
         seed = self.data / "buyer.seed"
         if not seed.exists():
             create_seed(str(seed))
@@ -173,6 +183,51 @@ class Console:
                           "at": datetime.fromtimestamp(r.get("ts_ms", 0) / 1000, timezone.utc).strftime("%H:%M:%S")})
         return {"running": bool(neg.get("running")), "error": neg.get("error"), "case": neg.get("case"), "steps": steps}
 
+    # Rules in plain words ------------------------------------------------------------------------
+    def rules_propose(self, text, role):
+        """Turn a sentence into rules and show them back. Nothing changes until rules_confirm."""
+        if role not in ("merchant", "buyer"):
+            raise ConsoleError("Choose merchant or buyer.")
+        try:
+            proposed = rules_nl.propose_rules(text, rules_nl.rules_adapter(self.adapter), role, policy_path=self.policy_path)
+        except ValueError as error:
+            raise ConsoleError(str(error))
+        with self._lock:
+            self.pending_rules[role] = proposed
+        return proposed.view()
+
+    def rules_confirm(self, role, rules_hash, source="typed", transcript_hash=None):
+        with self._lock:
+            proposed = self.pending_rules.get(role)
+            if proposed is None or not proposed.ok or proposed.rules.hash() != rules_hash:
+                raise ConsoleError("The rules on screen are not the ones waiting for confirmation. Turn the sentence into rules again.", 409)
+            try:
+                if role == "merchant":
+                    done = rules_nl.confirm(proposed, source, transcript_hash, self.policy_path, self.swarm.receipt)
+                    self.swarm.policy = load_policy(self.policy_path); self.swarm.policy_hash = policy_hash(self.swarm.policy)
+                else:
+                    sign = lambda step, action, params, ok: self.buyer_log.append(step, action, params, ok, actor={"agent": "clearwake-buyer", "user": MANDATE.owner})
+                    done = rules_nl.confirm(proposed, source, transcript_hash, self.policy_path, sign)
+                    self.buyer_rule = done["dispute_rule"]
+            except ValueError as error:
+                raise ConsoleError(str(error))
+            del self.pending_rules[role]
+            return {"role": role, "rules_hash": done["rules_hash"], "policy_hash": done.get("policy_hash", ""), "previous_kept": done["previous_kept"], "source": source}
+
+    def rules_last(self):
+        """The last signed rule hash per role, read from the signed logs."""
+        out = {}
+        for role, log, action in (("merchant", self.swarm.receipts.path, "clearwake.rules.confirmed"), ("buyer", self.buyer_log.path, "clearwake.rules.buyer_confirmed")):
+            p = Path(log)
+            for raw in (p.read_text(encoding="utf-8").splitlines() if p.exists() else []):
+                try:
+                    r = json.loads(raw)
+                except ValueError:
+                    continue
+                if r.get("action_id") == action:
+                    out[role] = {"rules_hash": r["params"]["rules_hash"], "source": r["params"]["source"], "model": r["params"]["model"], "status": r["params"]["status"]}
+        return out
+
     # Session ---------------------------------------------------------------------------------
     def csrf_for(self, sid):
         return hmac.new(self.secret, sid.encode(), hashlib.sha256).hexdigest()
@@ -198,7 +253,7 @@ class Console:
                         "spent_before_minor": spent, "receipt": None, "label": REHEARSAL}
             if decision.allowed:
                 order_id = "ORDER-REH-" + uuid.uuid4().hex[:8].upper()
-                receipt = mandate_receipt(self.buyer_log, MANDATE, decision.product, self.agent.merchant["id"], order_id)
+                receipt = mandate_receipt(self.buyer_log, dataclasses.replace(MANDATE, dispute_rule=self.buyer_rule) if self.buyer_rule else MANDATE, decision.product, self.agent.merchant["id"], order_id)
                 check = verify_log(self.buyer_log.path, self.buyer_log.public_key)
                 purchase["receipt"] = {"order_id": order_id, "digest": receipt["digest"], "public_key": receipt["public_key"],
                                        "line": receipt["line"], "log_ok": check["ok"], "log_lines": check["count"]}
@@ -526,6 +581,7 @@ class Console:
                 "entries": entries, "runs": self.runs, "inbox": self.inbox(), "ledger": self.ledger(), "gauge": gauge,
                 "disputes": self.dispute_ledger(), "fees": self.fee_state(),
                 "now": now_iso(self.clock),
+                "rules": {"last": self.rules_last(), "ceiling": money(rules_nl.CEILING_MINOR), "label": "rule parser, not AI" if self.backend == "scripted" else rules_nl.rules_adapter(self.adapter).label()},
             }
 
     def receipts(self):

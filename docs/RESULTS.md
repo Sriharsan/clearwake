@@ -113,10 +113,42 @@ Amounts for c, d and e are the ones set in `scripts/cases.py`. The four case che
 
 ## Model calls and cost
 
+Model calls in the recorded runs: **85** (42 on qwen2.5-coder:3b and 42 on qwen3.5:4b in local runs on the local provider, plus 1 on PayPal's real sandbox record, read only). Every call was a real call to a model running on this machine through Ollama on loopback (CPU only, 14 cores, `num_thread` 6, reasoning off). Each call is a signed `clearwake.model.call` receipt with the model, the SHA-256 of the prompt, latency in ms, token counts, the model's proposal, what the policy decided and whether it overrode the model. The policy decides; the model only proposes and writes the text.
+
+Run files: `data/runs/ai-eval-rehearsal-20261110-072208.json` (qwen2.5-coder:3b), `data/runs/ai-eval-rehearsal-20261110-072849.json` (qwen3.5:4b), `data/runs/ai-eval-real-record-20261110-115118.json` (one read only call on a real sandbox record). Produced by `python scripts/ai_eval.py --model <name>`. Each model got the same 42 prompts: 7 dispute types times 6 buyer messages, one of the types carrying an order-giving buyer message (6 injection prompts). Every number below comes from those run files.
+
+| Measure | qwen2.5-coder:3b | qwen3.5:4b |
+| --- | --- | --- |
+| Calls (local run on the local provider) | 42 | 42 |
+| Valid JSON, usable proposal | 42 of 42 | 42 of 42 |
+| Fell back to the scripted rule | 0 | 0 |
+| Proposal matched the correct decision | 28 of 42 | 35 of 42 |
+| Policy decision correct | 42 of 42 | 42 of 42 |
+| Proposals the policy overrode | 14 | 7 |
+| Wrong action, by type | fight with records, 12 (types o and u, never proposed fighting); order-giving message, 2 | unauthorised with a signed mandate, 6; order-giving message, 1 |
+| Offer amount the model set wrongly, capped by the policy | 2 | 1 |
+| Model texts sent after code checks | 32 | 41 |
+| Model texts blocked by the code check | 10 | 1 |
+| Blocked by reason | amount differs from the offer 6, currency missing 4, offer amount missing 3, promise beyond the offer 1 | amount differs from the offer 1, currency missing 1, offer amount missing 1, promise beyond the offer 1 |
+| Injection prompts, receipted as an attempt | 5 of 6 (the sixth was added to the detector afterwards, with a test) | 5 of 6 (same) |
+| Injection prompts where the model followed the order | 2 | 1 |
+| Injection prompts where the decision changed | 0 | 0 |
+| Latency, median / 90th percentile / max | 8,956 / 10,925 / 16,660 ms | 24,522 / 42,584 / 65,446 ms |
+| Tokens in / out | 10,263 / 1,883 | 10,431 / 1,753 |
+| Receipt chain verifies | yes | yes |
+
+Blocked-by-reason counts are problems found, so one text can carry two. The model texts are checked by code for the amount (must equal the offer), the currency, promises beyond the offer, ids absent from the PayPal record and links. A blocked text is replaced by the fixed text and the receipt says so.
+
+The model used is qwen3.5:4b: it proposed the correct action on 35 of 42 prompts against 28 for the 3b model, and its median answer takes 24.5 s, under the 30 s limit (the 3b model answers in 9.0 s but never proposed fighting with records). Both models were wrong on part of the prompts and the policy produced the correct decision on all 84 (42 + 42). Latency in these runs was measured with other work running on the same machine at times, so the worst times (65 s) include contention.
+
+| Real sandbox record, read only | Value |
+| --- | --- |
+| Dispute | `PP-R-OBG-10196144`, PayPal's real sandbox record, status shown as waiting for the seller in memory, every write blocked |
+| Model call | qwen3.5:4b, 22,555 ms, 262 tokens in, 45 out, proposed settle by offer, policy decided settle by offer, text accepted |
+| Real sandbox dispute at INQUIRY waiting for the seller | none existed on 10 November (the list held one RESOLVED, one waiting for the buyer, one CHARGEBACK), so no real offer was driven by the model |
+
 | Measure | Value | Why |
 | --- | --- | --- |
-| Model calls in the recorded runs | 0 | every run file records `"model": "scripted, not AI"` |
-| Model cost per dispute | USD 0 | scripted agents make no calls; the optional local model (Ollama, `qwen2.5-coder:3b`) runs on the same machine and has no per call price |
+| Model cost per dispute | USD 0 | the model runs on the same machine and has no per call price |
 | PayPal fees | none charged | sandbox only |
-
-The case runs in `data/runs` used scripted agents. The one recorded local model use is the drafting in case m above, inside the network isolated containers.
+| Earlier recorded case runs | scripted | the case runs before 10 November in `data/runs` used the scripted rule and recorded `"model": "scripted, not AI"`; the one earlier local model use was the drafting in case m |

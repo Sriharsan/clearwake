@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<title>Clearwake voice</title>
+<link rel="stylesheet" href="/voice.css">
+<script src="/console-theme.js"></script>
+<script src="/voice.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#mic">Skip to the microphone</a>
+<header class="bar">
+  <a class="brand" href="/console#merchant" aria-label="Clearwake console">Clearwake<span> Voice</span></a>
+  <button class="theme" type="button" aria-label="Switch to the light theme">Light</button>
+</header>
+
+<main>
+  <p class="label" id="label">Local run on the local provider. Speech is read on the laptop. Nothing goes to a cloud service.</p>
+
+  <div class="notice" id="notice" role="alert" hidden></div>
+
+  <section class="mic-block" aria-label="Microphone">
+    <button class="mic" id="mic" type="button" aria-pressed="false" aria-describedby="status">
+      <svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true" focusable="false"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm6-4a1 1 0 1 1 2 0 8 8 0 0 1-7 7.93V21h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.07A8 8 0 0 1 4 11a1 1 0 1 1 2 0 6 6 0 0 0 12 0z" fill="currentColor"/></svg>
+      <span class="mic-word" id="mic-word">Hold to talk</span>
+    </button>
+    <p class="status" id="status" role="status" aria-live="polite">Ready. Hold the button and speak, or tap once to start and tap again to stop.</p>
+    <div class="meter-row">
+      <meter id="level" min="0" max="1" value="0" aria-label="Microphone level"></meter>
+      <span class="timer" id="timer" aria-hidden="true">0:00</span>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="h-said">
+    <h2 id="h-said">You said</h2>
+    <p class="chip" id="heard-chip">No recording yet</p>
+    <p class="big" id="transcript" aria-live="polite">Your words appear here.</p>
+  </section>
+
+  <section class="card" id="readback-card" aria-labelledby="h-read" hidden>
+    <h2 id="h-read">Read back</h2>
+    <p class="big" id="readback"></p>
+    <div class="yesno">
+      <button class="yes" id="yes" type="button">Yes</button>
+      <button class="no" id="no" type="button">No</button>
+    </div>
+    <p class="small">You can also say yes or no.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-answer">
+    <h2 id="h-answer">Answer</h2>
+    <p class="big" id="answer" aria-live="polite">The spoken answer appears here, word for word.</p>
+    <p class="small" id="meta"></p>
+    <div class="row">
+      <button class="plain" id="speak" type="button">Speak again</button>
+      <button class="plain" id="mute" type="button" aria-pressed="false">Voice on</button>
+    </div>
+  </section>
+
+  <details class="card" id="typed" >
+    <summary>Type instead</summary>
+    <label for="text">Type what you would say</label>
+    <textarea id="text" rows="3" maxlength="600" autocomplete="off" autocapitalize="sentences" placeholder="What happened with my disputes today?"></textarea>
+    <button class="send" id="send" type="button">Send</button>
+  </details>
+
+  <section class="card tips" aria-labelledby="h-tips">
+    <h2 id="h-tips">What you can say</h2>
+    <ul>
+      <li>Set rules: Refund anything under $30 that has not arrived in 10 days. Ask me above that. Never refund twice.</li>
+      <li>Ask: What happened with my disputes today?</li>
+      <li>Approve: Approve the sixty four dollar one.</li>
+    </ul>
+    <p class="small">A voice command never moves money by itself. Rules and approvals wait for your yes.</p>
+  </section>
+</main>
+</body>
+</html>

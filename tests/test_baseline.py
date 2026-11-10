@@ -69,3 +69,50 @@ class BaselineTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ToolkitMixTests(unittest.TestCase):
+    """An agent using PayPal's Agent Toolkit directly versus Clearwake on the item not received mix."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.report = baseline.run_inr(11, 10)
+
+    def test_ten_scenarios_in_equal_share_and_seeded(self):
+        eps = baseline.episodes_inr(11, 20)
+        self.assertEqual(eps, baseline.episodes_inr(11, 20))
+        for scenario in baseline.SCENARIOS:
+            self.assertEqual(sum(1 for e in eps if e["condition"] == scenario), 2)
+        with self.assertRaises(ValueError):
+            baseline.episodes_inr(11, 15)
+
+    def test_toolkit_surface_drops_amount_and_sends_no_request_id(self):
+        import random
+        with tempfile.TemporaryDirectory() as folder:
+            gateway = baseline.PayPalLikeGateway(Path(folder) / "p.sqlite3")
+            d = gateway.open_dispute("CAP-T", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "9.00", "2026-11-20T00:00:00Z", "x", stage="INQUIRY")["dispute_id"]
+            surface = baseline.ToolkitSurface(gateway, random.Random(1))
+            surface.accept_dispute_claim(d, "ok", amount="1.00", limit="5.00")
+            self.assertEqual(gateway.refunds()[0]["amount"]["value"], "9.00")     # the caller's amount and limit were dropped
+            surface.accept_dispute_claim(d, "ok")
+            self.assertEqual(len(gateway.refunds()), 2)                           # no request id, so the repeat pays again
+            checked = baseline.ToolkitSurface(gateway, random.Random(2), resolved_check=True)
+            with self.assertRaises(baseline.ProviderRefused):
+                checked.accept_dispute_claim(d, "ok")
+
+    def test_clearwake_matches_intent_on_every_scenario_and_toolkit_agent_overpays(self):
+        total = self.report["summary"]["total"]
+        self.assertEqual(total["guarded"]["matches_intent"], 10)
+        for key in ("overpaid_minor", "double_refunds", "wrongly_accepted_claims", "claims_reached", "fee_minor"):
+            self.assertEqual(total["guarded"][key], 0, key)
+        self.assertGreater(total["unguarded"]["overpaid_minor"], 0)
+        self.assertGreater(total["unguarded"]["wrongly_accepted_claims"], 0)
+        self.assertEqual(self.report["clearwake_worse_on"], [])
+        self.assertEqual(self.report["labels"]["layer"], "local PayPal layer")
+
+    def test_lost_response_and_duplicate_pay_twice_without_a_request_id(self):
+        by = {r["condition"]: r for r in self.report["results"]}
+        self.assertGreater(by["lost_paypal_response"]["unguarded"]["refund_records"], 1)
+        self.assertEqual(by["lost_paypal_response"]["guarded"]["refund_records"], 1)
+        self.assertGreater(by["duplicate_delivery"]["unguarded"]["refund_records"], 1)
+        self.assertEqual(by["duplicate_delivery"]["unguarded_resolved_check"]["refund_records"], 1)   # the page's 422 variant

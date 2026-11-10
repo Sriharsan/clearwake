@@ -120,6 +120,29 @@
       <p class="screen-note">A stand-in provider in a local data folder plays PayPal, and every record here comes from it. The flow is the one the sandbox run uses: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
     </div>
 
+    <section class="card rules-say" aria-labelledby="rules-title">
+      <h2 id="rules-title" class="card-title">Say your rules</h2>
+      <p class="card-sub">Write the rules in your own words. Clearwake turns them into a policy, reads them back in plain words, and nothing takes effect until you press Confirm. Typed on purpose: browser speech recognition sends audio to a cloud service, and these rules stay on this machine.</p>
+      <div class="rules-row">
+        <label for="rules-role" class="sr-only">Whose rules</label>
+        <select id="rules-role" class="rules-role"><option value="merchant">My shop's rules</option><option value="buyer">My buying agent's rules</option></select>
+      </div>
+      <label for="rules-text" class="sr-only">Your rules in plain words</label>
+      <textarea id="rules-text" class="rules-text" rows="3" maxlength="600" placeholder="Refund anything under $30 that has not arrived in 10 days. Ask me above that. Never refund twice."></textarea>
+      <div class="runner-foot"><button type="button" class="button primary" id="rules-propose">Turn into rules</button>
+        <p class="card-sub" id="rules-label" aria-live="polite"></p></div>
+      <p class="rules-question" id="rules-question" role="status" hidden></p>
+      <div id="rules-result" hidden>
+        <h3 class="rules-h">Read back in plain words</h3>
+        <ul class="rules-readback" id="rules-readback"></ul>
+        <h3 class="rules-h">Compared with the rules in force now</h3>
+        <ul class="rules-diff" id="rules-diff"></ul>
+        <p class="card-sub" id="rules-changes"></p>
+        <div class="runner-foot"><button type="button" class="button primary" id="rules-confirm">Confirm</button></div>
+      </div>
+      <p class="card-sub mono" id="rules-last">Last signed rule hash: none yet.</p>
+    </section>
+
     <section class="card negotiate" aria-labelledby="neg-title">
       <div class="runner-head"><h2 id="neg-title" class="card-title">Run a negotiation</h2>
         <button type="button" class="button primary" id="neg-run">Run a case</button></div>

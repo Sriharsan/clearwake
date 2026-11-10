@@ -335,7 +335,7 @@ class ResolutionCenter:
             if not self.site.dispute_url_template:
                 raise
             self.page.goto(self.site.dispute_url_template.format(id=dispute_id), wait_until="domcontentloaded", timeout=self.timeout * 4)
-        self.wait_text(re.escape(dispute_id))
+        self.wait_text(r"(dispute|case)\W+" + re.escape(dispute_id) + r"|status\s*:")
 
     def wait_text(self, pattern, flags=re.I):
         """Wait until the visible page text matches. Hidden elements do not count."""
