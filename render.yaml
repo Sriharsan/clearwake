@@ -1,7 +1,7 @@
 # Render Blueprint for the Clearwake console in hosted mode.
 # Hosted on Render, not network isolated: the network isolated run stays the local proof (compose.airgap.yml).
 # Secrets are never in this file. PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are set by hand in the Render dashboard
-# (sync: false), see docs/RENDER.md. Sandbox keys only.
+# (none are needed for the hosted console), see docs/RENDER.md.
 services:
   - type: web
     name: clearwake-console
@@ -23,8 +23,5 @@ services:
         value: I_CONFIRM_SANDBOX_ONLY
       - key: PAYPAL_BASE_URL
         value: https://api-m.sandbox.paypal.com
-      # Set these two in the Render dashboard. Render asks for them on the first Blueprint apply.
-      - key: PAYPAL_CLIENT_ID
-        sync: false
-      - key: PAYPAL_CLIENT_SECRET
-        sync: false
+      # The hosted console runs on the local provider and never calls PayPal, so it needs no PayPal keys.
+      # The real PayPal sandbox runs are recorded in the ledger. No keys are stored on Render.
