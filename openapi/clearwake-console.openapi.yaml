@@ -1,0 +1,806 @@
+openapi: 3.1.0
+info:
+  title: Clearwake console API
+  version: 0.6.1
+  summary: The buyer agent, the merchant agent and the dispute ledger behind the Clearwake console.
+  description: |
+    The API that the Clearwake console (`/console`) calls. It lets a client run the buyer agent against its signed mandate,
+    run one dispute case through the merchant agent, approve a held action, reconcile an uncertain refund, read the ledger and
+    both signed receipt logs, and start a fresh run.
+
+    Every state-changing call needs the session cookie and the CSRF header from `GET /console/api/session`. The server accepts
+    requests only from its own origin; a client outside the browser sets `Origin` to the server's own origin.
+
+    Source of truth: `clearwake/server.py` (routes) and `clearwake/console.py` (bodies and shapes). The data in a local run is
+    rehearsal data (`label`); the PayPal sandbox calls that sit behind the merchant agent are listed in the Postman collection
+    `postman/clearwake-paypal.postman_collection.json`.
+  license:
+    name: MIT
+    identifier: MIT
+  contact:
+    name: Sriharsan B S
+    url: https://github.com/Sriharsan/clearwake
+servers:
+  - url: http://127.0.0.1:8810
+    description: Local run, `python -m clearwake --port 8810`. Loopback only.
+  - url: https://{renderHost}
+    description: Hosted on Render, not network isolated. Fill in the host after the deploy (docs/RENDER.md).
+    variables:
+      renderHost:
+        default: clearwake-console.onrender.com
+        description: The onrender.com host Render gives the service.
+tags:
+  - name: Session
+    description: Cookie and CSRF token. Call first.
+  - name: Buyer agent
+    description: The shopper's agent, limited by its owner's signed mandate.
+  - name: Merchant agent
+    description: Run a dispute or refund case, approve a held action, reconcile an uncertain refund.
+  - name: Ledger and receipts
+    description: What happened and the proof of it.
+  - name: Run
+    description: Start over.
+paths:
+  /console/api/session:
+    get:
+      tags: [Session]
+      operationId: getSession
+      summary: Start a session and get the CSRF token
+      description: Sets the HttpOnly `clearwake_console` cookie when the request has none and returns the token to send as `X-Clearwake-CSRF` on every POST.
+      responses:
+        '200':
+          description: Session ready.
+          headers:
+            Set-Cookie:
+              description: "`clearwake_console=<64 hex>; Path=/console; HttpOnly; SameSite=Strict; Max-Age=28800`"
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Session'
+              example:
+                csrf: 4f1d0c2f9a7b6e8d3c5a1b0e9f8d7c6b5a4938271605f4e3d2c1b0a998877665
+                label: rehearsal data
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/state:
+    get:
+      tags: [Ledger and receipts]
+      operationId: getState
+      summary: Everything the console shows
+      description: The mandate, the product catalog, purchases, every case entry with its history, the approval inbox, the money ledger, the dispute ledger (PayPal stage and status next to the policy decision and the model proposal), the fee gauge and the policy limits.
+      responses:
+        '200':
+          description: The current state of the run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/State'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/receipts:
+    get:
+      tags: [Ledger and receipts]
+      operationId: getReceipts
+      summary: Both signed receipt logs
+      description: The merchant log and the buyer log as written, with their public keys. Each is verifiable offline, in the browser or with the verdock-core verifier. Editing one line breaks the chain.
+      responses:
+        '200':
+          description: Receipt logs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipts'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/buy:
+    post:
+      tags: [Buyer agent]
+      operationId: buy
+      summary: Ask the buyer agent to buy something
+      description: The agent proposes a product from the catalog; the mandate check (budget, per item cap, store, category) decides. An allowed purchase writes a signed mandate receipt linked to the order id.
+      security:
+        - consoleSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BuyRequest'
+            example:
+              request: a pack of three A5 notebooks
+      responses:
+        '200':
+          description: The purchase decision, allowed or refused, with the checks that decided it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Purchase'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/case:
+    post:
+      tags: [Merchant agent]
+      operationId: runCase
+      summary: Run one case through the merchant agent
+      description: |
+        Runs case `c`, `d`, `e`, `f`, `g`, `i`, `j`, `k`, `l`, `m`, `n` or `o` (titles in `State.cases`). The agent proposes, the policy
+        file decides, code checks every amount and cited id, and a separate checker reads the provider record afterwards.
+      security:
+        - consoleSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseRequest'
+            example:
+              case: n
+      responses:
+        '200':
+          description: The entries the case produced.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseRun'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/approve:
+    post:
+      tags: [Merchant agent]
+      operationId: approve
+      summary: Approve a held action
+      description: Records a named person's approval for the approval id in the inbox, then runs the case again so the agent takes only the step the approval names. The approval store refuses a decided, expired or self approval.
+      security:
+        - consoleSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveRequest'
+      responses:
+        '200':
+          description: The updated case entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/reconcile:
+    post:
+      tags: [Merchant agent]
+      operationId: reconcile
+      summary: Reconcile an UNKNOWN refund from the provider record
+      description: Reads the provider's refund for the case's stable request id and checks amount, currency and status. Nothing is sent again. Only a refund in state UNKNOWN is reconciled.
+      security:
+        - consoleSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReconcileRequest'
+      responses:
+        '200':
+          description: The updated case entry.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/reset:
+    post:
+      tags: [Run]
+      operationId: reset
+      summary: Start a fresh run
+      description: Opens a new data folder. Locally earlier folders are kept; in hosted mode they are deleted (`wiped`, `removed_folders`).
+      security:
+        - consoleSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+            example: {}
+      responses:
+        '200':
+          description: A new run folder is open.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetResult'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+components:
+  securitySchemes:
+    consoleSession:
+      type: apiKey
+      in: cookie
+      name: clearwake_console
+      description: Set by `GET /console/api/session`. HttpOnly, SameSite=Strict, 8 hours.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-Clearwake-CSRF
+      description: The `csrf` value from `GET /console/api/session`, an HMAC of the session id. Required on every POST.
+  responses:
+    BadRequest:
+      description: The body is not valid (for example a request longer than 200 characters, or an unknown case key).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: The origin is not the server's own, or the session or CSRF token is missing or stale. Reload the session.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Unknown route, unknown reference, or the console is not configured on this server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Hosted mode only (`CLEARWAKE_HOSTED=1`). Too many requests from this address in the last minute (reads 120, writes 20 by default, set by `CLEARWAKE_RATE_READ` and `CLEARWAKE_RATE_WRITE`). Wait the number of seconds in `Retry-After`.
+      headers:
+        Retry-After:
+          description: Whole seconds to wait.
+          schema:
+            type: integer
+            minimum: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The state does not allow it (for example an approval already decided, or a refund that is not UNKNOWN).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: The refusal as shown in the console.
+    Session:
+      type: object
+      required: [csrf, label]
+      properties:
+        csrf:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+        label:
+          type: string
+          description: How the data behind the console runs, for example `rehearsal data`.
+    Money:
+      type: string
+      pattern: '^(0|[1-9][0-9]{0,8})\.[0-9]{2}$'
+      description: A USD amount with two decimals.
+    BuyRequest:
+      type: object
+      required: [request]
+      additionalProperties: false
+      properties:
+        request:
+          type: string
+          minLength: 1
+          maxLength: 200
+          pattern: '^[\x20-\x7e]+$'
+          description: What the owner asked the buyer agent for, in plain printable characters.
+    CaseRequest:
+      type: object
+      required: [case]
+      additionalProperties: false
+      properties:
+        case:
+          type: string
+          enum: [c, d, e, f, g, i, j, k, l, m, n, o]
+    ApproveRequest:
+      type: object
+      required: [approval_id, approver]
+      additionalProperties: false
+      properties:
+        approval_id:
+          type: string
+          pattern: '^[0-9a-f-]{36}$'
+        approver:
+          type: string
+          pattern: "^[A-Za-z][A-Za-z .'()-]{1,59}$"
+          description: The approver's name, 2 to 60 letters.
+    ReconcileRequest:
+      type: object
+      required: [case_id]
+      additionalProperties: false
+      properties:
+        case_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{1,64}$'
+    ResetResult:
+      type: object
+      required: [ok, folder]
+      properties:
+        ok:
+          type: boolean
+        wiped:
+          type: boolean
+          description: True in hosted mode, where a reset deletes the earlier run folders.
+        removed_folders:
+          type: integer
+          minimum: 0
+        folder:
+          type: string
+          pattern: '^run-[0-9]{8}-[0-9]{6}-[0-9a-f]{4}$'
+    Purchase:
+      type: object
+      required: [at, request, allowed, reason, checks, price_minor]
+      properties:
+        at:
+          type: string
+          format: date-time
+        request:
+          type: string
+        model:
+          type: string
+          description: Which agent proposed it, for example `scripted, not AI` or a model label.
+        proposed:
+          type: string
+          description: The product id the agent proposed.
+        note:
+          type: string
+        allowed:
+          type: boolean
+        reason:
+          type: string
+        checks:
+          type: object
+          description: Each mandate check by name, true when it passed.
+          additionalProperties:
+            type: boolean
+        product:
+          type:
+            - object
+            - 'null'
+          additionalProperties: true
+        price_minor:
+          type: integer
+          minimum: 0
+        spent_before_minor:
+          type: integer
+          minimum: 0
+        receipt:
+          oneOf:
+            - $ref: '#/components/schemas/MandateReceipt'
+            - type: 'null'
+        label:
+          type: string
+    MandateReceipt:
+      type: object
+      required: [order_id, digest, public_key, line, log_ok, log_lines]
+      properties:
+        order_id:
+          type: string
+        digest:
+          type: string
+        public_key:
+          type: string
+        line:
+          type: string
+          description: The receipt exactly as written to the log.
+        log_ok:
+          type: boolean
+        log_lines:
+          type: integer
+          minimum: 1
+    HistoryStep:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+        state:
+          type: string
+        action:
+          type: string
+        detail:
+          type: string
+        note:
+          type: string
+    Entry:
+      type: object
+      description: One case as the console shows it. Dispute entries add the dispute fields.
+      required: [id, key, run, title, kind, state, action, detail, history]
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+          enum: [c, d, e, f, g, i, j, k, l, m, n, o]
+        run:
+          type: string
+        title:
+          type: string
+        at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+          enum: ['PayPal dispute', 'buyer complaint']
+        label:
+          type: string
+        state:
+          type: string
+          description: "VERIFIED, UNKNOWN, PENDING, MISMATCH, done, awaiting approval, refused, busy or held, offline."
+        action:
+          type: string
+        detail:
+          type: string
+        refund_id:
+          type:
+            - string
+            - 'null'
+        approval_id:
+          type:
+            - string
+            - 'null'
+        proposed:
+          type:
+            - string
+            - 'null'
+          description: What the model proposed. The policy decides, not the model.
+        model:
+          type:
+            - string
+            - 'null'
+        decided:
+          type: string
+          description: What the policy decided.
+        offer:
+          description: The settlement offer, when the policy chose one.
+        dispatch:
+          description: The dispatch proof the evidence step found, when there was one.
+        claim:
+          description: The buyer's claim as checked against the record.
+        dispute_id:
+          type: string
+        amount_minor:
+          type: integer
+        reason:
+          type: string
+        deadline:
+          description: The seller response deadline and its state.
+        policy:
+          $ref: '#/components/schemas/PolicyView'
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryStep'
+      additionalProperties: true
+    PolicyView:
+      type: object
+      required: [allowed, needs_approval, reason]
+      properties:
+        allowed:
+          type: boolean
+        needs_approval:
+          type: boolean
+        reason:
+          type: string
+        limit:
+          oneOf:
+            - $ref: '#/components/schemas/Money'
+            - type: 'null'
+    CaseRun:
+      type: object
+      required: [key, run, label, entries]
+      properties:
+        key:
+          type: string
+        run:
+          type: string
+        label:
+          type: string
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+    DisputeRow:
+      type: object
+      description: One row of the AG Grid dispute ledger. `stage` and `paypal_status` are read from the provider record now.
+      required: [dispute, case, reason, amount, stage, paypal_status, decided, state, settled_before_escalation, fee_avoided]
+      properties:
+        dispute:
+          type: string
+        case:
+          type: string
+        reason:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+        stage:
+          type: string
+          description: INQUIRY, CHARGEBACK and so on, or `not given`.
+        paypal_status:
+          type: string
+          description: The provider's status, or `unreadable`.
+        decided:
+          type: string
+        proposed:
+          type: string
+        model:
+          type: string
+        state:
+          type: string
+        due:
+          type:
+            - string
+            - 'null'
+        dispatch:
+          description: The dispatch proof summary, or `none`.
+        settled_before_escalation:
+          type: boolean
+          description: True only when the provider record reads RESOLVED at the INQUIRY stage.
+        fee_avoided:
+          $ref: '#/components/schemas/Money'
+        source:
+          type: string
+    LedgerRow:
+      type: object
+      required: [at, case, movement, amount, currency, state]
+      properties:
+        at:
+          type: string
+          format: date-time
+        case:
+          type: string
+        movement:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+        currency:
+          type: string
+          enum: [USD]
+        record:
+          type: string
+        state:
+          type: string
+        source:
+          type: string
+    InboxRow:
+      type: object
+      required: [id, operation, action, amount, currency, status]
+      properties:
+        id:
+          type: string
+        operation:
+          type: string
+        action:
+          type: string
+        subject:
+          type: string
+        amount:
+          $ref: '#/components/schemas/Money'
+        currency:
+          type: string
+        limit:
+          oneOf:
+            - $ref: '#/components/schemas/Money'
+            - type: 'null'
+        requested_by:
+          type: string
+        requested_at:
+          type: number
+          description: Unix time in seconds.
+        expires_at:
+          type: number
+          description: Unix time in seconds.
+        status:
+          type: string
+          description: PENDING, APPROVED or another store state, upper case.
+        expired:
+          type: boolean
+        approver:
+          type:
+            - string
+            - 'null'
+        case:
+          type:
+            - string
+            - 'null'
+        key:
+          type:
+            - string
+            - 'null'
+    State:
+      type: object
+      required: [label, mode, folder, model, mandate, catalog, purchases, policy, cases, entries, runs, inbox, ledger, disputes, fees, now]
+      properties:
+        label:
+          type: string
+        mode:
+          type: string
+        folder:
+          type: string
+        model:
+          type: string
+          description: Which agents run, for example `scripted, not AI`.
+        network:
+          type: string
+        mandate:
+          type: object
+          properties:
+            owner:
+              type: string
+            budget:
+              $ref: '#/components/schemas/Money'
+            per_item_cap:
+              $ref: '#/components/schemas/Money'
+            merchants:
+              type: array
+              items:
+                type: string
+            categories:
+              type: array
+              items:
+                type: string
+            currency:
+              type: string
+            spent:
+              $ref: '#/components/schemas/Money'
+            remaining:
+              $ref: '#/components/schemas/Money'
+        merchant:
+          type: object
+          additionalProperties: true
+        catalog:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        purchases:
+          type: array
+          items:
+            $ref: '#/components/schemas/Purchase'
+        policy:
+          type: object
+          properties:
+            refund_max:
+              $ref: '#/components/schemas/Money'
+            approval_above:
+              $ref: '#/components/schemas/Money'
+            per_customer_per_day:
+              $ref: '#/components/schemas/Money'
+            hash:
+              type: string
+        cases:
+          type: array
+          items:
+            type: object
+            required: [key, title, dispute]
+            properties:
+              key:
+                type: string
+              title:
+                type: string
+              dispute:
+                type: boolean
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Entry'
+        runs:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              run:
+                type: string
+              at:
+                type: string
+              title:
+                type: string
+              states:
+                type: array
+                items:
+                  type: string
+              seconds:
+                type: number
+        inbox:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboxRow'
+        ledger:
+          type: object
+          properties:
+            rows:
+              type: array
+              items:
+                $ref: '#/components/schemas/LedgerRow'
+            provider_refunds:
+              type: integer
+        gauge:
+          type: object
+          additionalProperties: true
+        disputes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisputeRow'
+        fees:
+          type: object
+          additionalProperties: true
+          description: The fee leak gauge computed from the run's own records.
+        now:
+          type: string
+          format: date-time
+    LogFile:
+      type: object
+      required: [name, title, public_key, text]
+      properties:
+        name:
+          type: string
+          enum: [merchant, buyer]
+        title:
+          type: string
+        public_key:
+          type: string
+        text:
+          type: string
+          description: The receipt log as written, one JSON receipt per line.
+    Receipts:
+      type: object
+      required: [label, logs]
+      properties:
+        label:
+          type: string
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogFile'

@@ -463,3 +463,14 @@ h1{font-weight:700;font-size:clamp(2.4rem,5.4vw,4.6rem);line-height:.98;max-widt
 @media(max-width:1099px){.top{position:static;padding:.75rem 1rem;gap:.5rem 1rem}.top-meta{gap:.5rem}.tabs{order:3}}
 @media(max-width:860px){.buyer-grid{grid-template-columns:minmax(0,1fr)}.mandate{position:static}}
 @media(max-width:640px){.fee-v{font-size:1.9rem}.fee-strip{gap:1.25rem 1rem}}
+
+/* Dispute ledger tools and row detail */
+.ledger-tools{display:flex;align-items:center;gap:.75rem 1rem;flex-wrap:wrap;margin:0 0 .75rem}
+.ledger-tools .field-label{margin:0}
+.ledger-tools select{min-height:2.5rem;padding:.35rem .75rem;border:1px solid var(--cw-line-strong,var(--cw-line));border-radius:var(--radius,8px);background:var(--cw-surface);color:var(--cw-text);font:inherit}
+.ledger-tools .button{margin-left:auto}
+.detail{margin-top:1rem;padding:1rem 0 0;border-top:1px solid var(--cw-line-strong,var(--cw-line))}
+.detail .facts{margin:.5rem 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:.9rem 2rem}
+.detail .facts>div{display:block}
+.raw-record{margin:.5rem 0 0;max-height:20rem;overflow:auto;padding:.9rem 1rem;border-left:3px solid var(--cw-accent);background:var(--cw-raised);color:var(--cw-text);font:400 .82rem/1.55 var(--cw-code,ui-monospace,Consolas,monospace);white-space:pre}
+.cw-soon{color:var(--cw-warn-text,var(--cw-alert));font-weight:600}

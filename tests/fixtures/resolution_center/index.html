@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resolution Center (TEST FIXTURE)</title>
+<style>
+  body { font-family: sans-serif; margin: 24px; max-width: 720px; }
+  .banner { background: #fde68a; padding: 8px; font-weight: bold; }
+  [hidden] { display: none !important; }
+  li { margin: 4px 0; }
+  label { display: block; margin: 8px 0 2px; }
+</style>
+</head>
+<body>
+<!-- TEST ONLY. A local stand-in for the Resolution Center so the driver logic can be unit tested offline.
+     It is not PayPal, it is never served publicly, and it proves nothing about the real pages. -->
+<p class="banner">Local test fixture. Not PayPal.</p>
+
+<section id="signin" hidden>
+  <h1>Log in to your account</h1>
+  <label for="pw">Password</label>
+  <input id="pw" type="password">
+  <button id="login-btn">Log in</button>
+</section>
+
+<section id="blocked" hidden>
+  <h1>Security check</h1>
+  <p>Please confirm you are not a robot to continue. CAPTCHA</p>
+</section>
+
+<main id="app" hidden>
+  <h1>Resolution Center</h1>
+  <nav>
+    <a href="#/" id="home-link">All disputes</a>
+    <button id="report-btn">Report a problem</button>
+  </nav>
+
+  <section id="list-view">
+    <h2>Your disputes</h2>
+    <ul id="dispute-list" aria-label="Disputes"></ul>
+  </section>
+
+  <section id="report-view" hidden>
+    <h2>Report a problem</h2>
+    <label for="txn">Transaction</label>
+    <select id="txn" aria-label="Transaction"></select>
+    <fieldset>
+      <legend>What went wrong?</legend>
+      <label><input type="radio" name="why" value="item_not_received"> I didn't receive my item</label>
+      <label><input type="radio" name="why" value="not_as_described"> My item is significantly not as described</label>
+      <label><input type="radio" name="why" value="missing_items"> An item is missing from my order</label>
+    </fieldset>
+    <label for="amount">Amount you are asking back</label>
+    <input id="amount" type="text" aria-label="Refund amount">
+    <label for="msg">Message to the seller</label>
+    <textarea id="msg" aria-label="Message to the seller" rows="3"></textarea>
+    <button id="submit-btn">Submit</button>
+    <p id="opened" hidden></p>
+  </section>
+
+  <section id="dispute-view" hidden>
+    <h2 id="dispute-title"></h2>
+    <p id="status"></p>
+    <p id="requested"></p>
+    <ul id="thread" aria-label="Conversation"></ul>
+    <div id="offer-card" hidden>
+      <p id="offer-text"></p>
+      <button id="accept-btn">Accept offer</button>
+    </div>
+    <label for="reply">Reply to the seller</label>
+    <textarea id="reply" aria-label="Reply to the seller" rows="2"></textarea>
+    <button id="send-btn">Send message</button>
+    <button id="claim-btn">Escalate to claim</button>
+    <p id="result" hidden></p>
+  </section>
+</main>
+
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var RC = window.RC = {
+    signedIn: !params.has('signedout'),
+    blocked: params.has('captcha'),
+    counter: 0,
+    transactions: JSON.parse(params.get('txns') || '["CAP-FIXTURE-1"]'),
+    disputes: {},
+    log: [] // what the buyer did on this page: read by the test bridge, never by the driver
+  };
+  var $ = function (id) { return document.getElementById(id); };
+  var STATUS = { WAITING_FOR_SELLER_RESPONSE: 'Waiting for seller response', WAITING_FOR_BUYER_RESPONSE: 'Waiting for your response',
+                 RESOLVED: 'Resolved', ESCALATED: 'Escalated to a claim' };
+
+  function show(view) {
+    ['list-view', 'report-view', 'dispute-view'].forEach(function (id) { $(id).hidden = id !== view; });
+  }
+  function renderList() {
+    var list = $('dispute-list'); list.innerHTML = '';
+    Object.keys(RC.disputes).forEach(function (id) {
+      var li = document.createElement('li'), a = document.createElement('a');
+      a.href = '#/dispute/' + id; a.textContent = id; li.appendChild(a);
+      li.appendChild(document.createTextNode(' ' + STATUS[RC.disputes[id].status]));
+      list.appendChild(li);
+    });
+  }
+  function renderDispute(id) {
+    var d = RC.disputes[id]; if (!d) { show('list-view'); return; }
+    show('dispute-view');
+    $('dispute-title').textContent = 'Dispute ' + id;
+    $('status').textContent = 'Status: ' + STATUS[d.status];
+    $('requested').textContent = 'You asked for ' + d.currency + ' ' + d.requested;
+    var thread = $('thread'); thread.innerHTML = '';
+    d.messages.forEach(function (m) {
+      var li = document.createElement('li'); li.setAttribute('data-from', m.from);
+      li.textContent = (m.from === 'seller' ? 'Seller: ' : 'You: ') + m.text; thread.appendChild(li);
+    });
+    $('offer-card').hidden = !(d.offer && d.status === 'WAITING_FOR_BUYER_RESPONSE');
+    if (d.offer) $('offer-text').textContent = 'The seller offered you a refund of ' + d.offer.currency + ' ' + d.offer.amount;
+    var open = d.status !== 'RESOLVED' && d.status !== 'ESCALATED';
+    $('send-btn').hidden = $('reply').hidden = !open; $('claim-btn').hidden = !open;
+    $('result').hidden = open;
+    if (d.status === 'RESOLVED') $('result').textContent = 'Resolved: you accepted the offer.';
+    if (d.status === 'ESCALATED') $('result').textContent = 'This case is now a claim.';
+  }
+  function route() {
+    if (RC.blocked) { ['signin', 'app'].forEach(function (i) { $(i).hidden = true; }); $('blocked').hidden = false; return; }
+    $('signin').hidden = RC.signedIn; $('app').hidden = !RC.signedIn;
+    if (!RC.signedIn) return;
+    var m = /^#\/dispute\/(.+)$/.exec(location.hash);
+    if (m) renderDispute(m[1]); else { renderList(); show('list-view'); }
+  }
+  $('login-btn').onclick = function () { RC.signedIn = true; route(); };
+  $('report-btn').onclick = function () {
+    var sel = $('txn'); sel.innerHTML = '';
+    RC.transactions.forEach(function (t) { var o = document.createElement('option'); o.textContent = 'Payment ' + t; o.value = t; sel.appendChild(o); });
+    $('opened').hidden = true; show('report-view');
+  };
+  $('submit-btn').onclick = function () {
+    var why = document.querySelector('input[name=why]:checked');
+    if (!why || !$('msg').value.trim()) { $('opened').hidden = false; $('opened').textContent = 'Choose a reason and write a message.'; return; }
+    RC.counter += 1;
+    var id = 'PP-R-FIX-' + String(RC.counter).padStart(4, '0');
+    RC.disputes[id] = { transaction: $('txn').value, reason: why.value, requested: $('amount').value || '0.00', currency: 'USD',
+                        status: 'WAITING_FOR_SELLER_RESPONSE', offer: null, messages: [{ from: 'buyer', text: $('msg').value }] };
+    RC.log.push({ type: 'opened', id: id });
+    $('opened').hidden = false; $('opened').textContent = 'Your dispute ' + id + ' was opened.';
+    renderList();
+  };
+  $('accept-btn').onclick = function () {
+    var id = /^#\/dispute\/(.+)$/.exec(location.hash)[1], d = RC.disputes[id];
+    d.status = 'RESOLVED'; RC.log.push({ type: 'accepted', id: id }); renderDispute(id);
+  };
+  $('send-btn').onclick = function () {
+    var id = /^#\/dispute\/(.+)$/.exec(location.hash)[1], d = RC.disputes[id], text = $('reply').value.trim();
+    if (!text) return;
+    d.messages.push({ from: 'buyer', text: text }); d.status = 'WAITING_FOR_SELLER_RESPONSE';
+    RC.log.push({ type: 'message', id: id, text: text }); $('reply').value = ''; renderDispute(id);
+  };
+  $('claim-btn').onclick = function () {
+    var id = /^#\/dispute\/(.+)$/.exec(location.hash)[1], d = RC.disputes[id];
+    d.status = 'ESCALATED'; RC.log.push({ type: 'claim', id: id }); renderDispute(id);
+  };
+  // Test hook for the seller side. The driver never calls it; the test bridge does, to play the merchant.
+  RC.merchantSync = function (id, patch) {
+    var d = RC.disputes[id]; if (!d) return false;
+    if (patch.messages) d.messages = d.messages.filter(function (m) { return m.from === 'buyer'; }).concat(patch.messages.map(function (t) { return { from: 'seller', text: t }; }));
+    if ('offer' in patch) d.offer = patch.offer; if (patch.status) d.status = patch.status;
+    route(); return true;
+  };
+  $('home-link').addEventListener('click', function () { setTimeout(route, 0); });
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

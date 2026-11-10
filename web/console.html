@@ -24,7 +24,6 @@
   <div class="top-meta">
     <span class="pill rehearsal" id="mode-pill">Rehearsal data</span>
     <span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: loading</span>
-    <a class="workroom-link" href="/">Workroom</a>
     <button class="theme" type="button" aria-label="Switch to the light theme">Light</button>
   </div>
 </header>
@@ -194,8 +193,22 @@
         <div class="fee-cell"><span class="fee-k">Fee avoided</span><span class="fee-v" id="fee-avoided">USD 0.00</span><span class="fee-note">Standard USD 15.00, High Volume USD 30.00</span></div>
       </div>
       <p class="card-sub fee-sources">Rule: <a id="rule-link" rel="noreferrer" target="_blank">PayPal Help Center help350</a>. Fees: <a id="fee-link" rel="noreferrer" target="_blank">PayPal Merchant Fees (US)</a>. The Standard fee is not charged on claims below USD 30.00, so small settled cases avoid no fee.</p>
+      <div class="ledger-tools" role="group" aria-label="Dispute ledger tools">
+        <label class="field-label" for="stage-filter">Stage</label>
+        <select id="stage-filter"><option value="all">All stages</option><option value="INQUIRY">Inquiry</option><option value="CHARGEBACK">Chargeback</option></select>
+        <span class="card-sub" id="ledger-count" aria-live="polite"></span>
+        <button class="button small" type="button" id="export-csv">Export CSV for the accountant</button>
+      </div>
       <div id="dispute-grid" class="ag-host" role="region" aria-label="Dispute ledger"></div>
       <p class="empty-line" id="dispute-ledger-empty">No disputes yet. Case n settles one in conversation; i, j, k and l answer others.</p>
+      <article class="detail" id="dispute-detail" aria-labelledby="detail-title" aria-live="polite" hidden>
+        <h3 id="detail-title" class="mini-title">Dispute detail</h3>
+        <dl class="facts" id="detail-facts"></dl>
+        <p class="card-sub" id="detail-message"></p>
+        <h4 class="mini-title">PayPal's record, raw</h4>
+        <pre class="raw-record" id="detail-raw" tabindex="0"></pre>
+      </article>
+      <p class="card-sub" id="detail-hint">Select a row to see PayPal's record for that dispute.</p>
     </section>
   </section>
 

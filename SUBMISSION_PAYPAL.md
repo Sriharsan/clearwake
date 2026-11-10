@@ -4,9 +4,17 @@ Repository: https://github.com/Sriharsan/clearwake (MIT)
 
 Public site: https://clearwake-mu.vercel.app (static, recorded sandbox run, browser receipt verifier; not network isolated, runs no agents)
 
+Live console, hosted on Render, not network isolated: [RENDER_URL]
+
+Video: [VIDEO_URL]
+
+<!-- Placeholders in brackets are filled by the lead from the run files; the list is at the top of D:\paypal hackathon\DEVPOST_ENTRY.md. -->
+
 ## Description
 
-Clearwake settles PayPal disputes before they turn into fees. Agents running inside the merchant's own network resolve each case with the buyer inside the owner's limits, fight only the cases worth fighting, and never call a refund done until PayPal's own record says so.
+When an AI agent buys, Clearwake settles what goes wrong. The buyer's agent and the merchant's agent resolve the dispute inside PayPal's own conversation, each within limits its owner signed, before it becomes a claim or a fee. PayPal's record decides when it is done, and both sides keep proof.
+
+The sequence: the buyer's agent buys a parcel inside a signed mandate; one item is missing; the buyer's agent opens the dispute in PayPal's Resolution Center as the sandbox buyer, through a browser on the owner's own machine; the merchant's agent checks its dispatch proof and offers through `send-message` and `make-offer`; the buyer's agent accepts within its owner's dispute rule; PayPal's record reads RESOLVED at the INQUIRY stage, with no dispute fee. Both sides write signed receipts, and the buyer's receipts link back to the mandate receipt.
 
 The money leak it fixes comes from PayPal's own rules ([docs/SOURCES.md](docs/SOURCES.md)):
 
@@ -27,7 +35,9 @@ The console's merchant control room has an AG Grid dispute ledger (stage, policy
 
 Dispatch proof (case o): at packing, the merchant photographs the open parcel and SAM, an open weights model from Meta, counts the items on the merchant's own machine. Clearwake writes a signed dispatch receipt (order, capture, items ordered and counted, photo hashes, sealed, how it was counted, policy hash) into the same receipt chain. When a buyer says some items did not arrive, the Evidence agent checks the receipt against the order and the tracking. Strong proof is sent through `provide-evidence` before the deadline, with the photo; weak proof is never sent and the policy settles by offer, refunds within the limit or escalates. Still photos use SAM 3; SAM 3.1 is Meta's video tracker and is not claimed. Run for real on 3 November 2026: SAM 3 counted three notebooks in a CC0 test photo (not a real parcel) offline on this laptop's CPU, and PayPal's sandbox accepted the evidence with the photo on dispute PP-R-UKF-10195772. Weak proof and rehearsal use a scripted count, labelled "scripted count, not SAM".
 
-On the buyer side, a buyer agent shops inside an owner's mandate (budget, per item cap, allowed merchants and categories; the demo cap is USD 102) and signs a mandate receipt linked to the PayPal order id, a cart mandate in AP2 terms. When an agent order is disputed as unauthorised, the merchant attaches it as evidence (case j).
+On the buyer side, a buyer agent shops inside an owner's mandate (budget, per item cap, allowed merchants and categories; the demo cap is USD 102) and signs a mandate receipt linked to the PayPal order id, a cart mandate in AP2 terms. When an agent order is disputed as unauthorised, the merchant attaches it as evidence (case j). The same buyer agent then handles what went wrong: it opens the dispute, reads the merchant's message and offer, and accepts, counters or escalates within the dispute rule in its mandate. Every buyer step is receipted.
+
+The batch: [BATCH_TOTAL] sandbox orders bought by the buyer agent and disputed by it with mixed reasons (item not received, missing items with dispatch proof, not as described), negotiated by the two agents and read back from PayPal: [BATCH_SETTLED] settled at INQUIRY with no fee, [BATCH_EVIDENCE] evidence sent, [BATCH_ESCALATED] escalated to an owner, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_SECONDS_PER_CASE] s per case, [MODEL_CALLS] model calls. A bracket means the run is not recorded yet. If the sandbox shows a CAPTCHA or blocks the browser, the buyer step stops and the owner does that step by hand; it is never bypassed.
 
 ## PayPal APIs used (sandbox only)
 
@@ -49,8 +59,10 @@ The adapter (`clearwake/paypal.py`) refuses any base URL other than `https://api
 
 ## AI tools and how they are used
 
-* **Scripted agents (default).** Fixed rules, labelled "scripted, not AI" on screen and in every run file. Zero model calls, so anyone can run the demo without a model.
-* **Ollama with `qwen2.5-coder:3b` (optional, local).** The same adapter sends the agents' proposals to an open weights model on loopback or, inside the isolated network, to the `ollama` container: `python scripts/cases.py --model ollama`, `python -m clearwake --console-model ollama`, `python scripts/airgap.py`. In case m it kept drafting inside the boundary while the network was cut (6.3 to 13.1 s per proposal). On 30 October the workroom specialists ran on it with 3 real model calls and 412 tokens.
+* **Merchant agent: `[MODEL_NAME]` through Ollama, local.** It reads each dispute and buyer message, proposes settle, fight or escalate, and writes the reply and the offer note. The adapter sends it to a model on loopback or, inside the isolated network, to the `ollama` container. [MODEL_CALLS] recorded model calls, [MODEL_MS_PER_CALL] ms per call (docs/RESULTS.md, "Model calls"). The policy decides; code checks every amount and cited id.
+* **Buyer agent.** Chooses a product inside the mandate and handles the dispute inside the owner's dispute rule. Every step is receipted and linked to the mandate receipt.
+* **Scripted fallback.** Fixed rules, labelled "scripted, not AI" on screen and in every run file, used when no model is running, so anyone can run the demo without a model.
+* **Earlier local model use.** `qwen2.5-coder:3b` through Ollama drafted inside the boundary while the network was cut in case m (6.3 to 13.1 s per proposal).
 * **Meta model API: off.** Not used by Clearwake.
 * **SAM 3 (Meta, open weights, optional).** Counts the items in a packing photo on the merchant's own machine, through `tools/sam/` in its own environment, offline once the weights are cached. Ran on a CC0 test photo (not a real parcel) on 3 November 2026: 3 found, 15 s to load and 56 s to count on the CPU, with a 20 line CPU patch (`tools/sam/cpu.patch`). Rehearsal labels its count "scripted count, not SAM".
 * **Claude Code** helped write code and documents; every commit is reviewed and authored by Sri.
@@ -73,7 +85,10 @@ A model can only propose. It cannot approve, send, change a limit or mark a refu
 | o. Dispatch proof: buyer says 2 of 3 items arrived | real sandbox, SAM 3 on the CPU, CC0 test photo | PASS: 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo. Try 1 refused by PayPal, try 2 lost and held UNKNOWN, try 3 accepted |
 | o. weak proof | rehearsal, scripted count | PASS: not sent, settled by offer |
 | a, b, f, g, h, j | rehearsal or offline | PASS |
-| k, l | real sandbox | SKIPPED: no real dispute close to its deadline, not ten real disputes. PASS in rehearsal (l: 4 evidenced, 4 refunded, 2 escalated) |
+| Agent to agent batch | real sandbox, buyer agent through a local browser, merchant agent with a local model | [BATCH_TOTAL] orders and disputes: [BATCH_SETTLED] settled at INQUIRY with no fee, [BATCH_EVIDENCE] evidence sent, [BATCH_ESCALATED] escalated, [BATCH_REFUNDS] refunds confirmed. A bracket means not recorded yet |
+| k | real sandbox | SKIPPED: no real dispute close to its deadline. PASS in rehearsal |
+| l (ten in parallel) | rehearsal | PASS (4 evidenced, 4 refunded, 2 escalated). The real batch above replaces it |
+| Console on Render | hosted on Render, not network isolated | [RENDER_URL] |
 
 Sources: `data/runs/*.json`, `data/airgap/*.json`, [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md), [docs/RESULTS.md](docs/RESULTS.md). Sandbox means PayPal's test environment with test money. No live PayPal, no real money, no customers.
 
@@ -96,6 +111,10 @@ Python 3.12 or newer, nothing to install. For the sandbox:
 
 Public site (static, recorded sandbox run, browser receipt verifier): https://clearwake-mu.vercel.app, deployed from `site/` only with no environment variables; served locally with `python scripts/serve_site.py`.
 
+Live console, hosted on Render, not network isolated: [RENDER_URL]/console. Press Reset, buy an item, run case n, and watch the AG Grid ledger. Rate limited per address. Build files: `render.yaml`, `Dockerfile.render`, [docs/RENDER.md](docs/RENDER.md).
+
+API: [openapi/clearwake-console.openapi.yaml](openapi/clearwake-console.openapi.yaml) (OpenAPI 3.1) and [postman/clearwake-paypal.postman_collection.json](postman/clearwake-paypal.postman_collection.json) (every PayPal call Clearwake makes, with tests on PayPal's responses).
+
 ## Updates during the hackathon
 
 Every commit in this repository and in both pinned submodules is dated after 1 October 2026. The full list, from git history, is in [docs/HACKATHON_UPDATES.md](docs/HACKATHON_UPDATES.md).
@@ -106,7 +125,7 @@ Clearwake runs on [verdock-core](https://github.com/Sriharsan/verdock-core) v0.2
 
 ## Judging criteria
 
-**Technological Implementation.** Clearwake calls PayPal's Orders v2, Payments v2 and Disputes v1 APIs (eight dispute calls, including `send-message` and `make-offer`) through one allowlisted, sandbox only adapter, and every money movement or settlement is checked by a separate read of PayPal's record. Refunds and offers carry one stable `PayPal-Request-Id`, so a duplicate click, a restart, a second agent or a reconnect replays the held operation instead of sending again. The network isolated run is real: an internal Docker network, a CONNECT only gateway with a host allowlist, and a cable pull mid batch against the PayPal sandbox (case m). Standard library only; 109 Python and 12 UI tests pass offline.
+**Technological Implementation.** Clearwake calls PayPal's Orders v2, Payments v2 and Disputes v1 APIs (eight dispute calls, including `send-message` and `make-offer`) through one allowlisted, sandbox only adapter, and every money movement or settlement is checked by a separate read of PayPal's record. Refunds and offers carry one stable `PayPal-Request-Id`, so a duplicate click, a restart, a second agent or a reconnect replays the held operation instead of sending again. The network isolated run is real: an internal Docker network, a CONNECT only gateway with a host allowlist, and a cable pull mid batch against the PayPal sandbox (case m). Standard library only; [TESTS_PY] Python and [TESTS_UI] UI tests pass offline. The Postman collection lists every PayPal call with tests on PayPal's responses, and a script checks that the collection and `clearwake/paypal.py` list the same routes.
 
 **Design.** Three console screens: the buyer agent with the owner's mandate; the merchant control room with the approval inbox, the AG Grid dispute ledger and the fee leak gauge; and a receipt verifier that checks every receipt in the browser. Every screen states its mode, every ledger row shows the model's proposal next to the policy's decision, and anything above the owner's threshold waits in the inbox. The public site carries the same story and verifies the real case m receipts in the visitor's browser.
 
@@ -120,7 +139,11 @@ Clearwake runs on [verdock-core](https://github.com/Sriharsan/verdock-core) v0.2
 
 **Best Use of PayPal + AI.** Agents read real PayPal disputes, orders, captures and tracking and act through PayPal's Disputes and Payments APIs inside the owner's limits, with a local model inside the merchant's network. Real sandbox refunds verified against PayPal's record (c, d, e, m) and a real sandbox dispute answered from the order record (i).
 
-**Best Use of AG Grid.** The dispute ledger in the merchant control room is AG Grid Community 35.3.1, vendored unchanged under a strict CSP (a fresh nonce per page, AG Grid's fixed load time styles allowed by exact hash, no `unsafe-inline`). Its columns are the ones a merchant needs to stop the fee leak: stage, policy decision next to the model's proposal, PayPal's own status, deadline countdown, settled before escalation, fee avoided.
+**Best Use of AG Grid.** The dispute ledger in the merchant control room is AG Grid Community 35.3.1, vendored unchanged under a strict CSP (a fresh nonce per page, AG Grid's fixed load time styles allowed by exact hash, no `unsafe-inline`), on the local console, on Render and on the public Control Room. Its columns are the ones a merchant needs to stop the fee leak: stage, policy decision next to the model's proposal, PayPal's own status, deadline countdown, settled before escalation, fee avoided; CSV export for the accountant.
+
+**Best Use of Render.** The console runs on Render from a Blueprint (`render.yaml`) with the sandbox keys as dashboard secrets, per address rate limits and a Reset button, so a judge can run one negotiation in a browser. Labelled hosted on Render, not network isolated.
+
+**APIMatic.** An OpenAPI 3.1 spec of the console API that is checked against the running server and against the route table in `clearwake/server.py`, an SDK and portal generated from it, and the Context Plugin for PayPal used to review the PayPal calls. [APIMATIC_RESULT]
 
 **Best Use of Agentic Commerce.** Both sides of an agent purchase: a buyer agent that spends only inside a signed cart mandate (cases a and b) and a merchant swarm that answers the dispute with that mandate as evidence (case j).
 
@@ -128,4 +151,4 @@ Clearwake runs on [verdock-core](https://github.com/Sriharsan/verdock-core) v0.2
 
 ## Not claimed
 
-No live PayPal, no real money, no customers, no revenue. Sandbox results show the integration working against PayPal's test environment, nothing more. The hosted site is a static page with a recorded run; it is not network isolated and runs no agents. Survey figures are third party survey results, not Clearwake outcomes.
+No live PayPal, no real money, no customers, no revenue. Sandbox results show the integration working against PayPal's test environment, nothing more. The public site on Vercel is a static page with a recorded run; it is not network isolated and runs no agents. The console on Render is hosted on Render, not network isolated. Survey figures are third party survey results, not Clearwake outcomes.

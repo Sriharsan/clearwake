@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from clearwake.controller import RefundCase, RefundController
 from clearwake.paypal import BASE, GatewayError, RehearsalGateway, SandboxGateway, transport
-from clearwake.server import ClearwakeServer, core_script, workroom_page
+from clearwake.server import ClearwakeServer
 from relayloom.controller import Rejected, digest
 
 
@@ -383,11 +383,13 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(self.request("POST", "/api/refund-grant", body, {"Cookie": cookie})[0], 403)
         self.assertEqual(self.request("POST", "/api/refund-grant", body, {"Cookie": cookie, "X-Relayloom-CSRF": csrf, "Origin": "https://attacker.invalid"})[0], 403)
         self.assertEqual(self.request("POST", "/api/refund-grant", body, {"Cookie": cookie, "X-Relayloom-CSRF": csrf})[0], 409)
-        for asset in ("/", "/app.js", "/style.css", "/payment.js", "/payment.css"):
+        status, headers, _ = self.request("GET", "/")  # the refund workroom page is not served: / goes to the console
+        self.assertEqual((status, headers["Location"]), (302, "/console")); self.assertIn("frame-ancestors 'none'", headers["Content-Security-Policy"])
+        for asset in ("/app.js", "/style.css"):  # the pinned Relayloom core files, still behind the same policy
             status, headers, content = self.request("GET", asset)
             self.assertEqual(status, 200, asset); self.assertIn("frame-ancestors 'none'", headers["Content-Security-Policy"]); self.assertTrue(content)
-        self.assertIn(b"Clearwake", workroom_page()); self.assertIn(b"clearwake:state", core_script())
-        self.assertIn(b"Local AI configured", core_script())
+        for gone in ("/payment.js", "/payment.css"):
+            self.assertEqual(self.request("GET", gone)[0], 404, gone)
         self.assertEqual(self.request("GET", "/../README.md")[0], 404)
 
 

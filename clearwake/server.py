@@ -1,14 +1,18 @@
-"""Reuse pinned Relayloom HTTP/session/CSRF/SSE with a reviewed payment view."""
+"""The Clearwake console server. It reuses pinned Relayloom HTTP/session/CSRF handling; the refund workroom page is no longer served (/ goes to /console)."""
 from pathlib import Path
 from urllib.parse import urlsplit
 from http.cookies import CookieError, SimpleCookie
 
+import collections
 import io
 import json
+import os
 import re
 import secrets
+import threading
+import time
 
-from relayloom.server import Handler, LocalServer, WEB, COOKIE
+from relayloom.server import Handler, LocalServer, COOKIE
 from relayloom.controller import Rejected
 
 from .console import ConsoleError
@@ -49,47 +53,72 @@ FONT_FILES = ("Figtree-var",)
 CONSOLE_ASSETS.update({f"/fonts/{name}.woff2": (f"fonts/{name}.woff2", "font/woff2") for name in FONT_FILES})
 
 
-def core_script():
-    script = (WEB / "app.js").read_text(encoding="utf-8")
-    hooks = {
-        "snapshot = state;": "snapshot = state; document.dispatchEvent(new CustomEvent('clearwake:state', {detail: state}));",
-        "csrf = session.csrf;": "csrf = session.csrf; document.dispatchEvent(new CustomEvent('clearwake:session', {detail: {csrf}}));",
-        "function signedOut() {": "function signedOut() { document.dispatchEvent(new CustomEvent('clearwake:clear'));",
-    }
-    for anchor, replacement in hooks.items():
-        if script.count(anchor) != 1:
-            raise RuntimeError("Pinned core UI hooks changed. Review the extension before serving it.")
-        script = script.replace(anchor, replacement, 1)
-    script = script.replace("$('#mode-title').textContent = rehearsal ? 'Local rehearsal' : 'Meta adapter configured';",
-        "$('#mode-title').textContent = rehearsal ? 'Local rehearsal' : state.room.mode === 'local-ai' ? 'Local AI configured' : 'Meta adapter configured';")
-    script = script.replace("'Synthetic scope · request attempts and reported usage below'",
-        "(state.room.mode === 'local-ai' ? 'Local model · synthetic scope · actual attempts recorded' : 'Synthetic scope · request attempts and reported usage below')")
-    return script.encode()
+HOSTED_ENV = "CLEARWAKE_HOSTED"
 
 
-def workroom_page():
-    page = (WEB / "index.html").read_text(encoding="utf-8")
-    page = page.replace("Relayloom · Shared workroom", "Clearwake · Refund operations")
-    page = page.replace('aria-label="Relayloom home"', 'aria-label="Clearwake home"')
-    page = page.replace('relayloom<span class="brand-dot">', 'clearwake<span class="brand-dot">')
-    page = page.replace('<span class="brand-mark" aria-hidden="true">r</span>', '<span class="brand-mark" aria-hidden="true">c</span>')
-    page = page.replace('<link rel="stylesheet" href="/style.css">', '<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/theme.css"><link rel="stylesheet" href="/payment.css">')
-    page = page.replace('<script src="/app.js" defer></script>', '<script src="/app.js" defer></script><script src="/payment.js" defer></script>')
-    page = page.replace("Change direction.<br>Keep the useful work.", "Resolve the refund.<br>Keep the evidence.")
-    page = page.replace("Give your team a goal. Let specialists work together, revise what changes, and check the result before taking action.",
-        "Prepare a refund case together. Approve one exact sandbox effect, keep uncertain responses held, and check the provider record before calling it complete.")
-    page = page.replace("LOCAL REHEARSAL <span>Built for synthetic work. No live model calls are made in rehearsal mode.</span>",
-        "SYNTHETIC WORKROOM <span>Default rehearsal makes no provider/model calls. Live modes need explicit server opt-in.</span>")
-    anchor = '<div class="workspace-grid">'
-    if page.count(anchor) != 1:
-        raise RuntimeError("The pinned core workroom layout changed; review the payment view.")
-    return page.replace(anchor, (ASSETS / "payment-panel.html").read_text(encoding="utf-8") + anchor, 1).encode()
+class RateLimiter:
+    """Sliding window per client address and kind of request. Used only in hosted mode (CLEARWAKE_HOSTED=1)."""
+
+    def __init__(self, limits, clock=time.monotonic, window=60.0, max_clients=5000):
+        self.limits, self.clock, self.window, self.max_clients = dict(limits), clock, window, max_clients
+        self.seen = {}
+        self.lock = threading.Lock()
+
+    def allow(self, client, kind):
+        """0 when the request may go on, else the whole seconds to wait."""
+        now = self.clock()
+        with self.lock:
+            if len(self.seen) >= self.max_clients and client not in self.seen:  # forget clients idle for a whole window
+                self.seen = {c: w for c, w in self.seen.items() if any(slots and now - slots[-1] < self.window for slots in w.values())}
+                if len(self.seen) >= self.max_clients:
+                    return int(self.window)
+            slots = self.seen.setdefault(client, {}).setdefault(kind, collections.deque())
+            while slots and now - slots[0] >= self.window:
+                slots.popleft()
+            if len(slots) >= self.limits[kind]:
+                return max(1, int(self.window - (now - slots[0])) + 1)
+            slots.append(now)
+            return 0
 
 
 class ClearwakeHandler(Handler):
     server_version = "Clearwake"
 
     style_nonce = None
+
+    # Hosted mode (CLEARWAKE_HOSTED=1, e.g. on Render): other hosts allowed by name, Secure cookie, per client rate limits.
+    def local_origin(self, mutation=False):
+        server = self.server
+        if not getattr(server, "hosted", False) or not server.allowed_hosts:
+            return super().local_origin(mutation)
+        try:
+            host = (self.headers.get("Host") or "").lower()
+            if host not in server.allowed_hosts:
+                raise ValueError()
+            origin = self.headers.get("Origin")
+            if origin:
+                parsed = urlsplit(origin)
+                if parsed.scheme not in ("http", "https") or parsed.netloc.lower() != host or parsed.path or parsed.query or parsed.fragment:
+                    raise ValueError()
+            if mutation and self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site"):
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise Rejected("Use this console's own address and same-origin page.", 403)
+
+    def client_ip(self):
+        # Behind Render's proxy the connecting address is the proxy; the last X-Forwarded-For entry is the one it added.
+        forwarded = (self.headers.get("X-Forwarded-For") or "").split(",")[-1].strip()
+        return forwarded or self.client_address[0]
+
+    def rate_limit(self, kind):
+        limiter = getattr(self.server, "limiter", None)
+        if limiter is None:
+            return
+        wait = limiter.allow(self.client_ip(), kind)
+        if wait:
+            error = Rejected(f"Too many requests from this address. Try again in {wait} s.", 429)
+            error.retry_after = wait
+            raise error
 
     def send_header(self, keyword, value):
         # The console page lets in only styles carrying this response's nonce (AG Grid's); everything else stays 'self'.
@@ -129,13 +158,16 @@ class ClearwakeHandler(Handler):
                 finally:
                     self.style_nonce = None
             return self.send_asset(lambda: source.read_bytes(), kind)
-        asset = {"/": (workroom_page, "text/html"), "/app.js": (core_script, "text/javascript"),
-            "/payment.js": (lambda: (ASSETS / "payment.js").read_bytes(), "text/javascript"),
-            "/payment.css": (lambda: (ASSETS / "payment.css").read_bytes(), "text/css"),
-            "/theme.css": (lambda: (ASSETS / "theme.css").read_bytes(), "text/css")}.get(path)
+        if path == "/":  # the refund workroom is not a product page any more
+            return self.redirect("/console")
+        asset = {"/theme.css": (lambda: (ASSETS / "theme.css").read_bytes(), "text/css")}.get(path)
         if asset is None:
             return super().do_GET()
         return self.send_asset(*asset)
+
+    def redirect(self, location):
+        self.send_response(302); self.headers_common()
+        self.send_header("Location", location); self.send_header("Content-Length", "0"); self.end_headers()
 
     def send_asset(self, read, kind):
         try:
@@ -159,13 +191,16 @@ class ClearwakeHandler(Handler):
         sid = cookie[CONSOLE_COOKIE].value if CONSOLE_COOKIE in cookie else ""
         return sid if re.fullmatch(r"[0-9a-f]{64}", sid) else ""
 
-    def console_reply(self, status, value, sid=None):
+    def console_reply(self, status, value, sid=None, retry_after=None):
         body = json.dumps(value, separators=(",", ":")).encode()
         self.send_response(status); self.headers_common()
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        if retry_after:
+            self.send_header("Retry-After", str(retry_after))
         if sid:
-            self.send_header("Set-Cookie", f"{CONSOLE_COOKIE}={sid}; Path=/console; HttpOnly; SameSite=Strict; Max-Age=28800")
+            secure = "; Secure" if getattr(self.server, "hosted", False) else ""
+            self.send_header("Set-Cookie", f"{CONSOLE_COOKIE}={sid}; Path=/console; HttpOnly; SameSite=Strict; Max-Age=28800{secure}")
         self.end_headers(); self.wfile.write(body)
 
     def console_get(self, path):
@@ -174,6 +209,7 @@ class ClearwakeHandler(Handler):
             self.local_origin()
             if console is None:
                 raise Rejected("The console is not configured on this server.", 404)
+            self.rate_limit("read")
             if path == "/console/api/session":
                 sid = self.console_sid() or secrets.token_hex(32)
                 return self.console_reply(200, {"csrf": console.csrf_for(sid), "label": "rehearsal data"}, sid)
@@ -183,7 +219,7 @@ class ClearwakeHandler(Handler):
                 return self.console_reply(200, console.receipts())
             raise Rejected("This page was not found.", 404)
         except (Rejected, ConsoleError) as error:
-            self.console_reply(error.status, {"error": str(error)})
+            self.console_reply(error.status, {"error": str(error)}, retry_after=getattr(error, "retry_after", None))
         except (BrokenPipeError, ConnectionResetError, TimeoutError):
             return
 
@@ -211,6 +247,7 @@ class ClearwakeHandler(Handler):
             self.local_origin(mutation=True)
             if console is None:
                 raise Rejected("The console is not configured on this server.", 404)
+            self.rate_limit("write")
             body = self.body()
             console.check_csrf(self.console_sid(), self.headers.get("X-Clearwake-CSRF", ""))
             action = path[len("/console/api/"):]
@@ -223,20 +260,31 @@ class ClearwakeHandler(Handler):
             elif action == "reconcile":
                 result = console.reconcile(body.get("case_id"))
             elif action == "reset":
-                result = console.reset()
+                result = console.reset(wipe=self.server.hosted)
             else:
                 raise Rejected("Unknown action.", 404)
             self.console_reply(200, result)
         except (Rejected, ConsoleError) as error:
-            self.console_reply(error.status, {"error": str(error)})
+            self.console_reply(error.status, {"error": str(error)}, retry_after=getattr(error, "retry_after", None))
         except (BrokenPipeError, ConnectionResetError, TimeoutError):
             return
         except Exception:
             self.console_reply(500, {"error": "The console action could not be completed. Nothing was retried."})
 
 
+def hosted_from_environment():
+    return os.environ.get(HOSTED_ENV) == "1"
+
+
 class ClearwakeServer(LocalServer):
-    def __init__(self, address, controller, console=None):
+    def __init__(self, address, controller, console=None, hosted=None, clock=time.monotonic):
         super().__init__(address, controller)
         self.RequestHandlerClass = ClearwakeHandler
         self.console = console
+        self.hosted = hosted_from_environment() if hosted is None else bool(hosted)
+        names = [h.strip().lower() for h in os.environ.get("CLEARWAKE_ALLOWED_HOSTS", "").split(",") if h.strip()]
+        render = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip().lower()
+        self.allowed_hosts = set(names + ([render] if render else []))
+        # Per client address and minute. Writes run a case or a purchase, so they get the smaller allowance.
+        self.limiter = RateLimiter({"read": int(os.environ.get("CLEARWAKE_RATE_READ", "120")),
+                                    "write": int(os.environ.get("CLEARWAKE_RATE_WRITE", "20"))}, clock) if self.hosted else None

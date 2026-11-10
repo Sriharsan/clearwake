@@ -1,35 +1,37 @@
-# Clearwake demo video script (under 3 minutes)
+# Clearwake demo video script (under 3 minutes, Sri speaks)
 
-Record the browser and one terminal only. Every shot gets a caption that says how it ran: **Real sandbox**, **Injected fault in sandbox**, **Rehearsal**, **Rehearsal, buyer step simulated** or **Scripted, not AI**. Never caption a rehearsal shot as sandbox. Upload publicly to YouTube with no music and no third party logos. Do not call the hosted site air gapped.
+Record the browser and one terminal only. Speak in your own words; the lines below are a guide of about 330 words, which fits 2 minutes 50 seconds at a calm pace. Every shot gets one short caption that says how it ran: **Real sandbox**, **Injected fault in sandbox**, **Recorded sandbox run** or **Rehearsal**. Never caption a rehearsal shot as sandbox. Upload publicly to YouTube, no music, no third party logos. Do not call the hosted pages network isolated.
 
-Screen names below match the console at `/console` (tabs **1 Buyer agent**, **2 Merchant control room**, **3 Receipt verifier**) as of 31 October.
+Placeholders in brackets (`[BATCH_SETTLED]` and so on) are numbers from the batch run; the lead fills them from `docs/RESULTS.md` before recording. Do not say a number that is still in brackets.
 
 ## Before recording
 
 ```
-python -m clearwake --port 8810                              # then open http://127.0.0.1:8810/console
-python scripts\cases.py                                      # rehearsal: must print 14 PASS
-python scripts\cases.py --sandbox                            # c, d, e must print PASS (keys in .env)
-python scripts\airgap.py                                     # case m: must print PASS (Docker running)
+python -m clearwake --port 8810                 # console at http://127.0.0.1:8810/console
+python scripts\cases.py                         # rehearsal: must print PASS for a to o
+python scripts\airgap.py                        # case m: must print PASS (Docker running)
 ```
 
-If the sandbox buyer has opened a dispute at the INQUIRY stage (item not received, paid from the PayPal balance), also run `python scripts\cases.py --sandbox --only n --dispute <id>`, accept the offer as the sandbox buyer in the Resolution Center, and run it again. If it prints PASS with "real sandbox", use it at 0:25 with a **Real sandbox** caption. Otherwise use the rehearsal case n with **Rehearsal, buyer step simulated**.
+Have ready, in tabs: the console (tabs 1 Buyer agent, 2 Merchant control room, 3 Receipt verifier); PayPal's sandbox Resolution Center logged in as the sandbox buyer (log in by hand before recording; never show the login, the email or any key); the AG Grid ledger after the batch; a terminal with `python scripts\show_dispute.py [HERO_DISPUTE_ID]` typed for the settled dispute; the public site Verify page. Do not show `.env` or the PayPal developer credentials page.
 
 ## Shots
 
-| Time | Show | Exact clicks or command | On screen caption |
+| Time | Show | Say | Caption |
 | --- | --- | --- | --- |
-| 0:00 | The dispute pile and the 1.5% line | **Merchant control room**, scroll to **Dispute ledger and fee leak**: the rate bar with the 1.50% line, the sales count, the ledger | "PayPal charges no dispute fee when a case is settled with the buyer before it becomes a claim. Above 1.5% and 100 sales, the fee doubles. PayPal Help Center help350; PayPal Merchant Fees, US." |
-| 0:15 | Settled in conversation, inside the limit, PayPal's record confirms | **Run a rehearsal case**: case n. Point at the ledger row: stage INQUIRY, policy decision settle_by_offer next to the model's proposal, offer USD 2.50, PayPal record RESOLVED, "yes, no fee". Point at fee avoided USD 0.00 and say why | "Rehearsal, buyer step simulated. In the sandbox the buyer accepts in PayPal's Resolution Center. Settled, no fee only when PayPal's record says RESOLVED as an inquiry. Below USD 30 PayPal charges no Standard fee anyway, so nothing is counted as avoided." |
-| 0:40 | A case worth fighting: evidence before the deadline | Terminal: the **i.** line for dispute `PP-R-SLI-10195419` from docs/SANDBOX_RUN.md (tracker from PayPal's order record, read back from PayPal). Then case k in the console: a near deadline dispute in the **Approval inbox** with its countdown | Terminal: "Real sandbox." Console: "Rehearsal. Close to the deadline, the owner decides." |
-| 1:20 | Agent order disputed as unauthorised: the signed mandate verifies offline | **Run a rehearsal case**: case j. Point at the mandate receipt digest in the dispute. **Receipt verifier**: verify the buyer log | "Rehearsal dispute. The buyer agent's cart mandate, signed and linked to the PayPal order, verified offline." |
-| 1:05 | Dispatch proof (about 15 seconds) | **Run a rehearsal case**: case o. Point at the ledger row: **Dispatch proof** "3 of 3 notebook-a5 counted, sealed, receipt ..., tracking shipped", policy decision fight_with_evidence, PayPal record UNDER_REVIEW. Then in the terminal `python scripts\dispatch.py show` for the signed receipt. Then the site's Dispatch proof section: the photo and SAM's three numbered boxes, the model, the CPU and the time. Then `python scripts\show_dispute.py PP-R-UKF-10195772`: PayPal's own record with the dispatch proof, the tracking and the photo from the seller | Ledger: "Rehearsal." Photo and PayPal's record: "Real sandbox. SAM 3 counted this CC0 test photo on this laptop's CPU, offline. Not a real parcel." |
-| 1:45 | Cable pulled mid batch | Terminal running `python scripts\airgap.py`: the boundary lines (no route out, example.com 403), "network cut", the held lines, "network restored", the PASS line with the refund IDs | "Real sandbox, network isolated containers. Nothing moves while offline. On reconnect PayPal's record is read first. No duplicate." |
-| 2:30 | Receipts verified with no network | The airgap output lines "receipts verified in a container with networking disabled". Then the public site's **Verify** on the case m receipts, then **Change one line, then verify** (fails) | "Checked with networking disabled, and in this browser. Nothing uploaded." |
-| 2:50 | Close | Repo link https://github.com/Sriharsan/clearwake | "MIT. One command to run. Sandbox only, no real money." |
+| 0:00 | Console, **Buyer agent**: the request "three A5 notebooks", the mandate check passing, the signed mandate receipt | "An AI agent just bought a parcel for its owner: three notebooks, inside a budget the owner signed. The purchase is a signed receipt linked to the PayPal order." | Real sandbox order, receipt signed offline |
+| 0:20 | PayPal sandbox Resolution Center: the buyer agent opens the dispute, "Only 2 of 3 notebooks arrived" | "One notebook is missing. The buyer's own agent opens the dispute in PayPal's Resolution Center. The owner is not asked." | Real sandbox, buyer agent through a local browser |
+| 0:40 | Console, **Merchant control room**: the dispute row in the AG Grid ledger, stage INQUIRY, the model's proposal next to the policy decision, the dispatch proof "3 of 3 counted, sealed, tracking shipped" | "The merchant's agent reads the message. A local model proposes. The policy file decides, and code checks every amount. It checks its dispatch proof: three counted at packing, sealed, shipped. It offers a refund inside the owner's limit through PayPal's own message and offer calls." | Real sandbox. Local model `[MODEL_NAME]`; the policy decides |
+| 1:10 | Buyer agent step: the offer is read, the dispute rule ("accept any refund of 80 percent or more for a missing item") is applied, the buyer accepts | "The buyer's agent compares the offer with the rule its owner signed, and accepts." | Real sandbox, within the buyer's signed rule |
+| 1:25 | Terminal: `python scripts\show_dispute.py [HERO_DISPUTE_ID]`, PayPal's record: status RESOLVED, stage INQUIRY, fee line | "PayPal's own record now reads resolved, at the inquiry stage. No claim, no dispute fee. Clearwake says settled only when PayPal says it." | Real sandbox, read from PayPal's record |
+| 1:45 | AG Grid ledger after the batch: filter by stage, the countdown cells, the CSV export button | "That was one. Here are ten, bought and disputed by the same agent: [BATCH_SETTLED] settled with no fee, [BATCH_EVIDENCE] answered with evidence, [BATCH_ESCALATED] sent to the owner, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_SECONDS_PER_CASE] seconds a case." | Real sandbox batch of [BATCH_TOTAL], ledger as read from PayPal |
+| 2:05 | Terminal running `python scripts\airgap.py`: boundary lines, "network cut", held lines, "network restored", the PASS line with the refund ids | "I pull the cable in the middle of a batch. Nothing moves while it is offline. On reconnect PayPal is read first, and there is no duplicate." | Real sandbox, network isolated containers |
+| 2:25 | Public site, **Verify** on the case m receipts, then change one line and verify again (it fails) | "Every step is a signed receipt. Change one line, and the chain breaks. This runs in the browser, with nothing uploaded." | Recorded sandbox run, verified in this browser |
+| 2:40 | The Render URL in the address bar, the console loading, then the repository link | "The console is live on Render, labelled hosted, not network isolated. Run one negotiation yourself. The code is MIT on GitHub, sandbox only, no real money." | Hosted on Render, not network isolated |
 
 ## Notes
 
-* Do not show `.env`, the PayPal developer dashboard credentials page or any key.
-* Case m uses scripted rules for the refund decisions; the local model drafts inside the boundary. Caption the drafting line "qwen2.5-coder:3b via Ollama, inside the boundary".
-* The hosted site shows a recorded sandbox run. Caption it "Recorded sandbox run, 31 Oct", never live.
+* Total is about 2 minutes 50 seconds. If a take runs long, cut the filter and CSV words at 1:45 first, then the second sentence at 2:25.
+* If the buyer step could not run for real on the day (the sandbox showed a CAPTCHA or blocked the browser), do not stage it: record the owner doing that step by hand, say so in one sentence, and caption it "Real sandbox, buyer step done by hand". Never get past a CAPTCHA.
+* Case m uses scripted rules for the refund decisions; a local model drafts inside the boundary. If you mention it, say "a local model drafts inside the boundary".
+* The public site shows a recorded sandbox run. Caption it "Recorded sandbox run, 31 Oct", never live.
+* Keep to plain speech and the public text rules in the build brief.

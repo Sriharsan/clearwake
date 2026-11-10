@@ -1,0 +1,103 @@
+{
+  "id": "b0f7c0aa-6a52-4a41-8f3b-0d7a6d3c8e10",
+  "name": "Clearwake PayPal sandbox (template, no secrets)",
+  "values": [
+    {
+      "key": "base_url",
+      "value": "https://api-m.sandbox.paypal.com",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "client_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "client_secret",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "order_amount",
+      "value": "10.00",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "order_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "capture_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "refund_amount",
+      "value": "1.00",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "refund_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "tracking_number",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "carrier",
+      "value": "UPS",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "test_card_number",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "test_card_expiry",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "dispute_id",
+      "value": "",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "dispute_message",
+      "value": "Settling this case with a refund inside the owner's limit.",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "offer_amount",
+      "value": "2.50",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

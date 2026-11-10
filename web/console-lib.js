@@ -111,7 +111,34 @@
 
   function isHexKey(value) { return /^[0-9a-fA-F]{64}$/.test(String(value || '').trim()); }
 
+  // Words as written, with underscores of PayPal codes turned into spaces (readable() also lowercases).
+  function plain(value) { return String(value || '').replaceAll('_', ' '); }
+
   function readable(value) { return String(value || '').replaceAll('_', ' ').toLowerCase(); }
 
-  return { money, gaugeShare, countdown, outcome, track, tamper, receiptRows, isHexKey, readable };
+  // CSV export for the accountant. A cell that starts with = + - @ tab or CR would run as a formula in a spreadsheet,
+  // so it gets a leading apostrophe. Quoting itself is done by the grid's CSV writer.
+  function csvSafe(value) {
+    const text = value === null || value === undefined ? '' : String(value);
+    return /^[=+\-@\t\r]/.test(text) && !/^-?\d+(\.\d+)?$/.test(text) ? "'" + text : text;
+  }
+
+  // Ledger helpers shared by the grid columns. A dash means the record does not hold the value.
+  const DASH = '–';
+  function stageOf(row) { return String((row && row.stage) || '').toUpperCase(); }
+  function stagePasses(row, filter) { return !filter || filter === 'all' || stageOf(row) === filter; }
+  function proposalOf(row) { return row && row.proposed && row.proposed !== 'no usable proposal' ? readable(row.proposed) : DASH; }
+  function deadlineOf(row, nowMs) {
+    if (!row || row.settled_before_escalation || row.paypal_status === 'RESOLVED') return 'closed';
+    if (!row.due) return DASH;
+    return countdown(row.due, nowMs).text;
+  }
+
+  // Whole table as CSV text (CRLF rows, quoted when needed). Used when the grid is not available; the grid's own writer is used otherwise.
+  function toCsv(headers, rows) {
+    const cell = v => { const t = csvSafe(v); return /[",\r\n]/.test(t) ? '"' + t.replaceAll('"', '""') + '"' : t; };
+    return [headers.map(h => cell(h.headerName)).join(',')].concat(rows.map(r => headers.map(h => cell(h.get(r))).join(','))).join('\r\n') + '\r\n';
+  }
+
+  return { plain, toCsv, money, gaugeShare, countdown, outcome, track, tamper, receiptRows, isHexKey, readable, csvSafe, stageOf, stagePasses, proposalOf, deadlineOf, DASH };
 });

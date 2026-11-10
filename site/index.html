@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="home.css">
 <script src="theme.js"></script>
 <script src="app.js" type="module"></script>
+<script src="totals.js" defer></script>
 </head>
 <body>
 <header class="bar">
@@ -28,7 +29,7 @@
   <section class="hero" aria-labelledby="h1">
     <img class="wave" src="img/hokusai-great-wave.jpg" width="600" height="403" alt="Hokusai's woodblock print The Great Wave: a huge wave with foam like claws curls over three boats, with Mount Fuji small in the distance">
     <div class="hero-in wrap">
-      <p class="eyebrow">PayPal sandbox, test money</p>
+      <p class="eyebrow">For sellers on PayPal</p>
       <h1 id="h1">Settle PayPal disputes before they turn into fees.</h1>
       <div class="hero-row">
         <p class="lede">Agents inside your own network resolve each case with the buyer, inside your limits, and never call a refund done until PayPal's record says so.</p>
@@ -37,11 +38,17 @@
           <a class="btn" href="/developers">Read the developer docs</a>
         </div>
       </div>
+      <ul class="proof-line" id="proof-line" aria-label="Results on the real PayPal sandbox">
+        <li><b>Case n</b> settled at INQUIRY, no fee</li>
+        <li><b>Case o</b> dispatch proof on PayPal's record</li>
+        <li><b>Case i</b> tracking on PayPal's record</li>
+      </ul>
+      <p class="hero-note">Real PayPal sandbox, test money. Every figure comes from a recorded run.</p>
     </div>
   </section>
 
-  <section class="wrap lanes-sec" aria-label="Recorded cases">
-    <div class="lanes" role="group" aria-label="Real recorded sandbox cases, sorted into three lanes">
+  <section class="wrap lanes-sec" aria-label="Cases">
+    <div class="lanes" role="group" aria-label="Cases sorted into three lanes">
       <div class="lane teal">
         <h2 class="lane-title">Settled before escalation</h2>
         <ul class="marks">
@@ -62,21 +69,6 @@
           <li class="mark c5"><b>Refund above the approval line</b><span class="mono">Case d, USD 3.50</span><span class="mono dim">2NB27940EC188891M, after approval</span></li>
         </ul>
       </div>
-    </div>
-    <p class="lanes-note">Recorded real sandbox runs, 31 Oct and 3 Nov 2026. Test money, PayPal's own ids.</p>
-  </section>
-
-  <section class="band wrap settled" id="settled" aria-labelledby="settled-h">
-    <p class="bignum tnum" aria-label="1 of 3">1</p>
-    <div class="settled-text">
-      <p class="eyebrow">Settled before escalation</p>
-      <h2 id="settled-h">of 3 real sandbox disputes was settled in conversation.</h2>
-      <svg class="dots" viewBox="0 0 220 60" role="img" aria-label="Three disputes: n settled before escalation, i and o answered with evidence">
-        <circle class="d-on" cx="28" cy="22" r="16"/><circle class="d-off" cx="110" cy="22" r="16"/><circle class="d-off" cx="192" cy="22" r="16"/>
-        <text x="28" y="56" class="d-t">n</text><text x="110" y="56" class="d-t">i</text><text x="192" y="56" class="d-t">o</text>
-      </svg>
-      <p class="lede">The recorded runs hold three real sandbox disputes. PayPal read case n RESOLVED while it was still an inquiry, so it never became a claim and carried no dispute fee. Cases i and o were answered with evidence. Source: docs/RESULTS.md.</p>
-      <p>PayPal charges no Standard Dispute Fee when a case is resolved directly between seller and buyer and not escalated to a claim. <a href="https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350">PayPal's rule, help350</a> (UK edition; the US edition was not reachable when checked).</p>
     </div>
   </section>
 
@@ -120,7 +112,7 @@
     <div class="wrap">
       <p class="eyebrow">Settled in conversation</p>
       <h2 id="wake-h">The wake of one dispute. Each ring is a signed step.</h2>
-      <p class="lede">Case n, a recorded real sandbox run on 3 Nov 2026. Scroll, and the rings follow the five signed receipts of dispute PP-R-OBG-10196144. Pick any step and change one value in it: your browser checks every signature and hash with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
+      <p class="lede">Case n, 3 Nov 2026. Scroll, and the rings follow the five signed receipts of dispute PP-R-OBG-10196144. Pick any step and change one value in it: your browser checks every signature and hash with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
     </div>
     <div class="wake-scene wrap" id="wake-scene">
       <div class="wake-sticky">
@@ -179,7 +171,7 @@
   <section class="band wrap dispatch" id="dispatch" aria-labelledby="dispatch-h">
     <p class="eyebrow">Dispatch proof</p>
     <h2 id="dispatch-h">Counted on your own machine, before the parcel leaves.</h2>
-    <p class="lede">SAM 3 (open weights from Meta) counted the items in the packing photo on a laptop CPU with no network, and Clearwake signed the count. Case o, recorded real sandbox, 3 Nov 2026.</p>
+    <p class="lede">SAM 3 (open weights from Meta) counted the items in the packing photo on a laptop CPU with no network, and Clearwake signed the count. Case o, 3 Nov 2026.</p>
     <div class="dispatch-stage">
       <figure class="photo"><img src="dispatch/sam-count.jpg" width="800" height="600" alt="A photo of three kraft notebooks on a wooden table with three numbered boxes drawn around the notebooks, scores 0.62, 0.59 and 0.70"><figcaption>SAM 3 found 3. Prompt "book"; 16 s to load, 56 s to count. A CC0 test photo by Jeff Sheldon, not a real parcel.</figcaption></figure>
       <div class="proof" id="proof">
@@ -198,37 +190,10 @@
     <p class="after">The buyer then wrote "Only 2 of 3 notebooks arrived." on dispute PP-R-UKF-10195772. The policy found strong proof and sent evidence. PayPal refused the first try (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES) and nothing was applied. The next reply was lost, so Clearwake held it as UNKNOWN and read the dispute. The third try, with the same request id, was accepted, and PayPal's record shows a PROOF_OF_FULFILLMENT from the seller.</p>
   </section>
 
-  <section class="band wrap orders" id="orders" aria-labelledby="orders-h">
-    <div class="orders-head">
-      <p class="eyebrow">Orders placed by agents</p>
-      <h2 id="orders-h">A signed mandate, and the dispute it answers.</h2>
-      <p class="lede">A buyer agent can only buy inside a mandate its owner signed. If that order is later disputed as unauthorised, the receipt goes in as evidence.</p>
-    </div>
-    <div class="slip">
-      <p><span class="pill amber">Rehearsal, not PayPal</span></p>
-      <dl>
-        <div><dt>Mandate receipt, order</dt><dd class="mono">ORDER-J-759afa</dd></div>
-        <div><dt>Merchant</dt><dd class="mono">clearwake-demo-store</dd></div>
-        <div><dt>Item</dt><dd class="mono">notebook-a5, USD 9.00</dd></div>
-        <div><dt>Budget</dt><dd class="mono">USD 102.00, home and stationery</dd></div>
-        <div><dt>Public key</dt><dd class="mono wrap-any">2665b8c1c02fba86&hellip;</dd></div>
-        <div><dt>Signature</dt><dd class="mono wrap-any">1e1985094ee566cc&hellip;</dd></div>
-      </dl>
-      <p class="slip-arrow" aria-hidden="true">answers</p>
-      <dl>
-        <div><dt>Dispute, case j</dt><dd class="mono">UNAUTHORISED, USD 9.00</dd></div>
-        <div><dt>Buyer says</dt><dd>"I did not buy this."</dd></div>
-        <div><dt>Policy</dt><dd>Evidence with the mandate receipt attached</dd></div>
-        <div><dt>Record</dt><dd class="mono">UNDER_REVIEW, VERIFIED</dd></div>
-      </dl>
-      <p class="note">From the 1 Nov rehearsal run in <span class="mono">data/console/</span>. No real sandbox dispute of this kind was run, and the receipt is not on the public site, so it is not checkable here.</p>
-    </div>
-  </section>
-
   <section class="band wrap cable" id="cable" aria-labelledby="cable-h">
     <p class="eyebrow">Pull the cable</p>
     <h2 id="cable-h">Drag the plug out. Money waits.</h2>
-    <p class="lede">Case m, recorded real sandbox in network isolated containers, 31 Oct 2026. Drag the plug left, or focus it and press the left arrow. Press the right arrow to plug it back in.</p>
+    <p class="lede">Case m, network isolated containers, 31 Oct 2026. Drag the plug left, or focus it and press the left arrow. Press the right arrow to plug it back in.</p>
     <svg id="cable-svg" class="cable-svg" viewBox="0 0 640 130" role="group" aria-label="Cable between the agents and the egress gateway">
       <text class="c-t" x="10" y="22">Agents</text>
       <text class="c-t right" x="630" y="22">Egress gateway</text>
@@ -304,7 +269,7 @@
     <div>
       <p class="eyebrow">Run it on your machine</p>
       <h2 id="run-h">Python 3.12 or newer. Nothing to install.</h2>
-      <p class="lede">It starts in rehearsal with rehearsal records and makes no network calls.</p>
+      <p class="lede">It starts on local records and makes no network calls.</p>
     </div>
     <div>
       <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
@@ -328,7 +293,7 @@ python -m clearwake --port 8810</pre>
 
 <footer class="foot">
   <div class="wrap">
-    <p>Sandbox only. No real money. Every case on this page is a recorded run.</p>
+    <p>Clearwake. A PayPal dispute and refund agent for sellers.</p>
     <p><a href="https://github.com/Sriharsan/clearwake">Repository</a> &nbsp; <a href="receipts/manifest.json">Receipts</a> &nbsp; <a href="https://github.com/Sriharsan/clearwake/blob/main/LICENSE">Licences</a></p>
     <p class="credit">Art: Hokusai, The Great Wave, Met Museum, public domain. Type: Figtree.</p>
   </div>

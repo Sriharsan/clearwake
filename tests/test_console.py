@@ -162,7 +162,10 @@ class ConsoleHTTPTests(unittest.TestCase):
         self.assertNotIn(b"<script>", page); self.assertNotIn(b" style=", page); self.assertNotIn(b"http", page.replace(b"http-equiv", b""))
         for path in ("/vendor/ag-grid/ag-grid.min.css", "/web/../clearwake/console.py", "/verdock/verify.test.mjs", "/console/api/nothing"):
             self.assertEqual(self.request("GET", path)[0], 404, path)
-        self.assertEqual(self.request("GET", "/")[0], 200)  # the workroom still answers
+        status, headers, _ = self.request("GET", "/")  # the refund workroom is gone: / goes to the console
+        self.assertEqual((status, headers["Location"]), (302, "/console"))
+        for gone in ("/payment.js", "/payment.css"):
+            self.assertEqual(self.request("GET", gone)[0], 404, gone)
 
     def test_only_the_console_page_lets_in_ag_grid_styles_by_nonce_and_fixed_hashes(self):
         import re
@@ -195,6 +198,94 @@ class ConsoleHTTPTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertTrue(before.exists()); self.assertNotEqual(before, self.console.data)
         self.assertEqual(self.console.entries, [])
+
+
+    def test_dispute_ledger_rows_carry_the_stage_the_proposal_and_paypal_raw_record(self):
+        self.run_case("n")
+        _, _, raw = self.request("GET", "/console/api/state")
+        row = json.loads(raw)["disputes"][0]
+        self.assertEqual((row["stage"], row["paypal_status"], row["proposed"], row["decided"]), ("INQUIRY", "RESOLVED", "settle_by_offer", "settle_by_offer"))
+        self.assertEqual(row["record"]["dispute_id"], row["dispute"])  # PayPal shaped record, as read from the gateway
+        self.assertEqual(row["record"]["dispute_life_cycle_stage"], "INQUIRY")
+        self.assertIn("seller_response_due_date", row["record"])
+        self.assertTrue(row["due"])
+
+
+class HostedTests(unittest.TestCase):
+    """CLEARWAKE_HOSTED=1: reset wipes the demo folder only, and each address has a rate limit."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        root = Path(self.folder.name)
+        self.controller = RefundController(root / "http.sqlite3")
+        self.console = Console(root / "console")
+        self.outside = root / "keep-me.txt"; self.outside.write_text("not the console's data", encoding="utf-8")
+        self.now = [1000.0]
+        self.server = ClearwakeServer(("127.0.0.1", 0), self.controller, self.console, hosted=True, clock=lambda: self.now[0])
+        self.server.limiter.limits.update({"read": 4, "write": 3})
+        self.port = self.server.server_address[1]
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def tearDown(self):
+        self.server.shutdown(); self.server.server_close(); self.controller.close(); self.folder.cleanup()
+
+    def request(self, method, path, body=None, headers=None):
+        connection = http.client.HTTPConnection("127.0.0.1", self.port, timeout=20)
+        connection.request(method, path, json.dumps(body) if body is not None else None, {"Content-Type": "application/json", **(headers or {})})
+        response = connection.getresponse(); content = response.read()
+        result = (response.status, dict(response.getheaders()), content); connection.close(); return result
+
+    def session(self, ip="203.0.113.7"):
+        status, headers, raw = self.request("GET", "/console/api/session", headers={"X-Forwarded-For": ip})
+        self.assertEqual(status, 200, raw)
+        self.assertIn("; Secure", headers["Set-Cookie"])
+        return headers["Set-Cookie"].split(";", 1)[0], json.loads(raw)["csrf"]
+
+    def post(self, cookie, csrf, path, body, ip="203.0.113.7"):
+        status, headers, raw = self.request("POST", path, body, {"Cookie": cookie, "X-Clearwake-CSRF": csrf, "X-Forwarded-For": ip})
+        return status, headers, json.loads(raw)
+
+    def test_reset_wipes_every_run_folder_of_the_demo_and_nothing_outside_it(self):
+        cookie, csrf = self.session()
+        first = self.console.data
+        self.assertEqual(self.post(cookie, csrf, "/console/api/case", {"case": "c"})[0], 200)
+        (self.console.root / "run-20260101-000000-abcd").mkdir()
+        (self.console.root / "notes").mkdir()
+        status, _, value = self.post(cookie, csrf, "/console/api/reset", {})
+        self.assertEqual(status, 200, value)
+        self.assertTrue(value["wiped"]); self.assertEqual(value["removed_folders"], 2)
+        self.assertFalse(first.exists()); self.assertTrue(self.console.data.exists())
+        self.assertTrue((self.console.root / "notes").exists()); self.assertTrue(self.outside.exists())
+        self.assertEqual(self.console.entries, [])
+
+    def test_a_client_over_its_allowance_gets_429_with_retry_after_then_recovers(self):
+        cookie, csrf = self.session()  # read 1
+        for _ in range(3):
+            self.assertEqual(self.post(cookie, csrf, "/console/api/buy", {"request": "A stoneware mug"})[0], 200)
+        status, headers, value = self.post(cookie, csrf, "/console/api/buy", {"request": "A stoneware mug"})
+        self.assertEqual(status, 429); self.assertIn("Too many requests", value["error"]); self.assertGreaterEqual(int(headers["Retry-After"]), 1)
+        self.assertEqual(len(self.console.purchases), 3)  # the refused request ran nothing
+        self.assertEqual(self.post(cookie, csrf, "/console/api/buy", {"request": "A stoneware mug"}, ip="198.51.100.9")[0], 200)  # another address has its own allowance
+        self.now[0] += 61
+        self.assertEqual(self.post(cookie, csrf, "/console/api/buy", {"request": "A stoneware mug"})[0], 200)
+
+    def test_reads_are_limited_too_and_limits_do_not_apply_outside_hosted_mode(self):
+        for _ in range(4):
+            self.assertEqual(self.request("GET", "/console/api/state", headers={"X-Forwarded-For": "192.0.2.1"})[0], 200)
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"X-Forwarded-For": "192.0.2.1"})[0], 429)
+        local = ClearwakeServer(("127.0.0.1", 0), self.controller, self.console, hosted=False)
+        try:
+            self.assertIsNone(local.limiter)
+        finally:
+            local.server_close()
+
+    def test_other_hosts_are_refused_unless_named(self):
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test"})[0], 403)  # no allowed host configured: loopback only
+        self.server.allowed_hosts = {"demo.example.test"}
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test"})[0], 200)
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "evil.test"})[0], 403)
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test", "Origin": "https://evil.test"})[0], 403)
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test", "Origin": "https://demo.example.test"})[0], 200)
 
 
 class ConsoleRestartTests(unittest.TestCase):

@@ -4,9 +4,11 @@ Backends: "ollama" (free open weights model on loopback, default), "meta" (Meta 
 CLEARWAKE_META_ACK is set), "scripted" (deterministic rules, always labelled "scripted, not AI").
 """
 from dataclasses import dataclass
+import hashlib
 import json
 import os
 import re
+import time
 from urllib.request import ProxyHandler, Request, build_opener
 
 OLLAMA = "http://127.0.0.1:11434/v1/chat/completions"
@@ -28,6 +30,7 @@ class Proposal:
     label: str          # what the screen shows
     value: dict | None  # parsed JSON proposal, or None if the model gave nothing usable
     note: str = ""
+    call: dict | None = None  # measured model call: prompt_sha256, latency_ms, tokens; None for scripted
 
 
 class Adapter:
@@ -39,28 +42,49 @@ class Adapter:
             raise ValueError("The Meta backend is off until Sri confirms the credit terms (CLEARWAKE_META_ACK).")
         self.model = model or os.environ.get("CLEARWAKE_MODEL", {"ollama": "qwen2.5-coder:3b", "meta": "muse-spark-1.3", "scripted": "scripted"}[self.backend])
         self.send, self.timeout = send or self._send, timeout
+        self.options = {"max_tokens": 300, "reasoning_effort": "none"}  # bound the reply; reasoning off (the native route also sets think false)
 
     def label(self):
         return "scripted, not AI" if self.backend == "scripted" else f"{self.model} via {'Ollama on this machine' if self.backend == 'ollama' else 'Meta Model API'}"
 
     def _send(self, url, payload, headers):
         opener = build_opener(ProxyHandler({}))
+        native = self.backend == "ollama" and url.endswith("/v1/chat/completions")
+        if native:  # Ollama's own chat route accepts the thread count and switches reasoning off; the OpenAI route accepts neither
+            url = url.replace("/v1/chat/completions", "/api/chat")
+            payload = {"model": payload["model"], "stream": False, "format": "json", "think": False, "messages": payload["messages"],
+                       "options": {"temperature": 0, "num_predict": payload.get("max_tokens", 400), "num_thread": int(os.environ.get("CLEARWAKE_OLLAMA_THREADS", "6"))}}
         with opener.open(Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json", **headers}, method="POST"), timeout=self.timeout) as response:
-            return json.loads(response.read(1 << 20))
+            reply = json.loads(response.read(1 << 20))
+        if native:
+            return {"choices": [{"message": {"content": reply["message"]["content"]}}],
+                    "usage": {"prompt_tokens": reply.get("prompt_eval_count"), "completion_tokens": reply.get("eval_count")}}
+        return reply
 
-    def propose(self, system, user, fields, scripted):
-        """Ask for a JSON object with exactly `fields`. `scripted` is the rule used when backend is scripted."""
+    def propose(self, system, user, fields, scripted, required=None):
+        """Ask for a JSON object with `fields` (`required` keys must all be present, default all). `scripted` is the rule used when backend is scripted."""
         if self.backend == "scripted":
             return Proposal("scripted", "scripted", self.label(), scripted())
         url, headers = (ollama_url(), {}) if self.backend == "ollama" else (META, {"Authorization": "Bearer " + os.environ.get("META_API_KEY", "")})
         payload = {"model": self.model, "temperature": 0, "response_format": {"type": "json_object"},
                    "messages": [{"role": "system", "content": system + " Reply with one JSON object with exactly these keys: " + ", ".join(fields) + "."},
                                 {"role": "user", "content": user}]}
+        if self.backend == "ollama":
+            payload.update(self.options)
+        call = {"prompt_sha256": hashlib.sha256(json.dumps(payload["messages"], sort_keys=True).encode()).hexdigest()}
+        started = time.perf_counter()
         try:
-            content = self.send(url, payload, headers)["choices"][0]["message"]["content"]
-            value = json.loads(content)
+            reply = self.send(url, payload, headers)
+            call["latency_ms"] = round((time.perf_counter() - started) * 1000)
+            usage = reply.get("usage") or {}
+            call["prompt_tokens"], call["completion_tokens"] = usage.get("prompt_tokens"), usage.get("completion_tokens")
+            value = json.loads(reply["choices"][0]["message"]["content"])
         except Exception as error:  # a bad or missing reply is not an instruction
-            return Proposal(self.backend, self.model, self.label(), None, f"no usable proposal ({type(error).__name__})")
-        if not isinstance(value, dict) or set(value) != set(fields):
-            return Proposal(self.backend, self.model, self.label(), None, "proposal had unexpected fields")
-        return Proposal(self.backend, self.model, self.label(), value)
+            call["latency_ms"] = call.get("latency_ms", round((time.perf_counter() - started) * 1000))
+            call["error"] = type(error).__name__
+            return Proposal(self.backend, self.model, self.label(), None, f"no usable proposal ({type(error).__name__})", call)
+        need = set(fields if required is None else required)
+        if not isinstance(value, dict) or not need <= set(value) <= set(fields):
+            call["error"] = "unexpected fields"
+            return Proposal(self.backend, self.model, self.label(), None, "proposal had unexpected fields", call)
+        return Proposal(self.backend, self.model, self.label(), value, "", call)

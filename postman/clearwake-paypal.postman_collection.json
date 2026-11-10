@@ -1,0 +1,1151 @@
+{
+  "info": {
+    "_postman_id": "6f2c9c1e-5d3b-4f0a-9d61-c1ea2a7e0d44",
+    "name": "Clearwake PayPal sandbox calls",
+    "description": "Every PayPal call that clearwake/paypal.py makes, against https://api-m.sandbox.paypal.com only. Each request has tests on PayPal's response: status code, id shape, status values, USD amounts with two decimals.\n\nSetup: import sandbox.environment.template.json, fill client_id and client_secret from your own PayPal sandbox app (Postman keeps the secret on your machine; never commit a filled environment), then run the folders in order. The token request is run first by the collection pre-request script.\n\nRun order needs real sandbox state: an order the sandbox buyer approved before Capture order, and a dispute the sandbox buyer opened in the Resolution Center before folder 3. Those cannot be created by API (POST /v1/customer/disputes returns 400 No permissions to set target_client_id for this app).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Sandbox only. Refuse any other host, then make sure a token exists.",
+          "const base = pm.environment.get('base_url') || '';",
+          "if (base !== 'https://api-m.sandbox.paypal.com') { throw new Error('base_url must be https://api-m.sandbox.paypal.com. Clearwake never calls production.'); }",
+          "if (pm.request.url.getPath().indexOf('/v1/oauth2/token') !== -1) { return; }",
+          "if (pm.environment.get('access_token')) { return; }",
+          "const id = pm.environment.get('client_id'), secret = pm.environment.get('client_secret');",
+          "if (!id || !secret) { throw new Error('Fill client_id and client_secret in the environment (your own sandbox app).'); }",
+          "const basic = CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(id + ':' + secret));",
+          "pm.sendRequest({url: base + '/v1/oauth2/token', method: 'POST', header: {Authorization: 'Basic ' + basic, 'Content-Type': 'application/x-www-form-urlencoded'},",
+          "  body: {mode: 'urlencoded', urlencoded: [{key: 'grant_type', value: 'client_credentials'}]}}, (err, res) => {",
+          "  if (err || res.code !== 200) { throw new Error('Token request failed'); }",
+          "  pm.environment.set('access_token', res.json().access_token);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "0 Authentication",
+      "item": [
+        {
+          "name": "Get access token (OAuth client credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('token_type is Bearer', () => pm.expect(String(body().token_type).toLowerCase()).to.eql('bearer'));",
+                  "pm.test('access_token is a non-empty string without line breaks', () => { const t = body().access_token; pm.expect(t).to.be.a('string').and.not.empty; pm.expect(t).to.not.match(/[\\r\\n]/); });",
+                  "pm.test('expires_in is an integer of at least 60', () => { const n = body().expires_in; pm.expect(Number.isInteger(n)).to.be.true; pm.expect(n).to.be.at.least(60); });",
+                  "pm.environment.set('access_token', body().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/oauth2/token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "oauth2",
+                "token"
+              ]
+            },
+            "description": "clearwake/paypal.py SandboxGateway._access_token. Clearwake accepts a token only if it is a non-empty string, token_type Bearer and expires_in at least 60.",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "client_credentials",
+                  "type": "text"
+                }
+              ]
+            },
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{client_id}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{client_secret}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1 Orders (Orders v2)",
+      "item": [
+        {
+          "name": "Create order (PayPal wallet, buyer approves)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('id looks like a PayPal order id', () => pm.expect(body().id).to.match(/^[A-Za-z0-9_-]{1,64}$/));",
+                  "pm.test('status is a created state', () => pm.expect(body().status).to.be.oneOf(['CREATED', 'PAYER_ACTION_REQUIRED']));",
+                  "pm.test('links include the buyer approval step', () => pm.expect((body().links || []).map(l => l.rel).join(' ')).to.match(/payer-action|approve/));",
+                  "pm.environment.set('order_id', body().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/checkout/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "checkout",
+                "orders"
+              ]
+            },
+            "description": "SandboxGateway.create_order. The sandbox buyer approves the order at the payer-action link in a browser; only then can it be captured.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"intent\": \"CAPTURE\",\n  \"purchase_units\": [\n    {\n      \"amount\": {\n        \"currency_code\": \"USD\",\n        \"value\": \"{{order_amount}}\"\n      },\n      \"description\": \"Clearwake sandbox order\"\n    }\n  ],\n  \"payment_source\": {\n    \"paypal\": {\n      \"experience_context\": {\n        \"user_action\": \"PAY_NOW\",\n        \"shipping_preference\": \"NO_SHIPPING\",\n        \"return_url\": \"http://127.0.0.1:8844/return\",\n        \"cancel_url\": \"http://127.0.0.1:8844/return\"\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Create order (sandbox test card)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('id is present', () => pm.expect(body().id).to.match(/^[A-Za-z0-9_-]{1,64}$/));",
+                  "pm.test('card order is COMPLETED or has a capture', () => pm.expect(body().status).to.be.oneOf(['COMPLETED', 'CREATED', 'APPROVED']));",
+                  "pm.environment.set('order_id', body().id);",
+                  "const cap = (((body().purchase_units || [])[0] || {}).payments || {}).captures;",
+                  "if (cap && cap[0]) { pm.environment.set('capture_id', cap[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/checkout/orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "checkout",
+                "orders"
+              ]
+            },
+            "description": "SandboxGateway.create_card_order. Use one of PayPal's published sandbox test card numbers (developer.paypal.com/tools/sandbox/card-testing). The merchant account must have card processing enabled, otherwise PayPal answers 422 PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING, which is what the sandbox merchant did on 31 October 2026.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"intent\": \"CAPTURE\",\n  \"purchase_units\": [\n    {\n      \"amount\": {\n        \"currency_code\": \"USD\",\n        \"value\": \"{{order_amount}}\"\n      },\n      \"description\": \"Clearwake sandbox order (test card)\"\n    }\n  ],\n  \"payment_source\": {\n    \"card\": {\n      \"number\": \"{{test_card_number}}\",\n      \"expiry\": \"{{test_card_expiry}}\",\n      \"name\": \"Sandbox Test\",\n      \"billing_address\": {\n        \"address_line_1\": \"1 Test Street\",\n        \"admin_area_2\": \"San Jose\",\n        \"admin_area_1\": \"CA\",\n        \"postal_code\": \"95131\",\n        \"country_code\": \"US\"\n      }\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('id equals the requested order', () => pm.expect(body().id).to.eql(pm.environment.get('order_id')));",
+                  "pm.test('status is a known order status', () => pm.expect(body().status).to.be.oneOf(['CREATED', 'SAVED', 'APPROVED', 'VOIDED', 'COMPLETED', 'PAYER_ACTION_REQUIRED']));",
+                  "pm.test('has one purchase unit with a USD amount in two decimals', () => { const u = body().purchase_units; pm.expect(u).to.be.an('array').with.lengthOf.at.least(1); pm.expect(u[0].amount.currency_code).to.eql('USD'); pm.expect(u[0].amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/checkout/orders/{{order_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "checkout",
+                "orders",
+                "{{order_id}}"
+              ]
+            },
+            "description": "SandboxGateway.order. Clearwake reads the order for its tracking numbers (shipping.trackers) before sending dispute evidence."
+          }
+        },
+        {
+          "name": "Capture order",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('order is COMPLETED', () => pm.expect(body().status).to.eql('COMPLETED'));",
+                  "const c = (((body().purchase_units || [])[0] || {}).payments || {}).captures;",
+                  "pm.test('a capture with an id and a USD amount exists', () => { pm.expect(c).to.be.an('array').with.lengthOf.at.least(1); pm.expect(c[0].id).to.match(/^[A-Za-z0-9_-]{1,64}$/); pm.expect(c[0].amount.currency_code).to.eql('USD'); });",
+                  "if (c && c[0]) { pm.environment.set('capture_id', c[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/checkout/orders/{{order_id}}/capture",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "checkout",
+                "orders",
+                "{{order_id}}",
+                "capture"
+              ]
+            },
+            "description": "SandboxGateway.capture_order. Works only after the sandbox buyer approved the order. A replay with the same PayPal-Request-Id returns the first answer.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Add tracking to the order",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('returned order id equals the order', () => pm.expect(body().id).to.eql(pm.environment.get('order_id')));",
+                  "pm.test('the tracker is on the shipping detail', () => { const t = (((body().purchase_units || [])[0] || {}).shipping || {}).trackers; pm.expect(t, 'trackers').to.be.an('array').with.lengthOf.at.least(1); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/checkout/orders/{{order_id}}/track",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "checkout",
+                "orders",
+                "{{order_id}}",
+                "track"
+              ]
+            },
+            "description": "SandboxGateway.add_tracking (scripts/add_tracking.py). Tracking number 6 to 40 letters or digits; carrier is an uppercase PayPal carrier code such as UPS.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"capture_id\": \"{{capture_id}}\",\n  \"tracking_number\": \"{{tracking_number}}\",\n  \"carrier\": \"{{carrier}}\",\n  \"notify_payer\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 Payments v2 (capture and refund)",
+      "item": [
+        {
+          "name": "Get capture",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('id equals the capture', () => pm.expect(body().id).to.eql(pm.environment.get('capture_id')));",
+                  "pm.test('capture is COMPLETED (a PENDING capture blocks refunds in Clearwake)', () => pm.expect(body().status).to.eql('COMPLETED'));",
+                  "pm.test('amount is USD with two decimals', () => { pm.expect(body().amount.currency_code).to.eql('USD'); pm.expect(body().amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/payments/captures/{{capture_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "payments",
+                "captures",
+                "{{capture_id}}"
+              ]
+            },
+            "description": "SandboxGateway.capture. Clearwake reads the capture before every refund to confirm it is COMPLETED and to know its amount."
+          }
+        },
+        {
+          "name": "Refund capture",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));",
+                  "pm.variables.set('refund_amount', pm.environment.get('refund_amount') || '1.00');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 201', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));",
+                  "pm.test('refund id is present', () => pm.expect(body().id).to.match(/^[A-Za-z0-9_-]{1,64}$/));",
+                  "pm.test('refund status is COMPLETED or PENDING', () => pm.expect(body().status).to.be.oneOf(['COMPLETED', 'PENDING']));",
+                  "pm.test('refunded amount equals what was sent', () => { pm.expect(body().amount.value).to.eql(pm.variables.get('refund_amount')); pm.expect(body().amount.currency_code).to.eql('USD'); });",
+                  "pm.test('custom_id echoes the request id', () => pm.expect(body().custom_id).to.eql(pm.variables.get('request_id')));",
+                  "pm.environment.set('refund_id', body().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              },
+              {
+                "key": "Prefer",
+                "value": "return=representation"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/payments/captures/{{capture_id}}/refund",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "payments",
+                "captures",
+                "{{capture_id}}",
+                "refund"
+              ]
+            },
+            "description": "SandboxGateway.refund. One stable PayPal-Request-Id and the same value as custom_id, so Clearwake can match the refund to the request. Clearwake caps a refund at 5.00 USD; keep refund_amount at or below that.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": {\n    \"value\": \"{{refund_amount}}\",\n    \"currency_code\": \"USD\"\n  },\n  \"custom_id\": \"{{request_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('id equals the refund', () => pm.expect(body().id).to.eql(pm.environment.get('refund_id')));",
+                  "pm.test('status is COMPLETED (anything else stays PENDING or UNKNOWN in Clearwake)', () => pm.expect(body().status).to.eql('COMPLETED'));",
+                  "pm.test('amount is USD with two decimals', () => { pm.expect(body().amount.currency_code).to.eql('USD'); pm.expect(body().amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });",
+                  "pm.test('an up link points at the sandbox capture', () => { const up = (body().links || []).find(l => l.rel === 'up'); pm.expect(up, 'up link').to.exist; pm.expect(up.href).to.include('api-m.sandbox.paypal.com/v2/payments/captures/'); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v2/payments/refunds/{{refund_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v2",
+                "payments",
+                "refunds",
+                "{{refund_id}}"
+              ]
+            },
+            "description": "SandboxGateway.refund_record. This read is the check: Clearwake calls a refund VERIFIED only when this record is COMPLETED with the right amount and capture link."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3 Disputes v1",
+      "item": [
+        {
+          "name": "List disputes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('items is an array (empty when no dispute is open)', () => pm.expect(body().items === undefined || Array.isArray(body().items)).to.be.true);",
+                  "pm.test('each item has a dispute id, a status and a life cycle stage', () => (body().items || []).forEach(d => { pm.expect(d.dispute_id).to.be.a('string'); pm.expect(d.status).to.be.a('string'); pm.expect(d.dispute_life_cycle_stage).to.be.a('string'); }));",
+                  "if (!pm.environment.get('dispute_id') && (body().items || []).length) { pm.environment.set('dispute_id', body().items[0].dispute_id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes"
+              ]
+            },
+            "description": "SandboxGateway.disputes. Clearwake lists the sandbox disputes opened by the sandbox buyer in the Resolution Center. This request stores the first dispute id in dispute_id if none is set."
+          }
+        },
+        {
+          "name": "Get dispute",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('dispute_id equals the request', () => pm.expect(body().dispute_id).to.eql(pm.environment.get('dispute_id')));",
+                  "pm.test('life cycle stage is INQUIRY, CHARGEBACK or PRE_ARBITRATION', () => pm.expect(body().dispute_life_cycle_stage).to.be.oneOf(['INQUIRY', 'CHARGEBACK', 'PRE_ARBITRATION', 'ARBITRATION']));",
+                  "pm.test('status is a known dispute status', () => pm.expect(body().status).to.be.oneOf(['OPEN', 'WAITING_FOR_BUYER_RESPONSE', 'WAITING_FOR_SELLER_RESPONSE', 'UNDER_REVIEW', 'RESOLVED', 'OTHER']));",
+                  "pm.test('dispute amount is USD with two decimals', () => { const a = body().dispute_amount; pm.expect(a.currency_code).to.eql('USD'); pm.expect(a.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });",
+                  "pm.test('a disputed transaction names the seller transaction', () => pm.expect(body().disputed_transactions[0].seller_transaction_id).to.be.a('string'));",
+                  "pm.test('links list the actions PayPal offers', () => pm.expect(body().links).to.be.an('array'));",
+                  "const offered = (body().links || []).map(l => l.rel); console.log('PayPal offers: ' + offered.join(', '));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}"
+              ]
+            },
+            "description": "SandboxGateway.dispute. Clearwake reads the dispute for its stage, status, deadline, messages and the actions PayPal offers (links). The read after every action is the proof."
+          }
+        },
+        {
+          "name": "Send message to the buyer (INQUIRY only)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 202', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('links, when present, is an array', () => { const b = body(); pm.expect(b.links === undefined || Array.isArray(b.links)).to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}/send-message",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}",
+                "send-message"
+              ]
+            },
+            "description": "SandboxGateway.send_message. Allowed only while PayPal offers send_message on an INQUIRY. Otherwise PayPal answers 422 (NOT_IN_INQUIRY or ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE) and applies nothing.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"{{dispute_message}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Make offer (refund, INQUIRY only)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 202', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('links, when present, is an array', () => { const b = body(); pm.expect(b.links === undefined || Array.isArray(b.links)).to.be.true; });",
+                  "pm.test('offer amount is within Clearwake\\'s 5.00 USD cap', () => pm.expect(Number(pm.environment.get('offer_amount'))).to.be.within(0.01, 5.0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}/make-offer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}",
+                "make-offer"
+              ]
+            },
+            "description": "SandboxGateway.make_offer. PayPal refunds only if the buyer accepts. Clearwake sends the offer alone: a message followed by an offer was refused with 422 ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE on 31 October 2026.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"{{dispute_message}}\",\n  \"offer_type\": \"REFUND\",\n  \"offer_amount\": {\n    \"currency_code\": \"USD\",\n    \"value\": \"{{offer_amount}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Provide evidence (multipart)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 202', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('links, when present, is an array', () => { const b = body(); pm.expect(b.links === undefined || Array.isArray(b.links)).to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}/provide-evidence",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}",
+                "provide-evidence"
+              ]
+            },
+            "description": "SandboxGateway.provide_evidence. Evidence only from the record, as PayPal's multipart input part. Add evidence-file parts for photos in the Postman UI. When more than one evidence is sent each needs an item_id (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "input",
+                  "value": "{\"evidences\": [{\"evidence_type\": \"PROOF_OF_FULFILLMENT\", \"evidence_info\": {\"tracking_info\": [{\"carrier_name\": \"{{carrier}}\", \"tracking_number\": \"{{tracking_number}}\"}]}, \"notes\": \"Tracking from the PayPal order record.\"}]}",
+                  "type": "text",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Provide supporting info (multipart)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 202', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('links, when present, is an array', () => { const b = body(); pm.expect(b.links === undefined || Array.isArray(b.links)).to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}/provide-supporting-info",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}",
+                "provide-supporting-info"
+              ]
+            },
+            "description": "SandboxGateway.provide_supporting_info. PayPal offers this once a dispute is under review; notes only, no files.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "input",
+                  "value": "{\"notes\": \"Tracking {{carrier}} {{tracking_number}} from the PayPal order record.\"}",
+                  "type": "text",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept claim (refund)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 202', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('links, when present, is an array', () => { const b = body(); pm.expect(b.links === undefined || Array.isArray(b.links)).to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}/accept-claim",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}",
+                "accept-claim"
+              ]
+            },
+            "description": "SandboxGateway.accept_claim. Money moves. Clearwake calls it done only after reading the dispute and the refund record back.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"{{dispute_message}}\",\n  \"refund_amount\": {\n    \"currency_code\": \"USD\",\n    \"value\": \"{{offer_amount}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Adjudicate (sandbox only)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// One stable id per send, the way Clearwake does it (PayPal-Request-Id).",
+                  "pm.variables.set('request_id', pm.variables.replaceIn('{{$guid}}'));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200 or 202', () => pm.expect(pm.response.code).to.be.oneOf([200, 202]));",
+                  "pm.test('links, when present, is an array', () => { const b = body(); pm.expect(b.links === undefined || Array.isArray(b.links)).to.be.true; });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "PayPal-Request-Id",
+                "value": "{{request_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}/adjudicate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}",
+                "adjudicate"
+              ]
+            },
+            "description": "SandboxGateway.adjudicate. Exists only in the sandbox, to finish a test dispute without waiting for PayPal. Use BUYER_FAVOR or SELLER_FAVOR.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adjudication_outcome\": \"SELLER_FAVOR\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get dispute again (the proof)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 15 s (Clearwake timeout)', () => pm.expect(pm.response.responseTime).to.be.below(15000));",
+                  "pm.test('no PayPal debug id leaks a secret: body has no client secret', () => pm.expect(pm.response.text()).to.not.include(pm.environment.get('client_secret') || '\\u0000'));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('the stage is a known stage', () => pm.expect(body().dispute_life_cycle_stage).to.be.oneOf(['INQUIRY', 'CHARGEBACK', 'PRE_ARBITRATION', 'ARBITRATION']));",
+                  "const settled = body().status === 'RESOLVED' && body().dispute_life_cycle_stage === 'INQUIRY';",
+                  "console.log('Settled in conversation, no claim: ' + settled);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/v1/customer/disputes/{{dispute_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "v1",
+                "customer",
+                "disputes",
+                "{{dispute_id}}"
+              ]
+            },
+            "description": "The read that decides. A settlement counts as 'settled, no fee' only when this shows status RESOLVED at dispute_life_cycle_stage INQUIRY."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -10,6 +10,9 @@
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="room.css">
 <script src="theme.js"></script>
+<script src="vendor/ag-grid-community-35.3.1.min.js" defer></script>
+<script src="ledger-lib.js" defer></script>
+<script src="ledger.js" defer></script>
 <script src="room.js" defer></script>
 </head>
 <body>
@@ -32,7 +35,8 @@
 
 <main>
   <section id="today" class="hero wrap" aria-labelledby="h-today">
-    <p class="eyebrow">Control Room, recorded <span class="tag amber">not live</span></p>
+    <p class="eyebrow">Control Room</p>
+    <p class="strip">Real PayPal sandbox, test money. Recorded runs, not live.</p>
     <h1 id="h-today" class="sr">Control Room</h1>
     <div class="hero-grid">
       <div class="fee">
@@ -43,10 +47,10 @@
         <button type="button" class="toggle" id="hv" aria-pressed="false"><kbd>H</kbd> High volume what-if</button>
       </div>
       <dl class="today">
-        <div><dt>Settled before escalation</dt><dd class="tnum">1</dd><dd class="sub">Case n, real sandbox, RESOLVED at INQUIRY. Source: docs/RESULTS.md.</dd></div>
+        <div><dt>Settled before escalation</dt><dd class="tnum">1</dd><dd class="sub">Case n, RESOLVED at INQUIRY. Source: docs/RESULTS.md.</dd></div>
         <div><dt>Network</dt><dd class="word">Online, holding 0</dd><dd class="sub">At the end of the recorded run. Case m was cut and resumed, see the river.</dd></div>
         <div><dt>Approvals waiting</dt><dd class="tnum amber-t">0</dd><dd class="sub">Case d needed one and got it. See Approvals.</dd></div>
-        <div><dt>Deadlines</dt><dd class="word">None recorded</dd><dd class="sub">No deadline of a real sandbox dispute was saved. Rehearsal case k escalated with 4 h 59 min left.</dd></div>
+        <div><dt>Deadlines</dt><dd class="word">None recorded</dd><dd class="sub">No deadline of a real sandbox dispute was saved. Rows that carry one count down live in the ledger.</dd></div>
       </dl>
     </div>
     <div class="rate">
@@ -109,38 +113,31 @@
   </section>
 
   <section id="disputes" class="wrap sec" aria-labelledby="h-disputes">
-    <p class="eyebrow">Disputes, recorded</p>
+    <p class="eyebrow">Disputes</p>
     <h2 id="h-disputes">Dispute ledger</h2>
-    <p class="lede">Real sandbox rows ran against <code>api-m.sandbox.paypal.com</code>. Rehearsal rows ran on rehearsal records and say so. A dash means the run did not record it.</p>
-    <div class="tools" role="group" aria-label="Filter the ledger">
-      <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
-      <button type="button" class="chip" data-filter="sandbox" aria-pressed="false">Real sandbox</button>
-      <button type="button" class="chip" data-filter="rehearsal" aria-pressed="false">Rehearsal</button>
+    <p class="lede">Every row is a recorded run against <code>api-m.sandbox.paypal.com</code>. A dash means the run did not record the value. Select a row for the PayPal record fields saved with it.</p>
+    <div class="tools" role="group" aria-label="Ledger tools">
+      <label class="tool-label" for="stage-filter">Stage</label>
+      <select id="stage-filter" class="select"><option value="all">All stages</option><option value="INQUIRY">Inquiry</option><option value="CHARGEBACK">Chargeback</option></select>
       <span class="note count" id="ledger-count" aria-live="polite"></span>
+      <button type="button" class="btn" id="export-csv">Export CSV for the accountant</button>
     </div>
-    <div class="ledger-wrap">
-    <table class="ledger" id="ledger">
-      <caption class="sr">Dispute ledger. Use the column buttons to sort.</caption>
-      <thead><tr>
-        <th scope="col"><button type="button" class="sort" data-key="case">Case</button></th>
-        <th scope="col">Id</th><th scope="col">Reason</th>
-        <th scope="col"><button type="button" class="sort" data-key="amount">Amount (USD)</button></th>
-        <th scope="col">Stage</th><th scope="col">Policy decision</th><th scope="col">Outcome</th><th scope="col">Fee</th><th scope="col">Dispatch proof</th>
-      </tr></thead>
-      <tbody>
-        <tr data-source="sandbox" data-case="c" data-amount="1.50"><td data-label="Case"><b>c</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">6SN41486G5579815G</td><td data-label="Reason">Refund under the limit</td><td data-label="Amount (USD)" class="tnum">1.50</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Refund inside the USD 5.00 limit, executed</td><td data-label="Outcome">Refund VERIFIED at PayPal</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
-        <tr data-source="sandbox" data-case="d" data-amount="3.50"><td data-label="Case"><b>d</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">2NB27940EC188891M</td><td data-label="Reason">Refund above the approval line</td><td data-label="Amount (USD)" class="tnum">3.50</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Above USD 2.00, held for approval</td><td data-label="Outcome">Approved, refund VERIFIED at PayPal</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
-        <tr data-source="sandbox" data-case="e" data-amount="1.50"><td data-label="Case"><b>e</b> <span class="tag">real sandbox, fault injected</span></td><td data-label="Id" class="id">&ndash;</td><td data-label="Reason">Lost response, held as UNKNOWN</td><td data-label="Amount (USD)" class="tnum">1.50</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Read PayPal before any retry; second attempt sent nothing</td><td data-label="Outcome">One refund at PayPal, VERIFIED by reconciliation</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
-        <tr data-source="sandbox" data-case="i" data-amount=""><td data-label="Case"><b>i</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">PP-R-SLI-10195419</td><td data-label="Reason">Item not received</td><td data-label="Amount (USD)" class="tnum">&ndash;</td><td data-label="Stage">UNDER_REVIEW</td><td data-label="Policy decision">Send the tracking as the supporting info PayPal offered</td><td data-label="Outcome">Tracking note SUBMITTED_BY_SELLER, VERIFIED</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
-        <tr data-source="sandbox" data-case="m" data-amount="3.00"><td data-label="Case"><b>m</b> <span class="tag">real sandbox, network cut</span></td><td data-label="Id" class="id">6PX35920F4587564U<br>76C086475Y724052F<br>9C434129FA2384059</td><td data-label="Reason">Three refunds across a network cut</td><td data-label="Amount (USD)" class="tnum">1.00 each</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">First sent; two held while offline, sent after restore</td><td data-label="Outcome">All three VERIFIED at PayPal</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof">&ndash;</td></tr>
-        <tr data-source="sandbox" data-case="n" data-amount="2.50"><td data-label="Case"><b>n</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">PP-R-OBG-10196144</td><td data-label="Reason">&ndash;</td><td data-label="Amount (USD)" class="tnum">2.50</td><td data-label="Stage">INQUIRY</td><td data-label="Policy decision">Settle by offer of USD 2.50</td><td data-label="Outcome">RESOLVED_BUYER_FAVOUR, refund 0TB11858A85953644 paid</td><td data-label="Fee">None, never a claim</td><td data-label="Dispatch proof">&ndash;</td></tr>
-        <tr data-source="sandbox" data-case="o" data-amount="5.00"><td data-label="Case"><b>o</b> <span class="tag">real sandbox</span></td><td data-label="Id" class="id">PP-R-UKF-10195772</td><td data-label="Reason">Item not received, buyer says 2 of 3 arrived</td><td data-label="Amount (USD)" class="tnum">5.00</td><td data-label="Stage">INQUIRY</td><td data-label="Policy decision">Fight with evidence</td><td data-label="Outcome">PROOF_OF_FULFILLMENT on PayPal's record; WAITING_FOR_BUYER_RESPONSE</td><td data-label="Fee">None charged</td><td data-label="Dispatch proof"><a href="#dispatch">3 of 3 counted, sealed</a></td></tr>
-        <tr data-source="rehearsal" data-case="k" data-amount=""><td data-label="Case"><b>k</b> <span class="tag amber">rehearsal</span></td><td data-label="Id" class="id">&ndash;</td><td data-label="Reason">Near deadline escalation</td><td data-label="Amount (USD)" class="tnum">&ndash;</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Escalate to the approval inbox</td><td data-label="Outcome">Escalated with 4 h 59 min left</td><td data-label="Fee">&ndash;</td><td data-label="Dispatch proof">&ndash;</td></tr>
-        <tr data-source="rehearsal" data-case="l" data-amount=""><td data-label="Case"><b>l</b> <span class="tag amber">rehearsal</span></td><td data-label="Id" class="id">10 disputes</td><td data-label="Reason">4 not received, 4 not as described, 2 unauthorised</td><td data-label="Amount (USD)" class="tnum">&ndash;</td><td data-label="Stage">&ndash;</td><td data-label="Policy decision">Evidence, refund or escalate by reason</td><td data-label="Outcome">4 evidenced, 4 refunded, 2 escalated</td><td data-label="Fee">&ndash;</td><td data-label="Dispatch proof">&ndash;</td></tr>
-      </tbody>
-    </table>
+    <div id="ledger-grid" class="ag-host" role="region" aria-label="Dispute ledger" tabindex="-1"></div>
+    <noscript><p class="note">The ledger needs JavaScript. The same rows are in <a href="data/ledger.json">data/ledger.json</a>.</p></noscript>
+    <article id="row-detail" class="row-detail" aria-labelledby="h-detail" aria-live="polite" hidden>
+      <h3 id="h-detail">Row detail</h3>
+      <dl class="row-facts" id="detail-facts"></dl>
+      <p class="note" id="detail-message"></p>
+      <h4>PayPal record fields saved with this run</h4>
+      <pre class="codeblock" id="detail-raw" tabindex="0"></pre>
+      <p class="note">These are the fields the run kept, not the full body PayPal sent. <a id="detail-receipts" href="receipts/manifest.json" hidden>Open the signed log for this row</a></p>
+    </article>
+    <p class="note" id="detail-hint">No row selected.</p>
+    <div class="cannot" id="cannot-run">
+      <h3>Cannot run in the sandbox</h3>
+      <p>Three steps have no row above. Case k (a dispute close to its deadline) and case l (ten disputes at once) need open sandbox disputes, and PayPal lets only the sandbox buyer open one, by hand in the Resolution Center. The weak proof path (a packing photo that shows fewer items than ordered, so no evidence is sent and the policy settles by offer) needs a dispute with a weak count. All three ran on local records only.</p>
     </div>
-    <p class="note">Sources: <code>docs/RESULTS.md</code>, <code>docs/SANDBOX_RUN.md</code> and the signed logs in Receipts. Cases a, b, f, g, h and j are not disputes and are not listed. In the run files k and l were SKIPPED on the real sandbox because no answerable dispute was open.</p>
+    <p class="note">Sources: <code>docs/RESULTS.md</code>, <code>docs/SANDBOX_RUN.md</code> and the signed logs in Receipts. Cases a, b, f, g, h and j are not disputes and are not listed.</p>
   </section>
 
   <section id="refunds" class="wrap sec" aria-labelledby="h-refunds">
@@ -172,7 +169,7 @@
 
   <section id="dispatch" class="wrap sec dispatch" aria-labelledby="h-dispatch">
     <div class="d-copy">
-      <p class="eyebrow">Dispatch proof, case o, real sandbox</p>
+      <p class="eyebrow">Dispatch proof, case o</p>
       <h2 id="h-dispatch">3 of 3 counted on this machine</h2>
       <p class="lede">The sandbox buyer wrote &ldquo;Only 2 of 3 notebooks arrived.&rdquo; Before the case, the parcel photo was counted offline and sealed. The policy found strong proof and sent it as evidence.</p>
       <dl class="facts">
@@ -186,7 +183,7 @@
         <dt>Counted by</dt><dd>facebook/sam3, local, CPU, 55.7 s to count</dd>
         <dt>PayPal record</dt><dd>PROOF_OF_FULFILLMENT, SUBMITTED_BY_SELLER, 10:13 UTC; status WAITING_FOR_BUYER_RESPONSE</dd>
       </dl>
-      <p class="note">Try 1 was refused by PayPal, try 2 lost its response and was held as UNKNOWN, try 3 with the same request id was accepted. All of it is in the signed log, on the river above. Weak proof, such as a photo showing 2 of 3, sends nothing and the policy settles by offer (rehearsal).</p>
+      <p class="note">Try 1 was refused by PayPal, try 2 lost its response and was held as UNKNOWN, try 3 with the same request id was accepted. All of it is in the signed log, on the river above.</p>
     </div>
     <figure class="photos">
       <img class="p1" src="dispatch/test-photo.jpg" width="1600" height="1200" alt="Three stacked paper notebooks on a wooden desk, the packing photo">
@@ -197,11 +194,10 @@
 
   <section id="approvals" class="wrap sec" aria-labelledby="h-approvals">
     <p class="eyebrow">Approvals, recorded</p>
-    <h2 id="h-approvals">Nothing waiting. Two on record.</h2>
+    <h2 id="h-approvals">Nothing waiting. One on record.</h2>
     <ol class="rules">
-      <li><span class="tag amber">Case d, real sandbox</span><h3>Refund USD 3.50</h3><p>Above the USD 2.00 refund approval line. Held, approved, sent. Refund <span class="id">2NB27940EC188891M</span> VERIFIED at PayPal.</p></li>
-      <li><span class="tag amber">Case k, rehearsal</span><h3>Near deadline</h3><p>Escalated to the approval inbox with 4 h 59 min left, on rehearsal records.</p></li>
-      <li><span class="tag">Limits in force</span><h3>Refund, offer, day</h3><p>Refund up to USD 5.00, approval above USD 2.00. Offer up to USD 5.00, approval above USD 3.00. Per customer per day USD 6.00. From the policy file below.</p></li>
+      <li><span class="tag amber">Case d</span><h3>Refund USD 3.50</h3><p>Above the USD 2.00 refund approval line. Held, approved, sent. Refund <span class="id">2NB27940EC188891M</span> VERIFIED at PayPal.</p></li>
+      <li><span class="tag amber">Limits in force</span><h3>Refund, offer, day</h3><p>Refund up to USD 5.00, approval above USD 2.00. Offer up to USD 5.00, approval above USD 3.00. Per customer per day USD 6.00. From the policy file below.</p></li>
     </ol>
   </section>
 

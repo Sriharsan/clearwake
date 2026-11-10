@@ -12,6 +12,7 @@ import json
 from pathlib import Path
 import re
 import secrets
+import shutil
 import sqlite3
 import threading
 import time
@@ -54,6 +55,7 @@ FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "dispatch"
 DECIDED = {"provide_evidence": "fight_with_evidence", "provide_supporting_info": "fight_with_evidence", "accept_and_refund": "refund_within_limit",
            "escalate": "escalate", "settle_by_offer": "settle_by_offer", "fight_with_evidence": "fight_with_evidence"}
 REQUEST = re.compile(r"[\x20-\x7e]{1,200}\Z")
+RUN_FOLDER = re.compile(r"run-[0-9]{8}-[0-9]{6}-[0-9a-f]{4}")
 
 
 class ConsoleError(ValueError):
@@ -96,7 +98,7 @@ class Console:
         self.root.mkdir(parents=True, exist_ok=True)
         current = self.root / "current.txt"
         name = current.read_text(encoding="utf-8").strip() if current.exists() else ""
-        self._open(name if re.fullmatch(r"run-[0-9]{8}-[0-9]{6}-[0-9a-f]{4}", name or "") else None)
+        self._open(name if RUN_FOLDER.fullmatch(name or "") else None)
 
     # Data folder -----------------------------------------------------------------------------
     def _open(self, name=None):
@@ -121,11 +123,17 @@ class Console:
         tmp = self.data / "console.json.tmp"
         tmp.write_text(body, encoding="utf-8"); tmp.replace(self.data / "console.json")
 
-    def reset(self):
-        """Start a fresh rehearsal folder. Earlier folders are kept, not deleted."""
+    def reset(self, wipe=False):
+        """Start a fresh rehearsal folder. Earlier folders are kept, unless wipe is set (the hosted demo):
+        then every run folder under this console's data root is deleted. Nothing outside that root is touched."""
         with self._lock:
             self._open()
-            return {"ok": True, "folder": self.data.name}
+            removed = 0
+            if wipe:
+                for old in self.root.iterdir():
+                    if old.is_dir() and old != self.data and RUN_FOLDER.fullmatch(old.name):
+                        shutil.rmtree(old, ignore_errors=True); removed += 1
+            return {"ok": True, "folder": self.data.name, "wiped": bool(wipe), "removed_folders": removed}
 
     # Session ---------------------------------------------------------------------------------
     def csrf_for(self, sid):
@@ -347,8 +355,8 @@ class Console:
             rows.append({"dispute": e["dispute_id"], "case": e["key"], "reason": e["reason"], "amount": money(e["amount_minor"]),
                          "stage": stage, "paypal_status": record.get("status", "unreadable"), "decided": e.get("decided") or "",
                          "proposed": e.get("proposed") or "", "model": e.get("model") or "", "state": e["state"], "due": e.get("due"),
-                         "dispatch": e.get("dispatch") or "none",
-                         "settled_before_escalation": settled, "fee_avoided": money(fee_if_escalated(record, False)) if settled else "0.00",
+                         "dispatch": e.get("dispatch") or "none", "message": e.get("message") or "", "policy_reason": e.get("detail") or "",
+                         "record": record, "settled_before_escalation": settled, "fee_avoided": money(fee_if_escalated(record, False)) if settled else "0.00",
                          "source": REHEARSAL})
         return rows
 

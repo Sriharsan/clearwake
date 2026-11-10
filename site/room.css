@@ -140,3 +140,23 @@ th[aria-sort="descending"] .sort::after{content:" \2193";opacity:1;color:var(--t
   .plain-table,.steps table{font-size:.85rem;min-width:36rem}
 }
 @media (prefers-reduced-motion:reduce){.mark{animation:none}}
+/* The one mode line of this page */
+.strip{margin:0 0 1.25rem;padding:.55rem 0;border-block:1px solid var(--border);color:var(--mist);font-weight:500;font-size:.95rem;max-width:34rem}
+/* Ledger: AG Grid Community, themed by CSS variables so it follows light and dark */
+.tool-label{font:600 .75rem/1 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mist)}
+.select{min-height:2.75rem;padding:.4rem 2rem .4rem .8rem;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--foreground);font:600 .95rem var(--font-sans)}
+.ag-host{width:100%;min-height:8rem;margin-bottom:1rem}
+.ag-host.plain-host{overflow-x:auto}
+.cell-b{font-weight:700}
+.cell-id{font-family:var(--font-code);font-size:.85em}
+.cw-late{color:var(--coral);font-weight:600}
+.cw-soon{color:var(--amber);font-weight:600}
+.row-detail{margin:1.25rem 0;padding-top:1rem;border-top:1px solid var(--border)}
+.row-detail h3{margin-bottom:.75rem}
+.row-detail h4{margin:1rem 0 .5rem;font:600 .75rem/1.2 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mist)}
+.row-detail .codeblock{max-height:20rem;overflow:auto;border-radius:0;border:0;border-left:3px solid var(--teal)}
+.cannot{margin:2rem 0 1rem;padding:1rem 0 0;border-top:1px solid var(--border);max-width:46rem}
+.cannot h3{margin-bottom:.5rem}
+.row-facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:1rem 2rem;margin:0 0 1rem}
+.row-facts dt{font:600 .72rem/1.4 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mist)}
+.row-facts dd{margin:.15rem 0 0;overflow-wrap:anywhere}

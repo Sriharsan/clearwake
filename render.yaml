@@ -1,0 +1,30 @@
+# Render Blueprint for the Clearwake console in hosted mode.
+# Hosted on Render, not network isolated: the network isolated run stays the local proof (compose.airgap.yml).
+# Secrets are never in this file. PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET are set by hand in the Render dashboard
+# (sync: false), see docs/RENDER.md. Sandbox keys only.
+services:
+  - type: web
+    name: clearwake-console
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    plan: free
+    region: oregon
+    autoDeployTrigger: "off"
+    envVars:
+      - key: CLEARWAKE_HOSTED
+        value: "1"
+      # Per client address and minute. Reads are page loads and polling; writes run a purchase or a case.
+      - key: CLEARWAKE_RATE_READ
+        value: "120"
+      - key: CLEARWAKE_RATE_WRITE
+        value: "20"
+      - key: CLEARWAKE_SANDBOX_ACK
+        value: I_CONFIRM_SANDBOX_ONLY
+      - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      # Set these two in the Render dashboard. Render asks for them on the first Blueprint apply.
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false

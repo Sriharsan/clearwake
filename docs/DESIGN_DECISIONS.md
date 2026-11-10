@@ -25,3 +25,20 @@ One OpenAI compatible adapter with three backends:
 
 Models only propose. The policy file decides.
 * **Dispatch proof (1 November).** A signed receipt written at packing, in the merchant's own receipt chain, so it verifies offline with the rest. The buyer's message is read only as a claim to check ("only 2 of 3 arrived") and never decides an amount or an action. Strong proof (count matches the order, sealed, tracking shows shipped, log verifies) goes out as evidence; weak proof is never sent, so Clearwake does not answer a claim of missing items with tracking alone. Only photos whose SHA-256 the receipt lists are attached. SAM runs as a separate process in its own environment, offline, so the app stays on the Python standard library. Still photos use SAM 3 because Meta's image code loads that checkpoint; SAM 3.1 is the video tracker, and the receipt names the model that actually ran.
+
+## Sponsor tools: used with a real job, skipped without one (9 November 2026)
+Rule: a tool goes in only if a step of the product needs it and the outcome changes without it.
+
+| Tool | Decision | Reason |
+| --- | --- | --- |
+| AG Grid Community | Used | The dispute ledger the owner works from: stage filter, deadline countdown, the model's proposal next to the policy decision, PayPal's raw record in the row detail, CSV export for the accountant. MIT, vendored unchanged (`docs/THIRD_PARTY.md`). |
+| Render | Used | Judges run one negotiation in a browser against a public URL. Labelled hosted on Render, not network isolated (`docs/RENDER.md`). |
+| APIMatic | Used | The Context Plugin reviews the PayPal calls, the OpenAPI 3.1 spec describes the console API, and the generated SDK and portal are the client for it (`docs/APIMATIC.md`). The results of the plugin are logged only as they happen. |
+| Postman | Used | A collection of every PayPal call Clearwake makes, with tests on PayPal's responses and an environment template with no secrets (`docs/POSTMAN.md`). It also checks that the code and the collection list the same routes. |
+| Channel3 | Skipped | Its catalog returns real retailers' products with the retailer's own buy link. The buyer agent's order is a PayPal sandbox order at the one sandbox merchant, so a Channel3 result could not be bought and would change no outcome. Terms also need a commission disclosure and written consent to publish evaluation results (`docs/CHANNEL3.md`). |
+| Bryntum | Skipped | Its licence is commercial. A commercial component cannot ship inside an MIT public repository that anyone can clone and run, and AG Grid Community already does the grid job. |
+| KERNEL | Skipped | Cloud browsers would put the buyer step on someone else's network and break the network boundary the product is about. Local Playwright with a persistent profile on the owner's own machine does the job. |
+| Zapier | Skipped | No step needs a hosted automation service. The agents call PayPal directly through one reviewed gateway. |
+| Astropods | Skipped | No step needs it. |
+| Elastic | Optional, not done | Step traces (model call, policy decision, PayPal read) in a local Elastic for a "who tests the AI" view. Only if time remains after everything above; the same facts are already in the signed receipts. |
+

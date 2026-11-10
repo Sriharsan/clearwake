@@ -32,8 +32,8 @@
     <div class="herotext">
       <p class="eyebrow">Developers</p>
       <h1>Run it <span>yourself.</span></h1>
-      <p class="lede">Everything on this page comes from the repository and from the recorded sandbox runs. Output blocks say whether they are a recorded real sandbox run or a rehearsal. The hosted site runs no agents.</p>
-      <p class="status" role="note"><span class="dot" aria-hidden="true"></span><span><b>Recorded status, not live.</b> Real sandbox, 3 Nov 2026: case n PASS, case o PASS. Real sandbox, 31 Oct 2026: 9 PASS, 0 FAIL, 5 SKIPPED. Rehearsal, 31 Oct 2026: 14 PASS, 0 FAIL.</span></p>
+      <p class="lede">Everything on this page comes from the repository and from the recorded sandbox runs. The hosted site runs no agents.</p>
+      <p class="status" role="note"><span class="dot" aria-hidden="true"></span><span><b>Real PayPal sandbox, recorded, not live.</b> 3 Nov 2026: case n PASS, case o PASS. 31 Oct 2026: 9 PASS, 0 FAIL, 5 SKIPPED.</span></p>
       <div class="findrow"><label class="sr" for="docsearch">Search this page</label><input class="search" id="docsearch" type="search" placeholder="Search this page (press /)" autocomplete="off"><button class="kbd" type="button" id="palopen">Command palette <kbd>Ctrl K</kbd></button><p class="searchnote" id="findnote" role="status" aria-live="polite"></p></div>
       <p class="meta">Repository: <a href="https://github.com/Sriharsan/clearwake">github.com/Sriharsan/clearwake</a></p>
     </div>
@@ -63,7 +63,7 @@
 <pre tabindex="0"><code>git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
 cd clearwake
 python -m clearwake --port 8810</code></pre></figure>
-    <p>Open <code>http://127.0.0.1:8810/console</code> for the three screens (buyer agent, control room with the dispute ledger, receipt verifier), or <code>http://127.0.0.1:8810</code> for the refund workroom. With no keys set, everything runs as a rehearsal: a stand in provider, no network call, no model call.</p>
+    <p>Open <code>http://127.0.0.1:8810/console</code> for the three screens (buyer agent, control room with the dispute ledger, receipt verifier). With no keys set, everything runs as a rehearsal: a stand in provider, no network call, no model call.</p>
     <p class="note">Shortcuts: <code>.\demo.ps1</code> on Windows, <code>./demo.sh</code> on macOS or Linux.</p>
   </div>
 </section>
@@ -96,15 +96,9 @@ CLEARWAKE_REFUND_AMOUNT=1.00</code></pre></figure>
 <section class="sec" id="run" data-title="3. Run the cases">
 <div class="sechead"><span class="num" aria-hidden="true">04</span><p class="eyebrow">Quickstart</p><h2>3. Run the cases</h2></div>
 <div class="secbody">
-    <p>The cases are lettered a to o. Run them as a rehearsal first. Then run one against the real sandbox.</p>
-    <figure class="cb"><div class="cb-head"><span class="cb-label"><span class="tag">shell</span> rehearsal, no network</span></div>
+    <p>The cases are lettered a to o. Run them on local records first. Then run one against the real sandbox.</p>
+    <figure class="cb"><div class="cb-head"><span class="cb-label"><span class="tag">shell</span> local records, no network</span></div>
 <pre tabindex="0"><code>python scripts/cases.py</code></pre></figure>
-    <figure class="cb rehearsal"><div class="cb-head"><span class="cb-label"><span class="tag rehearsal">rehearsal</span> recorded output, 31 Oct 2026, 14 PASS 0 FAIL, first lines</span></div>
-<pre tabindex="0"><code>PASS    a. Buyer agent buys inside its mandate  [rehearsal: no PayPal checkout]  scripted, not AI chose notebook-a5; signed mandate receipt e39d9024eb8d
-PASS    b. Buyer agent refuses a purchase outside its mandate  [rehearsal: mandate check, no payment]  Refused: category allowed.
-PASS    e. Lost response: UNKNOWN, no blind retry, reconciled from PayPal's record  [rehearsal]  UNKNOWN, second attempt sent nothing, 1 refund at PayPal, reconciled to VERIFIED
-PASS    g. Prompt injection cannot move a limit; the receipt shows the refusal  [rehearsal: refused before any PayPal call]  Policy refused: above limit (limit 5.00 USD).
-PASS    h. A tampered receipt fails offline verification  [offline, no network]  failure at line 1: signature invalid</code></pre></figure>
     <p>Now the real sandbox. Case n settles one dispute in conversation, and the dispute must be open at the INQUIRY stage. The sandbox buyer opens it in PayPal's Resolution Center, because the app's token cannot open a dispute for the buyer.</p>
     <figure class="cb"><div class="cb-head"><span class="cb-label"><span class="tag">shell</span> real sandbox</span></div>
 <pre tabindex="0"><code>python scripts/cases.py --sandbox --only n --dispute PP-R-OBG-10196144</code></pre></figure>
@@ -131,7 +125,7 @@ PASS    h. A tampered receipt fails offline verification  [offline, no network] 
       <li>Clearwake reads the dispute back. Only PayPal's record can mark it settled: UNDER_REVIEW is PENDING, RESOLVED is VERIFIED.</li>
     </ol>
     <p class="hint amber">Send the offer alone. PayPal refuses an offer after a seller message. This was seen on the real sandbox as <code>422 ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE</code>. Clearwake now sends the offer without a message first, and a refusal is written to the receipts as it happened.</p>
-    <figure class="cb real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> case n, dispute PP-R-OBG-10196144, 3 Nov 2026</span></div>
+    <figure class="cb real"><div class="cb-head"><span class="cb-label">case n, dispute PP-R-OBG-10196144, 3 Nov 2026</span></div>
 <pre tabindex="0"><code>clearwake.dispute.decision    settle_by_offer, offer 250 (USD 2.50), stage INQUIRY
 clearwake.dispute.offer_sent  success true
 clearwake.dispute.settlement  success false  UNDER_REVIEW  stage INQUIRY  state PENDING
@@ -150,7 +144,7 @@ clearwake.dispute.settlement  success true   RESOLVED     stage INQUIRY  RESOLVE
       <li>If the case has already moved to UNDER_REVIEW and PayPal no longer offers <code>provide_evidence</code> (case i, stage CHARGEBACK), Clearwake sends the tracking note through <code>provide-supporting-info</code> instead.</li>
       <li>Then it reads the dispute back. Evidence counts as sent only when PayPal's record shows it: <code>clearwake.dispute.evidence_checked</code> with <code>dispatch_evidence_seen</code> true.</li>
     </ul>
-    <figure class="cb real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> case o, dispute PP-R-UKF-10195772, 3 Nov 2026</span></div>
+    <figure class="cb real"><div class="cb-head"><span class="cb-label">case o, dispute PP-R-UKF-10195772, 3 Nov 2026</span></div>
 <pre tabindex="0"><code>try 1  provide-evidence  400 INVALID_REQUEST ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES, nothing applied
 try 2  provide-evidence  response lost, held as UNKNOWN, reading the dispute showed nothing had landed
 try 3  provide-evidence  same PayPal-Request-Id, merged entry, HTTP 200 in 4.2 s
@@ -181,7 +175,7 @@ python scripts/dispatch.py show --order ORDER_ID</code></pre></figure>
     <h3>Strong or weak</h3>
     <p>When the dispute arrives, the Evidence agent checks the receipt. It is strong only if all of these hold: the receipt log verifies, counted equals ordered for every item, the parcel is sealed, a photo hash is on record, the tracking shows SHIPPED or DELIVERED, the order lines match, and the number the buyer wrote matches the order.</p>
     <p class="hint">A weak proof is never sent. The policy settles by offer or escalates instead.</p>
-    <figure class="cb real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> case o, SAM 3 on this machine's CPU, 3 Nov 2026</span></div>
+    <figure class="cb real"><div class="cb-head"><span class="cb-label">case o, SAM 3 on this machine's CPU, 3 Nov 2026</span></div>
 <pre tabindex="0"><code>order   7RV99265V1496281G  capture 4AN16499K3427771T
 counted 3 of 3 notebook-a5, scores 0.70, 0.62, 0.59
 timing  15.1 s to load, 55.7 s to count, no GPU
@@ -204,9 +198,9 @@ photo   CC0 test photo, not a real parcel</code></pre></figure>
         <tr><td><code>budget_minor</code>, <code>per_item_cap_minor</code></td><td>The owner's limits that applied</td></tr>
         <tr><td><code>allowed_categories</code></td><td>The categories the mandate allowed</td></tr>
       </tbody></table></div>
-    <figure class="cb"><div class="cb-head"><span class="cb-label"><span class="tag">shell</span> rehearsal cases a, b and j</span></div>
+    <figure class="cb"><div class="cb-head"><span class="cb-label"><span class="tag">shell</span> cases a, b and j</span></div>
 <pre tabindex="0"><code>python scripts/cases.py --only a,b,j</code></pre></figure>
-    <p>Case a buys inside the mandate and signs the receipt. Case b refuses a purchase outside it with no payment. Case j disputes an agent order as unauthorised and attaches the receipt, which verifies offline. All three are rehearsal. To run case a against the sandbox, add <code>--sandbox --order ORDER_ID</code> with an order the sandbox buyer approved.</p>
+    <p>Case a buys inside the mandate and signs the receipt. Case b refuses a purchase outside it with no payment. Case j disputes an agent order as unauthorised and attaches the receipt, which verifies offline. All three run on local records. To run case a against the sandbox, add <code>--sandbox --order ORDER_ID</code> with an order the sandbox buyer approved.</p>
   </div>
 </section>
 <section class="sec" id="unknown" data-title="Reconcile an UNKNOWN">
@@ -226,8 +220,6 @@ photo   CC0 test photo, not a real parcel</code></pre></figure>
         <tr><td><code>UNKNOWN</code></td><td>No record, or a field is missing. Do not retry blind</td></tr>
         <tr><td><code>PENDING</code></td><td>PayPal reports a status still in progress</td></tr>
       </tbody></table></div>
-    <figure class="cb rehearsal"><div class="cb-head"><span class="cb-label"><span class="tag rehearsal">rehearsal</span> recorded output, case e, 31 Oct 2026</span></div>
-<pre tabindex="0"><code>UNKNOWN, second attempt sent nothing, 1 refund at PayPal, reconciled to VERIFIED</code></pre></figure>
     <p class="note">The same case ran on the real sandbox as an injected fault: the real refund was sent and its reply withheld. Result: 1 refund at PayPal, the second attempt sent nothing, reconciled to VERIFIED. Case o try 2 and try 3 above show the same rule for evidence.</p>
   </div>
 </section>
@@ -246,7 +238,7 @@ python scripts/airgap.py --boundary-only</code></pre></figure>
       <li>Reconnects. Clearwake reads PayPal first, then sends the held refunds with their original request ids.</li>
       <li>Verifies every receipt log in a container started with <code>--network none</code>.</li>
     </ol>
-    <figure class="cb real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> case m, network isolated containers, 31 Oct 2026</span></div>
+    <figure class="cb real"><div class="cb-head"><span class="cb-label">case m, network isolated containers, 31 Oct 2026</span></div>
 <pre tabindex="0"><code>boundary  no direct route out (DNS fails); CONNECT example.com:443 through the gateway: 403, receipted
 before    refund 6PX35920F4587564U USD 1.00 VERIFIED
 22:37:01  gateway disconnected: two USD 1.00 refunds held, offline, still held on a resume attempt
@@ -263,7 +255,7 @@ receipts  34 gateway lines and 12 merchant lines verified with --network none</c
 <pre tabindex="0"><code>cd vendor/verdock-core
 python -m verdock_core verify ../../site/receipts/case-n-settle.ndjson \
   --public-key 93980b0de422af30f7bfaaab14c16c06209e71b296119e84d6b02c4c8517e6f9</code></pre></figure>
-    <figure class="cb real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox log</span> verified on this machine, offline</span></div>
+    <figure class="cb real"><div class="cb-head"><span class="cb-label">verified on this machine, offline</span></div>
 <pre tabindex="0"><code>line 1: ok
 line 2: ok
 line 3: ok
@@ -364,7 +356,7 @@ egress:
       <li>Other members may be added. They are not signed, but the next line's <code>prev_hash</code> covers them.</li>
       <li>Limit: a log with its newest lines removed still verifies. Keep the head digest somewhere else to catch that.</li>
     </ul>
-    <figure class="cb real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> one line of case-n-settle.ndjson, pretty printed</span></div>
+    <figure class="cb real"><div class="cb-head"><span class="cb-label">one line of case-n-settle.ndjson, pretty printed</span></div>
 <pre tabindex="0"><code>{
   "step_id": "PP-R-OBG-10196144:offer",
   "action_id": "clearwake.dispute.offer_sent",
@@ -441,7 +433,7 @@ envfile.load(".env")
 gw = SandboxGateway.from_environment()
 capture = gw.capture("1PH921107B839311S")
 print(capture["status"])</code></pre></figure>
-<figure class="cb resp real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
+<figure class="cb resp real"><div class="cb-head"><span class="cb-label">fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
 <pre class="rp" tabindex="0"><code>GET /v2/payments/captures/1PH921107B839311S
   status  COMPLETED                    (31 Oct 2026, setup)
   status  PARTIALLY_REFUNDED           (after two refunds of USD 1.00)
@@ -469,7 +461,7 @@ request_id = str(uuid.uuid4())
 refund = gw.refund("1PH921107B839311S", "1.00", "USD", request_id)
 print(refund["id"], refund["status"])
 print(gw.refund_record(refund["id"]))   # read PayPal back before calling it done</code></pre></figure>
-<figure class="cb resp real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
+<figure class="cb resp real"><div class="cb-head"><span class="cb-label">fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
 <pre class="rp" tabindex="0"><code>POST .../refund  amount USD 1.00
   refund 6PX35920F4587564U
 GET /v2/payments/refunds/6PX35920F4587564U
@@ -493,7 +485,7 @@ gw = SandboxGateway.from_environment()
 dispute = gw.dispute("PP-R-UKF-10195772")
 print(dispute["status"], dispute.get("dispute_life_cycle_stage"))
 print([link["rel"] for link in dispute.get("links", [])])</code></pre></figure>
-<figure class="cb resp real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
+<figure class="cb resp real"><div class="cb-head"><span class="cb-label">fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
 <pre class="rp" tabindex="0"><code>GET /v1/customer/disputes/PP-R-UKF-10195772      (3 Nov 2026)
   status                    OPEN
   dispute_life_cycle_stage  INQUIRY
@@ -522,7 +514,7 @@ gw = SandboxGateway.from_environment()
 gw.make_offer("PP-R-OBG-10196144", note, "2.50", "USD", str(uuid.uuid4()))
 # then read the dispute back: only PayPal's record says it is settled
 print(gw.dispute("PP-R-OBG-10196144")["status"])</code></pre></figure>
-<figure class="cb resp real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
+<figure class="cb resp real"><div class="cb-head"><span class="cb-label">fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
 <pre class="rp" tabindex="0"><code>POST .../make-offer after a seller message       (3 Nov 2026, first run)
   422 UNPROCESSABLE_ENTITY ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE
   nothing applied
@@ -554,7 +546,7 @@ entry = {"evidence_type": "PROOF_OF_FULFILLMENT",
          "notes": notes, "documents": [{"name": "packing.jpg"}]}
 gw.provide_evidence("PP-R-UKF-10195772", [entry], request_id,
                     files=[("packing.jpg", open("packing.jpg", "rb").read(), "image/jpeg")])</code></pre></figure>
-<figure class="cb resp real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
+<figure class="cb resp real"><div class="cb-head"><span class="cb-label">fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
 <pre class="rp" tabindex="0"><code>try 1  two evidence entries
   400 INVALID_REQUEST ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES
   nothing applied
@@ -581,7 +573,7 @@ import uuid
 envfile.load(".env")
 gw = SandboxGateway.from_environment()
 gw.provide_supporting_info("PP-R-SLI-10195419", notes, str(uuid.uuid4()))</code></pre></figure>
-<figure class="cb resp real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
+<figure class="cb resp real"><div class="cb-head"><span class="cb-label">fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
 <pre class="rp" tabindex="0"><code>POST .../provide-supporting-info        (case i, 31 Oct 2026)
 GET  /v1/customer/disputes/PP-R-SLI-10195419
   note shown as SUBMITTED_BY_SELLER at 2026-10-31T10:31:38Z
@@ -603,7 +595,7 @@ envfile.load(".env")
 gw = SandboxGateway.from_environment()
 gw.add_tracking(order_id, capture_id, tracking_number, "UPS", str(uuid.uuid4()))
 print(gw.order(order_id))</code></pre></figure>
-<figure class="cb resp real"><div class="cb-head"><span class="cb-label"><span class="tag real">recorded, real sandbox</span> fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
+<figure class="cb resp real"><div class="cb-head"><span class="cb-label">fields read back, not the raw body</span><button class="replay" type="button">Replay</button></div>
 <pre class="rp" tabindex="0"><code>POST .../track, carrier UPS           (31 Oct and 3 Nov 2026)
 GET  /v2/checkout/orders/7RV99265V1496281G
   tracker shown by PayPal as SHIPPED</code></pre><p class="replay-note" role="status" aria-live="polite">Replay shows a recorded response again. No request is sent to PayPal.</p></figure>
@@ -637,12 +629,12 @@ GET  /v2/checkout/orders/7RV99265V1496281G
 <div class="secbody">
 <p>Search a PayPal error or a Clearwake outcome. Each entry says where it was seen, the cause and the fix. Only errors seen in real runs or raised by the code are here.</p>
 <div class="errfind"><label class="sr" for="errsearch">Search errors</label><input class="search" id="errsearch" type="search" placeholder="Search errors, for example 422 or UNKNOWN" autocomplete="off"><p class="searchnote" id="errcount" role="status" aria-live="polite"></p></div>
-<ol class="errlist"><li class="err" id="err0" data-title="422 ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE"><h3><code>422 ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Real sandbox, case n, 3 Nov 2026</p><dl><dt>Cause</dt><dd>An offer was sent after a seller message. PayPal allows an offer only in an inquiry that waits for the seller.</dd><dt>Fix</dt><dd>Send the offer alone, first. Clearwake does this now and writes the refusal to the receipts as clearwake.dispute.refused_by_paypal.</dd></dl></li><li class="err" id="err1" data-title="400 INVALID_REQUEST ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES"><h3><code>400 INVALID_REQUEST ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Real sandbox, case o, 3 Nov 2026</p><dl><dt>Cause</dt><dd>Two evidence entries were sent, and the disputed item shows no item id.</dd><dt>Fix</dt><dd>Send one merged entry with the tracking, the notes and the documents together.</dd></dl></li><li class="err" id="err2" data-title="400 No permissions to set target_client_id"><h3><code>400 No permissions to set target_client_id</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Real sandbox, 31 Oct 2026</p><dl><dt>Cause</dt><dd>Creating a dispute for the buyer with a buyer assertion. The app's token has disputes/create, update-seller and read-seller, not update-buyer.</dd><dt>Fix</dt><dd>The sandbox buyer opens disputes in the Resolution Center. Clearwake handles them from there.</dd></dl></li><li class="err" id="err3" data-title="400 TRANSACTION_NOT_ELIGIBLE"><h3><code>400 TRANSACTION_NOT_ELIGIBLE</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Real sandbox, 31 Oct 2026</p><dl><dt>Cause</dt><dd>The same create call without the assertion.</dd><dt>Fix</dt><dd>Same as above.</dd></dl></li><li class="err" id="err4" data-title="capture status PENDING"><h3><code>capture status PENDING</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Real sandbox, case m, second attempt</p><dl><dt>Cause</dt><dd>The configured capture was PENDING, and the capture read before the refund refused it.</dd><dt>Fix</dt><dd>Put a COMPLETED capture in PAYPAL_SANDBOX_CAPTURE_ID.</dd></dl></li><li class="err" id="err5" data-title="Capture preflight failed. Nothing was sent."><h3><code>Capture preflight failed. Nothing was sent.</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Real sandbox, 31 Oct 2026, first attempt of cases c, d and e</p><dl><dt>Cause</dt><dd>Clearwake will not fetch a token in the moment before a POST. The capture read failed, so the refund was held.</dd><dt>Fix</dt><dd>Run it again. Nothing reached PayPal, so there is nothing to reconcile.</dd></dl></li><li class="err" id="err6" data-title="Offline: the request did not leave this network."><h3><code>Offline: the request did not leave this network.</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Case m during the cut</p><dl><dt>Cause</dt><dd>The egress gateway refused the tunnel or nothing could be reached. The request never left.</dd><dt>Fix</dt><dd>It is held as clearwake.offline.held. After reconnecting, Clearwake reads PayPal first, then sends with the original request id.</dd></dl></li><li class="err" id="err7" data-title="The sandbox response is uncertain. No automatic retry was sent."><h3><code>The sandbox response is uncertain. No automatic retry was sent.</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Lost response: case e and case o try 2</p><dl><dt>Cause</dt><dd>The request may or may not have been applied.</dd><dt>Fix</dt><dd>State UNKNOWN. Read PayPal first. Retry only if the policy says retry: safe, with the same PayPal-Request-Id.</dd></dl></li><li class="err" id="err8" data-title="403 from the egress gateway"><h3><code>403 from the egress gateway</code></h3><p class="errwhere"><span class="tag real">real sandbox</span> Case m, example.com through the gateway</p><dl><dt>Cause</dt><dd>The host is not in egress.allow_hosts.</dd><dt>Fix</dt><dd>Expected. Only api-m.sandbox.paypal.com passes.</dd></dl></li><li class="err" id="err9" data-title="PAYPAL_BASE_URL must be exactly the sandbox host"><h3><code>PAYPAL_BASE_URL must be exactly the sandbox host</code></h3><p class="errwhere"><span class="tag ">code</span> Raised at start by the code</p><dl><dt>Cause</dt><dd>The base url is not https://api-m.sandbox.paypal.com.</dd><dt>Fix</dt><dd>Set PAYPAL_BASE_URL to the sandbox host. Clearwake never runs against anything else.</dd></dl></li><li class="err" id="err10" data-title="Explicit sandbox-only acknowledgement is required"><h3><code>Explicit sandbox-only acknowledgement is required</code></h3><p class="errwhere"><span class="tag ">code</span> Raised at start by the code</p><dl><dt>Cause</dt><dd>CLEARWAKE_SANDBOX_ACK is not set to I_CONFIRM_SANDBOX_ONLY.</dd><dt>Fix</dt><dd>Set it in .env.</dd></dl></li><li class="err" id="err11" data-title="UNKNOWN"><h3><code>UNKNOWN</code></h3><p class="errwhere"><span class="tag ">code</span> Clearwake outcome</p><dl><dt>Cause</dt><dd>There is no observed record, or a compared field is missing. The action may or may not have happened.</dd><dt>Fix</dt><dd>Do not retry blind. Read PayPal's record and compare.</dd></dl></li><li class="err" id="err12" data-title="MISMATCH"><h3><code>MISMATCH</code></h3><p class="errwhere"><span class="tag ">code</span> Clearwake outcome</p><dl><dt>Cause</dt><dd>At least one compared field differs from PayPal's record.</dd><dt>Fix</dt><dd>Treat it as not done as expected. Read the record and decide with the owner.</dd></dl></li><li class="err" id="err13" data-title="PENDING"><h3><code>PENDING</code></h3><p class="errwhere"><span class="tag ">code</span> Clearwake outcome</p><dl><dt>Cause</dt><dd>PayPal reports a status still in progress, for example a dispute UNDER_REVIEW after an offer.</dd><dt>Fix</dt><dd>Wait and read again. Only RESOLVED counts as settled.</dd></dl></li><li class="err" id="err14" data-title="above limit"><h3><code>above limit</code></h3><p class="errwhere"><span class="tag ">code</span> Policy decision</p><dl><dt>Cause</dt><dd>The amount is higher than max_amount_minor for that operation.</dd><dt>Fix</dt><dd>Nothing is sent. Change the file and restart, or let the owner decide.</dd></dl></li><li class="err" id="err15" data-title="approval required above threshold"><h3><code>approval required above threshold</code></h3><p class="errwhere"><span class="tag ">code</span> Policy decision</p><dl><dt>Cause</dt><dd>The amount is above approval_above_minor.</dd><dt>Fix</dt><dd>It waits in the approval inbox. One approval, one exact action.</dd></dl></li></ol></div>
+<ol class="errlist"><li class="err" id="err0" data-title="422 ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE"><h3><code>422 ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE</code></h3><p class="errwhere">Real sandbox, case n, 3 Nov 2026</p><dl><dt>Cause</dt><dd>An offer was sent after a seller message. PayPal allows an offer only in an inquiry that waits for the seller.</dd><dt>Fix</dt><dd>Send the offer alone, first. Clearwake does this now and writes the refusal to the receipts as clearwake.dispute.refused_by_paypal.</dd></dl></li><li class="err" id="err1" data-title="400 INVALID_REQUEST ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES"><h3><code>400 INVALID_REQUEST ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES</code></h3><p class="errwhere">Real sandbox, case o, 3 Nov 2026</p><dl><dt>Cause</dt><dd>Two evidence entries were sent, and the disputed item shows no item id.</dd><dt>Fix</dt><dd>Send one merged entry with the tracking, the notes and the documents together.</dd></dl></li><li class="err" id="err2" data-title="400 No permissions to set target_client_id"><h3><code>400 No permissions to set target_client_id</code></h3><p class="errwhere">Real sandbox, 31 Oct 2026</p><dl><dt>Cause</dt><dd>Creating a dispute for the buyer with a buyer assertion. The app's token has disputes/create, update-seller and read-seller, not update-buyer.</dd><dt>Fix</dt><dd>The sandbox buyer opens disputes in the Resolution Center. Clearwake handles them from there.</dd></dl></li><li class="err" id="err3" data-title="400 TRANSACTION_NOT_ELIGIBLE"><h3><code>400 TRANSACTION_NOT_ELIGIBLE</code></h3><p class="errwhere">Real sandbox, 31 Oct 2026</p><dl><dt>Cause</dt><dd>The same create call without the assertion.</dd><dt>Fix</dt><dd>Same as above.</dd></dl></li><li class="err" id="err4" data-title="capture status PENDING"><h3><code>capture status PENDING</code></h3><p class="errwhere">Real sandbox, case m, second attempt</p><dl><dt>Cause</dt><dd>The configured capture was PENDING, and the capture read before the refund refused it.</dd><dt>Fix</dt><dd>Put a COMPLETED capture in PAYPAL_SANDBOX_CAPTURE_ID.</dd></dl></li><li class="err" id="err5" data-title="Capture preflight failed. Nothing was sent."><h3><code>Capture preflight failed. Nothing was sent.</code></h3><p class="errwhere">Real sandbox, 31 Oct 2026, first attempt of cases c, d and e</p><dl><dt>Cause</dt><dd>Clearwake will not fetch a token in the moment before a POST. The capture read failed, so the refund was held.</dd><dt>Fix</dt><dd>Run it again. Nothing reached PayPal, so there is nothing to reconcile.</dd></dl></li><li class="err" id="err6" data-title="Offline: the request did not leave this network."><h3><code>Offline: the request did not leave this network.</code></h3><p class="errwhere">Case m during the cut</p><dl><dt>Cause</dt><dd>The egress gateway refused the tunnel or nothing could be reached. The request never left.</dd><dt>Fix</dt><dd>It is held as clearwake.offline.held. After reconnecting, Clearwake reads PayPal first, then sends with the original request id.</dd></dl></li><li class="err" id="err7" data-title="The sandbox response is uncertain. No automatic retry was sent."><h3><code>The sandbox response is uncertain. No automatic retry was sent.</code></h3><p class="errwhere">Lost response: case e and case o try 2</p><dl><dt>Cause</dt><dd>The request may or may not have been applied.</dd><dt>Fix</dt><dd>State UNKNOWN. Read PayPal first. Retry only if the policy says retry: safe, with the same PayPal-Request-Id.</dd></dl></li><li class="err" id="err8" data-title="403 from the egress gateway"><h3><code>403 from the egress gateway</code></h3><p class="errwhere">Case m, example.com through the gateway</p><dl><dt>Cause</dt><dd>The host is not in egress.allow_hosts.</dd><dt>Fix</dt><dd>Expected. Only api-m.sandbox.paypal.com passes.</dd></dl></li><li class="err" id="err9" data-title="PAYPAL_BASE_URL must be exactly the sandbox host"><h3><code>PAYPAL_BASE_URL must be exactly the sandbox host</code></h3><p class="errwhere"><span class="tag ">code</span> Raised at start by the code</p><dl><dt>Cause</dt><dd>The base url is not https://api-m.sandbox.paypal.com.</dd><dt>Fix</dt><dd>Set PAYPAL_BASE_URL to the sandbox host. Clearwake never runs against anything else.</dd></dl></li><li class="err" id="err10" data-title="Explicit sandbox-only acknowledgement is required"><h3><code>Explicit sandbox-only acknowledgement is required</code></h3><p class="errwhere"><span class="tag ">code</span> Raised at start by the code</p><dl><dt>Cause</dt><dd>CLEARWAKE_SANDBOX_ACK is not set to I_CONFIRM_SANDBOX_ONLY.</dd><dt>Fix</dt><dd>Set it in .env.</dd></dl></li><li class="err" id="err11" data-title="UNKNOWN"><h3><code>UNKNOWN</code></h3><p class="errwhere"><span class="tag ">code</span> Clearwake outcome</p><dl><dt>Cause</dt><dd>There is no observed record, or a compared field is missing. The action may or may not have happened.</dd><dt>Fix</dt><dd>Do not retry blind. Read PayPal's record and compare.</dd></dl></li><li class="err" id="err12" data-title="MISMATCH"><h3><code>MISMATCH</code></h3><p class="errwhere"><span class="tag ">code</span> Clearwake outcome</p><dl><dt>Cause</dt><dd>At least one compared field differs from PayPal's record.</dd><dt>Fix</dt><dd>Treat it as not done as expected. Read the record and decide with the owner.</dd></dl></li><li class="err" id="err13" data-title="PENDING"><h3><code>PENDING</code></h3><p class="errwhere"><span class="tag ">code</span> Clearwake outcome</p><dl><dt>Cause</dt><dd>PayPal reports a status still in progress, for example a dispute UNDER_REVIEW after an offer.</dd><dt>Fix</dt><dd>Wait and read again. Only RESOLVED counts as settled.</dd></dl></li><li class="err" id="err14" data-title="above limit"><h3><code>above limit</code></h3><p class="errwhere"><span class="tag ">code</span> Policy decision</p><dl><dt>Cause</dt><dd>The amount is higher than max_amount_minor for that operation.</dd><dt>Fix</dt><dd>Nothing is sent. Change the file and restart, or let the owner decide.</dd></dl></li><li class="err" id="err15" data-title="approval required above threshold"><h3><code>approval required above threshold</code></h3><p class="errwhere"><span class="tag ">code</span> Policy decision</p><dl><dt>Cause</dt><dd>The amount is above approval_above_minor.</dd><dt>Fix</dt><dd>It waits in the approval inbox. One approval, one exact action.</dd></dl></li></ol></div>
 </section>
 <section class="sec" id="log" data-title="Recorded sandbox log">
 <div class="sechead"><span class="num" aria-hidden="true">17</span><p class="eyebrow">Reference</p><h2>Recorded sandbox log</h2></div>
 <div class="secbody">
-    <p>Every row is a <span class="tag real">recorded, real sandbox</span> run unless it says otherwise. IDs are PayPal sandbox ids. Test money only. Sources: <code>docs/SANDBOX_RUN.md</code>, <code>docs/RESULTS.md</code>.</p>
+    <p>Every row is a recorded run unless it says otherwise. IDs are PayPal sandbox ids. Test money only. Sources: <code>docs/SANDBOX_RUN.md</code>, <code>docs/RESULTS.md</code>.</p>
     <div class="tw" tabindex="0" role="region" aria-label="Recorded sandbox log"><table>
       <thead><tr><th>Date</th><th>Case</th><th>What PayPal answered</th></tr></thead>
       <tbody>

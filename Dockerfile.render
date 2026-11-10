@@ -1,0 +1,14 @@
+# Clearwake console for Render (hosted mode). Standard library only: nothing is installed.
+# Hosted on Render, not network isolated. Keys are never copied into the image (.dockerignore); Render passes
+# PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET as environment variables at run time.
+FROM python:3.13-slim
+WORKDIR /app
+COPY . /app
+# The pinned submodules must be in the build context: Render clones them with the repository.
+RUN test -f vendor/verdock-core/verdock_core/__init__.py && test -f vendor/relayloom/relayloom/__init__.py \
+ && useradd --create-home clearwake && mkdir -p /app/data && chown -R clearwake /app/data
+USER clearwake
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 CLEARWAKE_HOSTED=1
+# Render sets PORT (10000 by default). The server must listen on all interfaces here: see the hosted bind
+# note in docs/RENDER.md. The line below uses the --host flag that hosted mode needs.
+CMD ["sh", "-c", "python -m clearwake --host 0.0.0.0 --port ${PORT:-10000} --database /app/data/clearwake.sqlite3"]

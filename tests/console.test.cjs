@@ -98,3 +98,31 @@ test('receipt rows survive unreadable lines and unchecked logs', () => {
   assert.equal(L.isHexKey('ab'.repeat(32)), true);
   assert.equal(L.isHexKey('xyz'), false);
 });
+
+test('dispute ledger helpers: stage filter, proposal column with a dash, live deadline cell', () => {
+  const rows = [{ stage: 'INQUIRY', proposed: 'settle_by_offer', paypal_status: 'RESOLVED', settled_before_escalation: true },
+    { stage: 'CHARGEBACK', proposed: '', due: '2026-11-10T12:00:00Z', paypal_status: 'UNDER_REVIEW' },
+    { stage: 'inquiry', proposed: 'no usable proposal', due: '2026-11-09T12:00:00Z' }];
+  assert.deepEqual(rows.filter(r => L.stagePasses(r, 'INQUIRY')).length, 2);   // stage compare ignores case
+  assert.deepEqual(rows.filter(r => L.stagePasses(r, 'CHARGEBACK')).length, 1);
+  assert.equal(rows.filter(r => L.stagePasses(r, 'all')).length, 3);
+  assert.equal(L.proposalOf(rows[0]), 'settle by offer');
+  assert.equal(L.proposalOf(rows[1]), L.DASH);   // absent: a dash
+  assert.equal(L.proposalOf(rows[2]), L.DASH);   // the model gave nothing usable: a dash
+  const now = Date.parse('2026-11-09T09:00:00Z');
+  assert.equal(L.deadlineOf(rows[0], now), 'closed');
+  assert.equal(L.deadlineOf(rows[2], now), '3 h 00 min 00 s');
+  assert.equal(L.deadlineOf(rows[2], now + 1000), '2 h 59 min 59 s');   // the cell ticks
+  assert.equal(L.deadlineOf({ stage: 'INQUIRY' }, now), L.DASH);
+  assert.equal(L.deadlineOf(rows[2], Date.parse('2026-11-09T13:00:00Z')), 'Deadline passed');
+});
+
+test('CSV export neutralises formulas and quotes commas, quotes and line breaks', () => {
+  assert.equal(L.csvSafe('=HYPERLINK("x")'), '\'=HYPERLINK("x")');
+  assert.equal(L.csvSafe('@sum'), '\'@sum');
+  assert.equal(L.csvSafe('-2.50'), '-2.50');   // a plain negative number stays a number
+  assert.equal(L.csvSafe(null), '');
+  const csv = L.toCsv([{ headerName: 'Dispute', get: r => r.id }, { headerName: 'Buyer wrote', get: r => r.m }],
+    [{ id: 'PP-1', m: 'He said "no", twice' }, { id: 'PP-2', m: '=1+1' }]);
+  assert.equal(csv, 'Dispute,Buyer wrote\r\nPP-1,"He said ""no"", twice"\r\nPP-2,\'=1+1\r\n');
+});

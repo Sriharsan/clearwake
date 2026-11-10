@@ -71,7 +71,7 @@ function makeGrid(host, columns, emptyId, caption) {
 
 // AG Grid Community (vendored, MIT) for the dispute ledger. Its styles carry this page's CSP nonce.
 // Without it the plain sortable table above is used, so the ledger still works.
-function makeAgGrid(host, columns, emptyId, caption) {
+function makeAgGrid(host, columns, emptyId, caption, extra = {}) {
   const ag = window.agGrid;
   if (!ag || !ag.createGrid) return makeGrid(host, columns, emptyId, caption);
   if (ag.ModuleRegistry && ag.AllCommunityModule) ag.ModuleRegistry.registerModules([ag.AllCommunityModule]);
@@ -85,7 +85,7 @@ function makeAgGrid(host, columns, emptyId, caption) {
     theme, styleNonce: document.querySelector('meta[name="cw-style-nonce"]')?.content,
     columnDefs: columns.map(c => ({ sortable: true, resizable: true, ...c })), rowData: [],
     defaultColDef: { minWidth: 110 }, suppressCellFocus: false, ensureDomOrder: true, animateRows: false,
-    overlayNoRowsTemplate: ' '
+    loading: false, overlayNoRowsTemplate: '<span>No disputes at this stage.</span>', ...extra
   });
   return { api, set(rows) { host.hidden = rows.length === 0; $(emptyId).hidden = rows.length > 0; api.setGridOption('rowData', rows); } };
 }
@@ -110,8 +110,10 @@ function renderFees() {
   $('fee-escalated').textContent = `escalated to a claim: ${f.escalated}`;
   $('fee-avoided').textContent = `${f.currency} ${f.fee_avoided}`;
   $('rule-link').href = f.rule_source[1]; $('fee-link').href = f.fee_source[1];
-  grids.disputes.set(data.disputes.map(r => ({ ...r, countdown: r.settled_before_escalation || r.paypal_status === 'RESOLVED' ? 'closed' : countdown(r.due),
-    settled: r.settled_before_escalation ? 'yes, no fee' : 'no' })));
+  grids.disputes.set(grids.disputes.api ? allDisputeRows() : disputeRows());
+  const shown = grids.disputes.api ? grids.disputes.api.getDisplayedRowCount() : disputeRows().length;
+  $('ledger-count').textContent = data.disputes.length ? `${shown} of ${data.disputes.length} disputes` : '';
+  if (selectedDispute) showDetail(data.disputes.find(r => r.dispute === selectedDispute));
 }
 
 // 1. Buyer agent ---------------------------------------------------------------------------------
@@ -388,6 +390,58 @@ function wire() {
   }, 1000);
 }
 
+let stageFilter = 'all', selectedDispute = null;
+const DISPUTE_COLUMNS = [
+  { field: 'dispute', headerName: 'Dispute', minWidth: 170, cellClass: 'cell-mono', pinned: 'left' },
+  { field: 'reason', headerName: 'Reason', minWidth: 170, valueFormatter: p => L.readable(p.value) },
+  { field: 'amount', headerName: 'Amount USD', minWidth: 110, cellClass: 'cell-mono' },
+  { field: 'stage', headerName: 'Stage', minWidth: 120 },
+  { colId: 'countdown', field: 'countdown', headerName: 'Deadline', minWidth: 160, cellClass: 'cell-mono',
+    valueGetter: p => L.deadlineOf(p.data, Date.now()),
+    cellClassRules: { 'cw-late': p => p.value === 'Deadline passed', 'cw-soon': p => !!(p.data && p.data.due && p.value !== 'closed' && L.countdown(p.data.due, Date.now()).state === 'soon') } },
+  { field: 'due', headerName: 'Due (UTC)', minWidth: 190, cellClass: 'cell-mono', hide: true },
+  { field: 'proposal_text', headerName: 'Model proposal', minWidth: 160, tooltipField: 'model' },
+  { field: 'decided', headerName: 'Policy decision', minWidth: 170, valueFormatter: p => L.readable(p.value) || L.DASH },
+  { field: 'model', headerName: 'Proposed by', minWidth: 170 },
+  { field: 'paypal_status', headerName: 'PayPal record', minWidth: 150 },
+  { field: 'state', headerName: 'Checked', minWidth: 140, cellClassRules: { 'cell-ok': p => p.value === 'VERIFIED', 'cell-wait': p => p.value === 'UNKNOWN' || p.value === 'PENDING' } },
+  { field: 'settled', headerName: 'Settled before escalation', minWidth: 190, cellClassRules: { 'cw-yes': p => p.value === 'yes, no fee' } },
+  { field: 'fee_avoided', headerName: 'Fee avoided USD', minWidth: 140, cellClass: 'cell-mono' },
+  { field: 'dispatch', headerName: 'Dispatch proof', minWidth: 300, tooltipField: 'dispatch', cellClassRules: { 'cw-yes': p => /counted, sealed/.test(p.value || ''), 'cw-late': p => /^weak/.test(p.value || '') } }
+];
+
+function allDisputeRows() {
+  return data.disputes.map(r => ({ ...r, countdown: L.deadlineOf(r, Date.now()), proposal_text: L.proposalOf(r), model: r.model || L.DASH,
+    settled: r.settled_before_escalation ? 'yes, no fee' : 'no' }));
+}
+function disputeRows() { return allDisputeRows().filter(r => L.stagePasses(r, stageFilter)); }
+
+function showDetail(row) {
+  $('dispute-detail').hidden = !row; $('detail-hint').hidden = !!row;
+  if (!row) return;
+  const facts = [['Dispute', row.dispute], ['Case', row.case], ['Reason', L.readable(row.reason)], ['Amount', `USD ${row.amount}`], ['Stage', row.stage],
+    ['PayPal status', row.paypal_status], ['Deadline', row.due ? `${row.due} (${L.deadlineOf(row, Date.now())})` : L.DASH],
+    ['Model proposal', `${L.proposalOf(row)}${row.model ? ' (' + row.model + ')' : ''}`], ['Policy decision', L.readable(row.decided) || L.DASH],
+    ['Checked', row.state], ['Why', row.policy_reason || L.DASH]];
+  $('detail-facts').replaceChildren(...facts.map(([k, v]) => el('div', {}, el('dt', { text: k }), el('dd', { class: 'mono', text: String(v) }))));
+  $('detail-message').textContent = row.message ? `Buyer wrote: "${row.message}"` : '';
+  $('detail-raw').textContent = JSON.stringify(row.record || {}, null, 2);
+}
+
+function download(name, text) {
+  const link = el('a', { href: URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' })), download: name });
+  document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function exportCsv() {
+  const name = `clearwake-disputes-${new Date().toISOString().slice(0, 10)}.csv`;
+  const api = grids.disputes.api;
+  // getDataAsCsv hands back the text; the grid's own download helper shows a spinner icon that this page's img-src would block.
+  if (api) { download(name, api.getDataAsCsv({ allColumns: true, processCellCallback: p => L.csvSafe(p.formatValue ? p.formatValue(p.value) : p.value) })); return; }
+  const heads = DISPUTE_COLUMNS.map(c => ({ headerName: c.headerName, get: r => c.field === 'reason' ? L.readable(r.reason) : r[c.field] ?? '' }));
+  download(name, L.toCsv(heads, disputeRows()));
+}
+
 async function start() {
   grids.ledger = makeGrid($('ledger-grid'), [
     { field: 'at', headerName: 'Time (UTC)', minWidth: 170, cellClass: 'cell-mono' },
@@ -398,20 +452,20 @@ async function start() {
     { field: 'state', headerName: 'State', minWidth: 140, cellClassFor: r => /^(VERIFIED|matches|verified)/.test(r.state) ? 'cell-ok' : r.state === 'UNKNOWN' ? 'cell-wait' : '' },
     { field: 'source', headerName: 'Source', minWidth: 190 }
   ], 'ledger-empty', 'Ledger of money movements');
-  grids.disputes = makeAgGrid($('dispute-grid'), [
-    { field: 'dispute', headerName: 'Dispute', minWidth: 170, cellClass: 'cell-mono', pinned: 'left' },
-    { field: 'reason', headerName: 'Reason', minWidth: 170, valueFormatter: p => L.readable(p.value) },
-    { field: 'amount', headerName: 'Amount USD', minWidth: 110, cellClass: 'cell-mono' },
-    { field: 'stage', headerName: 'Stage', minWidth: 120 },
-    { field: 'decided', headerName: 'Policy decision', minWidth: 170 },
-    { field: 'dispatch', headerName: 'Dispatch proof', minWidth: 470, tooltipField: 'dispatch', cellClassRules: { 'cw-yes': p => /counted, sealed/.test(p.value || ''), 'cw-late': p => /^weak/.test(p.value || '') } },
-    { field: 'proposed', headerName: 'Model proposed', minWidth: 170 },
-    { field: 'paypal_status', headerName: 'PayPal record', minWidth: 190 },
-    { field: 'state', headerName: 'Checked', minWidth: 140, cellClassRules: { 'cell-ok': p => p.value === 'VERIFIED', 'cell-wait': p => p.value === 'UNKNOWN' || p.value === 'PENDING' } },
-    { field: 'countdown', headerName: 'Deadline', minWidth: 130, cellClassRules: { 'cw-late': p => p.value === 'lapsed' } },
-    { field: 'settled', headerName: 'Settled before escalation', minWidth: 190, cellClassRules: { 'cw-yes': p => p.value === 'yes, no fee' } },
-    { field: 'fee_avoided', headerName: 'Fee avoided USD', minWidth: 140, cellClass: 'cell-mono' }
-  ], 'dispute-ledger-empty', 'Dispute ledger');
+  grids.disputes = makeAgGrid($('dispute-grid'), DISPUTE_COLUMNS, 'dispute-ledger-empty', 'Dispute ledger', {
+    getRowId: p => p.data.dispute,
+    rowSelection: { mode: 'singleRow', checkboxes: false, enableClickSelection: true },
+    onSelectionChanged: e => { const row = e.api.getSelectedRows()[0]; selectedDispute = row ? row.dispute : null; showDetail(row); },
+    isExternalFilterPresent: () => stageFilter !== 'all',
+    doesExternalFilterPass: node => L.stagePasses(node.data, stageFilter)
+  });
+  $('stage-filter').addEventListener('change', () => {
+    stageFilter = $('stage-filter').value;
+    if (grids.disputes.api) grids.disputes.api.onFilterChanged();
+    if (data) renderFees();
+  });
+  $('export-csv').addEventListener('click', exportCsv);
+  setInterval(() => { if (grids.disputes.api) grids.disputes.api.refreshCells({ columns: ['countdown'], force: true }); }, 1000);
   setInterval(() => { if (data) renderFees(); }, 30000);
   grids.receipts = makeGrid($('receipt-grid'), [
     { field: 'log', headerName: 'Log', minWidth: 100 },
