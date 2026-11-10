@@ -75,8 +75,11 @@ class Mandate:
     allowed_categories: tuple
     currency: str = "USD"
     dispute_rule: DisputeRule | None = None
+    max_over_market_percent: int | None = None   # the owner's price rule: refuse an item priced above the market reference by more than this
 
     def __post_init__(self):
+        if self.max_over_market_percent is not None and (type(self.max_over_market_percent) is not int or not 0 <= self.max_over_market_percent <= 1000):
+            raise ValueError("max_over_market_percent must be a whole number from 0 to 1000, or left out.")
         if min(self.budget_minor, self.per_item_cap_minor) <= 0 or self.per_item_cap_minor > self.budget_minor:
             raise ValueError("A mandate needs a positive budget and a per item cap no higher than the budget.")
         if self.dispute_rule is not None and not isinstance(self.dispute_rule, DisputeRule):
@@ -159,7 +162,20 @@ def check(mandate, merchant_id, currency, product, spent_minor):
     return MandateDecision(not failed, "Inside the mandate." if not failed else "Refused: " + ", ".join(failed) + ".", product, checks)
 
 
-def mandate_receipt(log, mandate, product, merchant_id, order_id, ts_ms=None):
+def price_verdict(mandate, market_check):
+    """The owner's price rule applied to a market reference (clearwake/market.py MarketCheck): ok, flag or refuse, with the reason.
+
+    No rule: ok. A price above the reference by more than the rule: refuse. No reference to compare with: flag, the purchase is not refused."""
+    if mandate.max_over_market_percent is None:
+        return {"action": "ok", "reason": "No price rule in the mandate."}
+    if market_check is None or market_check.within_tolerance is None:
+        return {"action": "flag", "reason": "No market reference could be had; the price is not checked. " + (getattr(market_check, "note", "") or "")[:100]}
+    if market_check.within_tolerance:
+        return {"action": "ok", "reason": f"Within {mandate.max_over_market_percent}% of the market reference."}
+    return {"action": "refuse", "reason": f"Priced more than {mandate.max_over_market_percent}% above the market reference."}
+
+
+def mandate_receipt(log, mandate, product, merchant_id, order_id, ts_ms=None, price=None):
     """Signed record of authenticated purchase intent: the owner's mandate, the item, and the PayPal order it paid for.
 
     Written to the buyer's own receipt log with the buyer agent's key. Returns what the merchant's Evidence agent attaches."""
@@ -167,7 +183,9 @@ def mandate_receipt(log, mandate, product, merchant_id, order_id, ts_ms=None):
     params = {"order_id": order_id, "merchant": merchant_id, "item": product["id"], "price_minor": product["price_minor"],
               "currency": mandate.currency, "budget_minor": mandate.budget_minor, "per_item_cap_minor": mandate.per_item_cap_minor,
               "allowed_categories": list(mandate.allowed_categories),
-              "dispute_rule": mandate.dispute_rule.to_dict() if mandate.dispute_rule else "none"}
+              "dispute_rule": mandate.dispute_rule.to_dict() if mandate.dispute_rule else "none",
+              "max_over_market_percent": mandate.max_over_market_percent if mandate.max_over_market_percent is not None else -1,
+              "price_reference": price.to_receipt_params() if price is not None else "none"}
     line = log.append(f"mandate:{order_id}", "clearwake.buyer.mandate", params, True, actor={"agent": "clearwake-buyer", "user": mandate.owner}, ts_ms=ts_ms)
     return {"order_id": order_id, "owner": mandate.owner, "item": product["id"], "price": f"{mandate.currency} {product['price_minor'] / 100:.2f}",
             "cap": f"{mandate.currency} {mandate.per_item_cap_minor / 100:.2f}", "digest": line_hash(line), "line": line, "public_key": log.public_key}

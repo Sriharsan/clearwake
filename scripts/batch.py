@@ -60,7 +60,7 @@ def main(argv):
     print(f"\n{report['label']}\nsettled at INQUIRY with no fee {s[batch.SETTLED]} | evidence sent {s[batch.EVIDENCE]} | escalated to buyer owner {s[batch.BUYER_OWNER]} | "
           f"escalated to merchant owner {s[batch.MERCHANT_OWNER]} | pending {s[batch.PENDING_STATE]} | errors {s[batch.ERROR]}")
     print(f"refunds confirmed by PayPal's record {s['refunds_confirmed_by_paypal']} (USD {s['refunds_confirmed_total']}) | {s['seconds_per_case']} s per case | "
-          f"merchant model calls {s['model_calls']} ({s['merchant_model_ms']} ms, {s['scripted_decisions']} scripted) | buyer model calls {s['buyer_model_calls']} ({s['buyer_model_ms']} ms, {s['buyer_model_overrides']} overridden by the rule) | buyer log verifies {report['buyer_log']['verifies']}, merchant log verifies {report['merchant_log']['verifies']}")
+          f"merchant model calls {s['model_calls']} ({s['merchant_model_ms']} ms, {s['scripted_decisions']} scripted) | buyer model calls {s['buyer_model_calls']} ({s['buyer_model_ms']} ms, {s['buyer_model_overrides']} overridden by the rule) | price reference used: yes, {report['price_reference']['calls']} calls ({report['price_reference']['source']}) | buyer log verifies {report['buyer_log']['verifies']}, merchant log verifies {report['merchant_log']['verifies']}")
     print("Stayed manual:"); [print("  -", m) for m in report["manual"]]
     print("Saved", path.relative_to(ROOT))
     return 0

@@ -129,6 +129,39 @@ class ModelCheckTests(unittest.TestCase):
         self.assertFalse(check_draft(None, 900)[0])
 
 
+class PriceRuleTests(unittest.TestCase):
+    @staticmethod
+    def check(reference, within, note="ok"):
+        from clearwake.market import MarketCheck
+        return MarketCheck(reference, "shop.example" if reference else None, "Item", None, within, 0, note, 1)
+
+    def test_the_price_rule_is_validated(self):
+        for bad in (-1, 1001, 10.5, True):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                Mandate("o", 1000, 1000, ("m",), ("c",), max_over_market_percent=bad)
+        self.assertEqual(Mandate("o", 1000, 1000, ("m",), ("c",), max_over_market_percent=25).max_over_market_percent, 25)
+
+    def test_ok_flag_and_refuse(self):
+        from clearwake.buyer import price_verdict
+        rule = Mandate("o", 1000, 1000, ("m",), ("c",), max_over_market_percent=25)
+        self.assertEqual(price_verdict(rule, self.check(900, True))["action"], "ok")
+        self.assertEqual(price_verdict(rule, self.check(500, False))["action"], "refuse")
+        self.assertEqual(price_verdict(rule, self.check(None, None, "refused: cap"))["action"], "flag")
+        self.assertEqual(price_verdict(rule, None)["action"], "flag")
+        self.assertEqual(price_verdict(Mandate("o", 1000, 1000, ("m",), ("c",)), self.check(500, False))["action"], "ok")   # no rule, no check
+
+    def test_the_reference_and_the_rule_are_signed_into_the_mandate_receipt(self):
+        _, _, products = load_catalog()
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+            seed = Path(folder) / "b.seed"; create_seed(str(seed))
+            log = ReceiptLog(str(Path(folder) / "b.ndjson"), load_seed(str(seed)))
+            mandate = Mandate("Owner", 10200, 10200, ("clearwake-demo-store",), ("stationery",), max_over_market_percent=25)
+            receipt = mandate_receipt(log, mandate, products["notebook-a5"], "clearwake-demo-store", "ORDER-P-1", price=self.check(900, True))
+            params = json.loads(receipt["line"])["params"]
+            self.assertEqual((params["max_over_market_percent"], params["price_reference"]["reference_minor"], params["price_reference"]["within_tolerance"]), (25, 900, True))
+            self.assertTrue(verify_log([receipt["line"]], receipt["public_key"])["ok"])
+
+
 class SignedRuleTests(unittest.TestCase):
     def test_the_rule_is_in_the_signed_mandate_receipt_and_an_edit_breaks_it(self):
         _, _, products = load_catalog()

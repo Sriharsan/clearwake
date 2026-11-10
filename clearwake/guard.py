@@ -11,6 +11,7 @@ INJECTION = {
     "new_policy": r"\b(new|updated|changed) (polic|rule|instruction|limit)",
     "role_claim": r"\b(system prompt|system message|developer mode|you are now|act as|jailbreak|i am (the )?(owner|admin|merchant|paypal))\b",
     "demands_amount": r"\b(refund|pay|send|offer)\b.{0,25}(\$|usd|us\$)\s?\d|(\$|usd)\s?\d[\d,.]*.{0,25}\b(refund|now|immediately)\b",
+    "dictates_output": r"(reply|respond) with (action|offer|json)|offer_usd|action\s*[:=]?\s*(settle|fight|escalate)",
     "unlimited": r"\b(unlimited|no limit|without (any )?limit|full amount regardless)\b",
 }
 

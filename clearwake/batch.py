@@ -23,6 +23,7 @@ from verdock_core.outcome import MISMATCH, PENDING, UNKNOWN, VERIFIED
 from verdock_core.receipts import verify_log
 
 from . import dispatch
+from .buyer import price_verdict
 from .buyer import BuyerAgent, DisputeRule, Mandate, check, check_draft, decide_offer, final_action, mandate_receipt, reason_key
 from .buyer_browser import NeedsHuman, Recorder, ResolutionCenter, StepFailed, blocked, fixture_site, open_buyer_log, sandbox_site, visible
 from .counter import Counter
@@ -89,7 +90,20 @@ def money(minor):
 
 
 def buyer_mandate(owner="Buyer owner"):
-    return Mandate(owner, 100000, 10000, ("clearwake-demo-store",), ("home", "stationery"), dispute_rule=RULE)
+    return Mandate(owner, 100000, 10000, ("clearwake-demo-store",), ("home", "stationery"), dispute_rule=RULE, max_over_market_percent=25)
+
+
+def recorded_price(product, tolerance):
+    """Rehearsal price reference: a recorded fixture (the catalogue price itself). No credits are used and nothing is called."""
+    from .market import MarketCheck, _within
+    return MarketCheck(product["price_minor"], "recorded.fixture", product["name"], None, _within(product["price_minor"], product["price_minor"], tolerance),
+                       0, "recorded fixture", int(time.time() * 1000))
+
+
+def live_price(product, tolerance):
+    """Sandbox price reference through Channel3. Live calls are capped by CHANNEL3_MAX_CALLS (default 0: refused without a call, flagged)."""
+    from .market import price_check
+    return price_check(product["name"], product["price_minor"], "USD", tolerance)
 
 
 # Reading the outcome back from PayPal's own record ----------------------------------------------------------------------------
@@ -155,6 +169,8 @@ def classify(final, merchant_result, buyer_end, settled):
 class Rehearsal:
     """Fake provider plus the local stand-in page. Offline. Every record is invented; nothing here is PayPal."""
     mode, label = "rehearsal", "rehearsal: local fake provider and a local stand-in page, offline, nothing is PayPal"
+    price = staticmethod(recorded_price)
+    price_source = "recorded fixture"
 
     def __init__(self, work, page, now=None):
         self.work, self.page, self.site = Path(work), page, fixture_site()
@@ -210,6 +226,8 @@ class Rehearsal:
 class Sandbox:
     """The real PayPal sandbox. The buyer approves orders and works the Resolution Center in the persistent browser profile."""
     mode, label = "sandbox", "real PayPal sandbox: sandbox buyer in a real browser, merchant agent on the Disputes API"
+    price = staticmethod(live_price)
+    price_source = "Channel3"
 
     def __init__(self, gateway, page, site=None, manual=None, state=None):
         self.gateway, self.page, self.site = gateway, page, site or sandbox_site()
@@ -342,7 +360,8 @@ def create_and_pay(gateway, page, product, quantity, total_minor, site=None, tim
 # The negotiation --------------------------------------------------------------------------------------------------------------
 
 class Run:
-    def __init__(self, world, swarm, rc, rec, mandate, log, adapter_label, clock=time.perf_counter, counter=None, buyer_adapter=None):
+    def __init__(self, world, swarm, rc, rec, mandate, log, adapter_label, clock=time.perf_counter, counter=None, buyer_adapter=None, price_fn=None):
+        self.price_fn = price_fn
         self.world, self.swarm, self.rc, self.rec, self.mandate, self.log = world, swarm, rc, rec, mandate, log
         self.buyer_adapter = buyer_adapter or Adapter("scripted")
         self.adapter_label, self.clock = adapter_label, clock
@@ -410,12 +429,21 @@ class Run:
             decision = check(self.mandate, self.catalog.merchant["id"], self.catalog.currency, priced, spent_minor)
             row["mandate"] = decision.reason
             if not decision.allowed:
-                row.update(outcome=ERROR, detail="The mandate refused the purchase: " + decision.reason)
+                row.update(outcome=ERROR, detail="The mandate refused the purchase: " + decision.reason, seconds=round(self.clock() - started, 2), buyer_steps=0)
+                return row
+            mc = (self.price_fn or self.world.price)(product, self.mandate.max_over_market_percent)
+            verdict = price_verdict(self.mandate, mc)
+            row["price_reference"] = {**mc.to_receipt_params(), "verdict": verdict["action"], "why": verdict["reason"], "source": self.world.price_source}
+            row["price_credits"] = mc.credits_used
+            self.rec.step(None, f"case{spec.n}", "price_reference", {**{k: v for k, v in mc.to_receipt_params().items() if v is not None},
+                                                                     "verdict": verdict["action"], "why": verdict["reason"][:200], "item": product["id"]}, verdict["action"] != "refuse")
+            if verdict["action"] == "refuse":
+                row.update(outcome=ERROR, detail="The mandate's price rule refused the purchase: " + verdict["reason"], seconds=round(self.clock() - started, 2), buyer_steps=0)
                 return row
             bought = self.world.buy(spec, product, total, run_id)
             kept = getattr(self.world, "state", {}).get("cases", {}).get(str(spec.n), {})
             if not kept.get("mandate"):
-                kept["mandate"] = mandate_receipt(self.log, self.mandate, priced, self.catalog.merchant["id"], bought["order_id"])
+                kept["mandate"] = mandate_receipt(self.log, self.mandate, priced, self.catalog.merchant["id"], bought["order_id"], price=mc)
             digest = kept["mandate_digest"] = kept["mandate"]["digest"]
             self.rec.mandate_digest = digest
             row.update(order_id=bought["order_id"], capture_id=bought["capture_id"], paid=money(total), mandate_receipt=digest[:16], bought_how=bought["how"])
@@ -503,6 +531,8 @@ def summarise(rows):
             "merchant_model_ms": sum(r.get("model_ms", 0) for r in rows),
             "buyer_model_calls": sum(r.get("buyer_model_calls", 0) for r in rows), "buyer_model_ms": sum(r.get("buyer_model_ms", 0) for r in rows),
             "buyer_scripted_decisions": sum(r.get("buyer_scripted_decisions", 0) for r in rows),
+            "price_reference_calls": sum(r.get("price_credits", 0) for r in rows), "price_reference_flags": sum(1 for r in rows if r.get("price_reference", {}).get("verdict") == "flag"),
+            "price_reference_refused": sum(1 for r in rows if r.get("price_reference", {}).get("verdict") == "refuse"),
             "buyer_model_overrides": sum(1 for r in rows for m in r.get("buyer_model", []) if m["proposed"] != m["final"])}
 
 
@@ -532,7 +562,7 @@ def verify(path, key):
     return bool(Path(path).is_file() and verify_log(str(path), key)["ok"])
 
 
-def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.perf_counter, source=None, counter=None, door=None, buyer_adapter=None):
+def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.perf_counter, source=None, counter=None, door=None, buyer_adapter=None, price_fn=None):
     """Run the cases in order. Returns the report dictionary (written to data/runs/ by scripts/batch.py)."""
     work = Path(work)
     mandate = mandate or buyer_mandate()
@@ -540,7 +570,7 @@ def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.
     rec = Recorder(log, "0" * 64, source or world.mode, work / "shots")
     rc = door(rec) if door else ResolutionCenter(page, world.site if hasattr(world, "site") else fixture_site(), rec)
     swarm = MerchantSwarm(world.gateway, work / "merchant", adapter)
-    runner = Run(world, swarm, rc, rec, mandate, log, adapter.label(), clock, counter, buyer_adapter)
+    runner = Run(world, swarm, rc, rec, mandate, log, adapter.label(), clock, counter, buyer_adapter, price_fn)
     run_id = uuid.uuid4().hex[:6]
     started = datetime.now(timezone.utc)
     rows, spent = [], 0
@@ -553,6 +583,7 @@ def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.
         if row.get("manual_steps"):
             break   # a challenge or a missing login: stop the batch, never push through
     return {"kind": "buyer-seller batch", "mode": world.mode, "label": world.label, "started": started.isoformat(), "finished": datetime.now(timezone.utc).isoformat(),
+            "price_reference": {"source": world.price_source, "used": True, "calls": sum(r.get("price_credits", 0) for r in rows)},
             "merchant_agent": adapter.label(), "buyer_agent": (buyer_adapter or Adapter("scripted")).label() + "; the owner's dispute rule (clearwake/buyer.py decide_offer) sets what it may do",
             "buyer_rule": mandate.dispute_rule.to_dict(), "cases": rows, "summary": summarise(rows), "manual": MANUAL[world.mode], "run_id": run_id,
             "buyer_log": {"path": str(Path(log.path).relative_to(ROOT)) if Path(log.path).is_relative_to(ROOT) else "buyer-receipts.ndjson", "public_key": log.public_key,

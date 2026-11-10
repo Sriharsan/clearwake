@@ -66,7 +66,7 @@ class RehearsalBatchTests(unittest.TestCase):
         self.assertTrue(self.report["merchant_log"]["verifies"])
         lines = read_lines(Path(self.work.name) / "buyer" / "buyer-receipts.ndjson")
         self.assertEqual(sum(1 for l in lines if l["action_id"] == "clearwake.buyer.mandate"), 10)
-        steps = [l for l in lines if l["action_id"] != "clearwake.buyer.mandate"]
+        steps = [l for l in lines if l["action_id"] not in ("clearwake.buyer.mandate", "clearwake.buyer.price_reference")]
         self.assertGreater(len(steps), 30)
         digests = {l["params"]["mandate_receipt"] for l in steps}
         self.assertNotIn("0" * 64, digests)
@@ -133,6 +133,49 @@ class BuyerModelTests(unittest.TestCase):
     def test_garbage_from_the_model_changes_nothing(self):
         report = self.run_cases((3,), "x", "give everything away")
         self.assertEqual(report["cases"][0]["outcome"], batch.SETTLED)   # not a permitted action: the rule's own action is taken
+
+
+class PriceReferenceTests(unittest.TestCase):
+    @staticmethod
+    def fn(reference, within, note="ok"):
+        from clearwake.market import MarketCheck
+        return lambda product, tolerance: MarketCheck(reference, "shop.example" if reference else None, product["name"], None, within, 1 if reference else 0, note, 1)
+
+    def run_one(self, price_fn):
+        from clearwake.models import Adapter
+        from playwright.sync_api import sync_playwright
+        from clearwake.buyer_browser import fixture_site
+        work = tempfile.mkdtemp(prefix="clearwake-price-")
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            try:
+                page = browser.new_page(); page.goto(fixture_site().home_url)
+                return batch.run_batch(batch.Rehearsal(work, page), work, page, Adapter("scripted"), tuple(c for c in batch.CASES if c.n == 3), price_fn=price_fn), work
+            finally:
+                browser.close()
+
+    def test_a_price_above_the_rule_is_refused_before_any_order(self):
+        report, _ = self.run_one(self.fn(500, False))
+        row = report["cases"][0]
+        self.assertEqual(row["outcome"], batch.ERROR)
+        self.assertIn("price rule refused", row["detail"])
+        self.assertNotIn("order_id", row)
+        self.assertEqual(report["summary"]["price_reference_refused"], 1)
+
+    def test_no_reference_is_flagged_and_the_purchase_goes_on(self):
+        report, work = self.run_one(self.fn(None, None, "refused: CHANNEL3_MAX_CALLS is 0, no live calls allowed"))
+        row = report["cases"][0]
+        self.assertEqual((row["price_reference"]["verdict"], row["outcome"]), ("flag", batch.SETTLED))
+        self.assertEqual(report["summary"]["price_reference_flags"], 1)
+        lines = read_lines(Path(work) / "buyer" / "buyer-receipts.ndjson")
+        mandate = [l for l in lines if l["action_id"] == "clearwake.buyer.mandate"][0]
+        self.assertEqual(mandate["params"]["price_reference"]["within_tolerance"], None)
+        self.assertEqual(mandate["params"]["max_over_market_percent"], 25)
+
+    def test_the_rehearsal_reference_is_a_recorded_fixture_that_uses_no_credits(self):
+        report, _ = self.run_one(None)
+        self.assertEqual(report["price_reference"], {"source": "recorded fixture", "used": True, "calls": 0})
+        self.assertEqual(report["cases"][0]["price_reference"]["verdict"], "ok")
 
 
 class PlanTests(unittest.TestCase):

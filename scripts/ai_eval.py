@@ -16,6 +16,7 @@ import statistics
 import sys
 import tempfile
 import time
+import uuid
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -57,8 +58,8 @@ def scenarios(work):
         return d["dispute_id"], 900, "buyer-o", {"id": "ORDER-O"}, TRACKERS, None
 
     def agent_order(g, s, msg):  # u: unauthorised claim on an agent order with a signed mandate receipt: fight with the receipt
-        seed = work / "buyer.seed"; create_seed(str(seed))
-        log = ReceiptLog(str(work / "buyer.ndjson"), load_seed(str(seed)))
+        tag = uuid.uuid4().hex[:8]; seed = work / f"buyer-{tag}.seed"; create_seed(str(seed))
+        log = ReceiptLog(str(work / f"buyer-{tag}.ndjson"), load_seed(str(seed)))
         receipt = mandate_receipt(log, MANDATE, load_catalog()[2]["notebook-a5"], "clearwake-demo-store", "ORDER-U")
         d = g.open_dispute("CAP-U", UNAUTHORISED, "9.00", due(240), msg, stage="INQUIRY")
         return d["dispute_id"], 900, "buyer-u", {"id": "ORDER-U"}, (), receipt
