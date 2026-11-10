@@ -36,8 +36,9 @@ class RuleValidationTests(unittest.TestCase):
         self.assertEqual(reason_key("MERCHANDISE_OR_SERVICE_NOT_RECEIVED"), "item_not_received")
         self.assertEqual(reason_key("MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED"), "not_as_described")
         self.assertEqual(reason_key("missing_items"), "missing_items")
+        self.assertEqual(reason_key("UNAUTHORISED"), "unauthorised")
         with self.assertRaises(ValueError):
-            reason_key("UNAUTHORISED")
+            reason_key("SOMETHING_ELSE")
 
 
 class DecisionTests(unittest.TestCase):
@@ -106,6 +107,26 @@ class DecisionTests(unittest.TestCase):
                     self.assertEqual(got.action, "escalate", (requested, offer))
                 else:
                     self.assertEqual(got.action, "counter", (requested, offer))
+
+
+class ModelCheckTests(unittest.TestCase):
+    def test_the_model_may_only_pick_among_actions_the_rule_permits(self):
+        from clearwake.buyer import final_action
+        self.assertEqual(final_action("accept", "accept"), "accept")
+        self.assertEqual(final_action("accept", "escalate"), "escalate")      # more careful is allowed
+        self.assertEqual(final_action("escalate", "accept"), "escalate")      # bolder is not
+        self.assertEqual(final_action("counter", "accept"), "counter")
+        self.assertEqual(final_action("wait", "escalate"), "wait")
+        self.assertEqual(final_action("accept", "give it all away"), "accept")
+
+    def test_a_drafted_message_may_state_only_the_amount_asked_and_no_links(self):
+        from clearwake.buyer import check_draft
+        self.assertTrue(check_draft("My notebook never arrived. I would like 9.00 USD back.", 900)[0])
+        self.assertFalse(check_draft("Please send 12.00 USD.", 900)[0])
+        self.assertFalse(check_draft("See https://example.com for details of the order.", 900)[0])
+        self.assertFalse(check_draft("short", 900)[0])
+        self.assertFalse(check_draft("x" * 600, 900)[0])
+        self.assertFalse(check_draft(None, 900)[0])
 
 
 class SignedRuleTests(unittest.TestCase):

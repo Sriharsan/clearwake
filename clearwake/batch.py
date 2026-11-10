@@ -8,7 +8,8 @@ Two worlds share one negotiation loop:
   Rehearsal: RehearsalGateway (a local fake provider) plus the local stand-in page in tests/fixtures/resolution_center. Runs offline.
   Sandbox:   the real PayPal sandbox. Needs Sri's one time login in the persistent browser profile.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
+import hashlib
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
@@ -22,7 +23,7 @@ from verdock_core.outcome import MISMATCH, PENDING, UNKNOWN, VERIFIED
 from verdock_core.receipts import verify_log
 
 from . import dispatch
-from .buyer import BuyerAgent, DisputeRule, Mandate, check, decide_offer, mandate_receipt, reason_key
+from .buyer import BuyerAgent, DisputeRule, Mandate, check, check_draft, decide_offer, final_action, mandate_receipt, reason_key
 from .buyer_browser import NeedsHuman, Recorder, ResolutionCenter, StepFailed, blocked, fixture_site, open_buyer_log, sandbox_site, visible
 from .counter import Counter
 from .models import Adapter
@@ -34,7 +35,7 @@ PHOTO = ROOT / "fixtures" / "dispatch" / "photos" / "test-photo-3-notebooks.jpg"
 PHOTO_NOTE = "test photo, CC0, not a real parcel"
 TRACKER = {"carrier": "UPS", "status": "SHIPPED"}
 NOT_RECEIVED, NOT_AS_DESCRIBED = "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED"
-API_REASON = {"item_not_received": NOT_RECEIVED, "missing_items": NOT_RECEIVED, "not_as_described": NOT_AS_DESCRIBED}
+API_REASON = {"item_not_received": NOT_RECEIVED, "missing_items": NOT_RECEIVED, "not_as_described": NOT_AS_DESCRIBED, "unauthorised": "UNAUTHORISED"}
 RULE = DisputeRule(accept_min_percent=80, accept_min_percent_not_as_described=80, counter_min_percent=40, max_counters=1)
 MAX_ROUNDS = 5
 
@@ -57,7 +58,20 @@ class CaseSpec:
     owner_approves: bool = False   # rehearsal only: the merchant owner approves the offer in the inbox
 
 
-CASES = (
+CASES = (   # case l: 4 item not received, 4 not as described, 2 unauthorised
+    CaseSpec(1, "Item not received, tracking shows shipped", "item_not_received", "notebook-a5", 1, 900, "My notebook never arrived.", tracked=True),
+    CaseSpec(2, "Item not received, no tracking, full amount", "item_not_received", "notebook-a5", 1, 900, "My notebook never arrived."),
+    CaseSpec(3, "Item not received, no tracking, small amount", "item_not_received", "notebook-a5", 1, 300, "My notebook never arrived."),
+    CaseSpec(4, "Item not received, no tracking, small amount", "item_not_received", "notebook-a5", 1, 200, "My notebook never arrived."),
+    CaseSpec(5, "Not as described, small amount", "not_as_described", "notebook-a5", 1, 300, "The paper is not the grid I ordered."),
+    CaseSpec(6, "Not as described, small amount", "not_as_described", "notebook-a5", 1, 150, "The cover is scratched."),
+    CaseSpec(7, "Not as described, full amount, owner approves a partial offer", "not_as_described", "notebook-a5", 1, 900, "The cover is a different colour.", owner_approves=True),
+    CaseSpec(8, "Not as described, small amount", "not_as_described", "notebook-a5", 1, 250, "The pages are a different size."),
+    CaseSpec(9, "Unauthorised, signed mandate on record, full amount", "unauthorised", "notebook-a5", 1, 900, "I do not recognise this payment."),
+    CaseSpec(10, "Unauthorised, signed mandate on record, small amount", "unauthorised", "notebook-a5", 1, 300, "I do not recognise this payment."),
+)
+
+CASES_DISPATCH = (
     CaseSpec(1, "Item not received, tracking shows shipped", "item_not_received", "notebook-a5", 1, 900, "My notebook never arrived.", tracked=True),
     CaseSpec(2, "Item not received, no tracking, full amount", "item_not_received", "notebook-a5", 1, 900, "My notebook never arrived."),
     CaseSpec(3, "Item not received, no tracking, small amount", "item_not_received", "notebook-a5", 1, 300, "My notebook never arrived."),
@@ -69,7 +83,6 @@ CASES = (
     CaseSpec(9, "Not as described, full amount, owner approves a partial offer", "not_as_described", "notebook-a5", 1, 900, "The cover is a different colour.", owner_approves=True),
     CaseSpec(10, "Not as described, small amount", "not_as_described", "notebook-a5", 1, 150, "The cover is scratched."),
 )
-
 
 def money(minor):
     return f"{Decimal(minor) / 100:.2f}"
@@ -95,9 +108,11 @@ def refund_seen(record):
     return 0
 
 
-def model_calls(receipts_path, dispute_id):
-    """Model calls for one dispute, from the merchant agent's signed receipts: entries naming a model that is not scripted."""
-    calls, scripted = 0, 0
+def model_stats(receipts_path, dispute_id):
+    """Merchant model calls for one dispute from the merchant agent's signed receipts: {"calls", "ms", "scripted"}.
+
+    Uses the per call receipts (clearwake.model.call) when they exist, otherwise any receipt that names a model."""
+    new, old = {"calls": 0, "ms": 0, "scripted": 0, "seen": False}, {"calls": 0, "ms": 0, "scripted": 0}
     path = Path(receipts_path)
     for line in path.read_text(encoding="utf-8").splitlines() if path.is_file() else []:
         try:
@@ -105,13 +120,23 @@ def model_calls(receipts_path, dispute_id):
         except ValueError:
             continue
         params = body.get("params", {})
-        if params.get("dispute") != dispute_id or "model" not in params:
+        if params.get("dispute") != dispute_id:
             continue
-        if params["model"] == "scripted":
-            scripted += 1
-        else:
-            calls += 1
-    return calls, scripted
+        if body.get("action_id") == "clearwake.model.call":
+            new["seen"] = True
+            if params.get("backend") == "scripted" or params.get("model") == "scripted":
+                new["scripted"] += 1
+            else:
+                new["calls"] += 1
+                new["ms"] += max(0, int(params.get("latency_ms", 0)))
+        elif "model" in params:
+            old["scripted" if params["model"] == "scripted" else "calls"] += 1
+    return new if new["seen"] else old
+
+
+def model_calls(receipts_path, dispute_id):
+    stats = model_stats(receipts_path, dispute_id)
+    return stats["calls"], stats["scripted"]
 
 
 def classify(final, merchant_result, buyer_end, settled):
@@ -317,11 +342,62 @@ def create_and_pay(gateway, page, product, quantity, total_minor, site=None, tim
 # The negotiation --------------------------------------------------------------------------------------------------------------
 
 class Run:
-    def __init__(self, world, swarm, rc, rec, mandate, log, adapter_label, clock=time.perf_counter, counter=None):
+    def __init__(self, world, swarm, rc, rec, mandate, log, adapter_label, clock=time.perf_counter, counter=None, buyer_adapter=None):
         self.world, self.swarm, self.rc, self.rec, self.mandate, self.log = world, swarm, rc, rec, mandate, log
+        self.buyer_adapter = buyer_adapter or Adapter("scripted")
         self.adapter_label, self.clock = adapter_label, clock
         self.counter = counter or Counter("recorded")
         self.catalog = BuyerAgent(mandate, Adapter("scripted"))   # catalog and the mandate check; the choice itself is scripted
+
+    def ask_model(self, ctx, name, system, user, fields, scripted, row):
+        """One buyer model call. Returns the proposal; the call is receipted with model, latency and prompt hash."""
+        proposal = self.buyer_adapter.propose(system, user, fields, scripted)
+        call = proposal.call or {}
+        live = proposal.backend != "scripted"
+        if live:
+            row["buyer_model_calls"] = row.get("buyer_model_calls", 0) + 1
+            row["buyer_model_ms"] = row.get("buyer_model_ms", 0) + max(0, int(call.get("latency_ms", 0)))
+        else:
+            row["buyer_scripted_decisions"] = row.get("buyer_scripted_decisions", 0) + 1
+        return proposal, live
+
+    def draft(self, ctx, spec, product, total, row):
+        """The buyer agent drafts its dispute message. Code accepts it only if it states nothing but the amount asked."""
+        what = {"item_not_received": "the item did not arrive", "missing_items": "part of the order is missing",
+                "not_as_described": "the item is not as described", "unauthorised": "the owner does not recognise this payment"}[spec.reason]
+        proposal, live = self.ask_model(
+            ctx, "model_draft", "You write the first message of a PayPal dispute for a buyer. Be polite and factual in two or three sentences. "
+            "State only the facts given. Do not invent amounts, dates, ids or promises. Do not add links.",
+            f"Item: {product['name']}. Order total USD {money(total)}. Refund asked: USD {money(spec.ask_minor)}. Problem: {what}. Buyer's note: {spec.message}",
+            ["message"], lambda: {"message": spec.message}, row)
+        text = (proposal.value or {}).get("message")
+        ok, problems = check_draft(text, spec.ask_minor)
+        used = "model" if live and ok else "scripted rule" if not live else "fallback to the owner's note"
+        message = text.strip() if live and ok else spec.message
+        call = proposal.call or {}
+        self.rec.step(None, ctx, "model_draft", {"model": proposal.model, "backend": proposal.backend, "latency_ms": call.get("latency_ms", -1),
+                      "prompt_sha256": call.get("prompt_sha256", ""), "used": used, "problems": "; ".join(problems)[:200],
+                      "message_sha256": hashlib.sha256(message.encode()).hexdigest()}, True)
+        row["draft"] = {"model": proposal.model, "used": used, "message": message}
+        return message
+
+    def choose(self, ctx, spec, step, facts, row):
+        """The rule decides what is allowed; a model may pick among the allowed actions (never a bolder one); code takes the final say."""
+        proposal, live = self.ask_model(
+            ctx, "model_decision", "You are a buyer's agent. The owner's rule already limits what you may do. Choose accept, counter or escalate. "
+            "Choose escalate if anything looks wrong.",
+            f"Asked USD {money(spec.ask_minor)}. Merchant offer: {('USD ' + money(facts['offer_minor'])) if facts['offer_minor'] is not None else 'none'}. "
+            f"Merchant answered with records instead of an offer: {facts['evidence']}. The owner's rule says: {step.action} ({step.code}).",
+            ["action"], lambda: {"action": step.action}, row)
+        proposed = (proposal.value or {}).get("action") if live else step.action
+        proposed = proposed if isinstance(proposed, str) else "none"
+        final = final_action(step.action, proposed) if live else step.action
+        call = proposal.call or {}
+        self.rec.step(None, ctx, "model_decision", {"model": proposal.model, "backend": proposal.backend, "latency_ms": call.get("latency_ms", -1),
+                      "prompt_sha256": call.get("prompt_sha256", ""), "proposed": proposed[:20], "rule_action": step.action, "final": final,
+                      "overridden": bool(live and proposed != final), "rule_code": step.code}, True)
+        row.setdefault("buyer_model", []).append({"proposed": proposed, "rule": step.action, "final": final, "model": proposal.model})
+        return final
 
     def case(self, spec, run_id, spent_minor):
         started = self.clock()
@@ -338,8 +414,9 @@ class Run:
                 return row
             bought = self.world.buy(spec, product, total, run_id)
             kept = getattr(self.world, "state", {}).get("cases", {}).get(str(spec.n), {})
-            digest = kept.get("mandate_digest") or mandate_receipt(self.log, self.mandate, priced, self.catalog.merchant["id"], bought["order_id"])["digest"]
-            kept["mandate_digest"] = digest
+            if not kept.get("mandate"):
+                kept["mandate"] = mandate_receipt(self.log, self.mandate, priced, self.catalog.merchant["id"], bought["order_id"])
+            digest = kept["mandate_digest"] = kept["mandate"]["digest"]
             self.rec.mandate_digest = digest
             row.update(order_id=bought["order_id"], capture_id=bought["capture_id"], paid=money(total), mandate_receipt=digest[:16], bought_how=bought["how"])
             order = {"id": bought["order_id"], "items": [{"sku": spec.product, "quantity": spec.quantity}]}
@@ -350,13 +427,15 @@ class Run:
             if kept.get("dispatch_receipt"):
                 row["dispatch_receipt"], row["dispatch_counter"] = kept["dispatch_receipt"], kept["dispatch_counter"]
             ctx = bought["order_id"]
-            opened = self.rc.open_dispute(bought["capture_id"], spec.reason, spec.message, amount=money(spec.ask_minor), context=ctx)
+            message = self.draft(ctx, spec, product, total, row)
+            opened = self.rc.open_dispute(bought["capture_id"], spec.reason, message, amount=money(spec.ask_minor), context=ctx)
             page_id = opened["dispute_id"]
             api_id = self.world.find_dispute(bought["capture_id"], page_id, spec.reason, spec.ask_minor, spec.message)
             row.update(dispute_id=api_id, page_dispute_id=page_id)
             approval_id = None
             for _ in range(MAX_ROUNDS):
-                merchant_result = self.swarm.handle_dispute(api_id, total, f"buyer-{run_id}-{spec.n}", order, bought["trackers"], None, approval_id)
+                merchant_result = self.swarm.handle_dispute(api_id, total, f"buyer-{run_id}-{spec.n}", order, bought["trackers"],
+                                                         kept["mandate"] if spec.reason == "unauthorised" else None, approval_id)
                 if merchant_result.state == "awaiting approval":
                     approval_id = self.world.approve(self.swarm, merchant_result, spec)
                     if approval_id:
@@ -367,6 +446,9 @@ class Run:
                 thread = self.rc.read_thread(page_id, context=ctx)
                 facts = thread.facts()
                 step = decide_offer(self.mandate.dispute_rule, spec.reason, spec.ask_minor, facts["offer_minor"], facts["evidence"], facts["replied"], counters)
+                taken = self.choose(ctx, spec, step, facts, row) if step.action in ("accept", "counter", "escalate", "wait") else step.action
+                if taken != step.action:
+                    step = replace(step, action=taken, code=step.code + "+model_cautious")
                 self.rec.step(None, ctx, "decision", {"dispute_id": page_id, "action": step.action, "code": step.code, "percent": step.percent,
                                                       "offer_minor": facts["offer_minor"] if facts["offer_minor"] is not None else -1, "asked_minor": spec.ask_minor,
                                                       "counters_used": counters}, True)
@@ -397,8 +479,8 @@ class Run:
                        merchant_state=merchant_result.state if merchant_result else "", merchant_decision=(merchant_result.proposal.get("decided") if merchant_result else ""),
                        buyer_end=buyer_end or "waiting", counters=counters)
             row["outcome"] = classify(final, merchant_result, buyer_end, settled)
-            calls, scripted = model_calls(self.swarm.receipts.path, api_id)
-            row.update(model_calls=calls, scripted_decisions=scripted)
+            stats = model_stats(self.swarm.receipts.path, api_id)
+            row.update(model_calls=stats["calls"], model_ms=stats["ms"], scripted_decisions=stats["scripted"])
         except NeedsHuman as stop:
             row.update(outcome=ERROR, detail="Stopped, a person must continue: " + stop.why, manual_steps=stop.steps)
         except (StepFailed, GatewayError, ProviderRefused, Offline, LookupError, TimeoutError, ValueError) as error:
@@ -417,7 +499,11 @@ def summarise(rows):
             "refunds_confirmed_by_paypal": sum(1 for r in rows if r.get("settlement") == VERIFIED and refund_seen_ok(r)),
             "refunds_confirmed_total": money(refunds),
             "seconds_total": round(sum(r["seconds"] for r in done), 2), "seconds_per_case": round(sum(r["seconds"] for r in done) / len(done), 2) if done else 0,
-            "model_calls": sum(r.get("model_calls", 0) for r in rows), "scripted_decisions": sum(r.get("scripted_decisions", 0) for r in rows)}
+            "model_calls": sum(r.get("model_calls", 0) for r in rows), "scripted_decisions": sum(r.get("scripted_decisions", 0) for r in rows),
+            "merchant_model_ms": sum(r.get("model_ms", 0) for r in rows),
+            "buyer_model_calls": sum(r.get("buyer_model_calls", 0) for r in rows), "buyer_model_ms": sum(r.get("buyer_model_ms", 0) for r in rows),
+            "buyer_scripted_decisions": sum(r.get("buyer_scripted_decisions", 0) for r in rows),
+            "buyer_model_overrides": sum(1 for r in rows for m in r.get("buyer_model", []) if m["proposed"] != m["final"])}
 
 
 def refund_seen_ok(row):
@@ -425,9 +511,9 @@ def refund_seen_ok(row):
 
 
 def table(rows):
-    head = ("#", "Scenario", "Ask", "Merchant", "Buyer", "PayPal record", "Outcome", "Sec", "Model calls")
+    head = ("#", "Scenario", "Ask", "Merchant", "Buyer", "PayPal record", "Outcome", "Sec", "Model calls (merchant+buyer)")
     body = [(str(r["n"]), r["scenario"][:44], r["ask"], (r.get("merchant_decision") or r.get("merchant_state") or "-")[:20], r.get("buyer_end", "-"),
-             f"{r.get('paypal_status', '-')}/{r.get('paypal_stage', '-')}", r.get("outcome", "-"), str(r.get("seconds", "-")), str(r.get("model_calls", 0))) for r in rows]
+             f"{r.get('paypal_status', '-')}/{r.get('paypal_stage', '-')}", r.get("outcome", "-"), str(r.get("seconds", "-")), f"{r.get('model_calls', 0)}+{r.get('buyer_model_calls', 0)}") for r in rows]
     widths = [max(len(head[i]), *(len(b[i]) for b in body)) for i in range(len(head))]
     fmt = lambda cols: "  ".join(c.ljust(widths[i]) for i, c in enumerate(cols))
     return "\n".join([fmt(head), fmt(["-" * w for w in widths]), *(fmt(b) for b in body)])
@@ -435,7 +521,7 @@ def table(rows):
 
 MANUAL = {
     "rehearsal": ["Nothing real was touched: every record is invented by the local fake provider and the stand-in page.",
-                  "Case 9: the merchant owner's approval of the partial offer is simulated (named 'rehearsal owner' in the receipt)."],
+                  "Case 7: the merchant owner's approval of the partial offer is simulated (named 'rehearsal owner' in the receipt)."],
     "sandbox": ["Sri logs in to the sandbox buyer account once, by hand, in the persistent browser window (python scripts/buyer_dispute.py --login).",
                 "The merchant owner's approval of any offer above the approval threshold stays manual: those cases are reported as escalated to the merchant owner.",
                 "Cases the buyer agent hands to its owner (merchant answered with records, or an offer below the rule) stay open until the owner decides.",
@@ -446,7 +532,7 @@ def verify(path, key):
     return bool(Path(path).is_file() and verify_log(str(path), key)["ok"])
 
 
-def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.perf_counter, source=None, counter=None, door=None):
+def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.perf_counter, source=None, counter=None, door=None, buyer_adapter=None):
     """Run the cases in order. Returns the report dictionary (written to data/runs/ by scripts/batch.py)."""
     work = Path(work)
     mandate = mandate or buyer_mandate()
@@ -454,7 +540,7 @@ def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.
     rec = Recorder(log, "0" * 64, source or world.mode, work / "shots")
     rc = door(rec) if door else ResolutionCenter(page, world.site if hasattr(world, "site") else fixture_site(), rec)
     swarm = MerchantSwarm(world.gateway, work / "merchant", adapter)
-    runner = Run(world, swarm, rc, rec, mandate, log, adapter.label(), clock, counter)
+    runner = Run(world, swarm, rc, rec, mandate, log, adapter.label(), clock, counter, buyer_adapter)
     run_id = uuid.uuid4().hex[:6]
     started = datetime.now(timezone.utc)
     rows, spent = [], 0
@@ -467,7 +553,7 @@ def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.
         if row.get("manual_steps"):
             break   # a challenge or a missing login: stop the batch, never push through
     return {"kind": "buyer-seller batch", "mode": world.mode, "label": world.label, "started": started.isoformat(), "finished": datetime.now(timezone.utc).isoformat(),
-            "merchant_agent": adapter.label(), "buyer_agent": "scripted rule from the owner's mandate (clearwake/buyer.py decide_offer), not AI",
+            "merchant_agent": adapter.label(), "buyer_agent": (buyer_adapter or Adapter("scripted")).label() + "; the owner's dispute rule (clearwake/buyer.py decide_offer) sets what it may do",
             "buyer_rule": mandate.dispute_rule.to_dict(), "cases": rows, "summary": summarise(rows), "manual": MANUAL[world.mode], "run_id": run_id,
             "buyer_log": {"path": str(Path(log.path).relative_to(ROOT)) if Path(log.path).is_relative_to(ROOT) else "buyer-receipts.ndjson", "public_key": log.public_key,
                           "verifies": verify(log.path, log.public_key), "receipts": len(Path(log.path).read_text(encoding="utf-8").splitlines())},
@@ -475,7 +561,7 @@ def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.
             "work_dir": str(work)}
 
 
-def run_rehearsal(adapter=None, cases=CASES, work=None, headless=True):
+def run_rehearsal(adapter=None, cases=CASES, work=None, headless=True, buyer_adapter=None):
     """All cases end to end offline: fake provider plus the local stand-in page. Used by scripts/batch.py and the tests."""
     from playwright.sync_api import sync_playwright
     adapter = adapter or Adapter("scripted")
@@ -485,7 +571,7 @@ def run_rehearsal(adapter=None, cases=CASES, work=None, headless=True):
         try:
             page = browser.new_page()
             page.goto(fixture_site().home_url)
-            return run_batch(Rehearsal(work, page), work, page, adapter, cases)
+            return run_batch(Rehearsal(work, page), work, page, adapter, cases, buyer_adapter=buyer_adapter)
         finally:
             browser.close()
 
@@ -495,7 +581,7 @@ def has_login():
     return (Path(PROFILE) / ".clearwake-login-ok").is_file()
 
 
-def run_sandbox(adapter=None, cases=CASES, work=None, manual=False, resume=False, timeout_s=900, out=print, gateway=None, poll_s=5):
+def run_sandbox(adapter=None, cases=CASES, work=None, manual=False, resume=False, timeout_s=900, out=print, gateway=None, poll_s=5, buyer_adapter=None):
     """The real PayPal sandbox.
 
     Playwright mode needs the saved login in data/buyer-profile (python scripts/buyer_dispute.py --login).
@@ -524,7 +610,7 @@ def run_sandbox(adapter=None, cases=CASES, work=None, manual=False, resume=False
             def approve_order(self, *a):
                 return holder["door"].approve_order(*a)
         world.manual = Lazy()
-        report = run_batch(world, work, None, adapter, cases, source="paypal-sandbox via the lead's browser", door=door)
+        report = run_batch(world, work, None, adapter, cases, source="paypal-sandbox via the lead's browser", door=door, buyer_adapter=buyer_adapter)
         state["save"]()
         report["label"] += " (manual buyer mode: buyer browser steps performed through the lead's browser, effects confirmed from PayPal's records)"
         report["manual"] = MANUAL["sandbox"][1:] + ["Every buyer browser step (approve the checkout link, open the dispute, accept or counter) was performed through the lead's browser; PayPal's record confirmed each effect."]
@@ -538,9 +624,56 @@ def run_sandbox(adapter=None, cases=CASES, work=None, manual=False, resume=False
         context, page = launch(pw, PROFILE, headless=False)
         try:
             ensure_signed_in(page, sandbox_site())
-            return run_batch(Sandbox(gateway, page), work, page, adapter, cases)
+            return run_batch(Sandbox(gateway, page), work, page, adapter, cases, buyer_adapter=buyer_adapter)
         finally:
             context.close()
+
+
+def plan_sandbox(cases=CASES, work=None, gateway=None, out=print):
+    """Create the sandbox orders for the batch (no money moves until the buyer approves) and print what the buyer's browser must do.
+
+    One JSON line per lead action: the checkout approval link of every order first, then the dispute each order will need.
+    The orders are saved, so the real run (--resume) buys nothing twice."""
+    from . import envfile
+    from .buyer_manual import LABEL, REASON_UI
+    from .paypal import SandboxGateway
+    if gateway is None:
+        envfile.load(ROOT / ".env")
+        gateway = SandboxGateway.from_environment()
+    mandate = buyer_mandate()
+    catalog = BuyerAgent(mandate, Adapter("scripted"))
+    work = Path(work or ROOT / "data" / "buyer" / "manual-batch")
+    work.mkdir(parents=True, exist_ok=True)
+    state_path = work / "state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8")) if state_path.is_file() else {}
+    lines, spent = [], 0
+    gateway._access_token()
+    for spec in cases:
+        product = catalog.products[spec.product]
+        total = product["price_minor"] * spec.quantity
+        verdict = check(mandate, catalog.merchant["id"], catalog.currency, {**product, "price_minor": total}, spent)
+        if not verdict.allowed:
+            raise ValueError(f"Case {spec.n}: the mandate refuses the purchase: {verdict.reason}")
+        spent += total
+        saved = state.setdefault("cases", {}).setdefault(str(spec.n), {})
+        if not saved.get("order_id"):
+            order = gateway._request("/v2/checkout/orders", order_payload(product, spec.quantity, total, "http://127.0.0.1:8842/sandbox-approved"), str(uuid.uuid4()))
+            saved["order_id"] = order["id"]
+            saved["approve_url"] = next((i["href"] for i in order.get("links", []) if i.get("rel") in ("payer-action", "approve")), "")
+            state_path.write_text(json.dumps(state, indent=1), encoding="utf-8")
+        lines.append({"phase": "approve", "case": spec.n, "action": "approve_order", "order_id": saved["order_id"], "url": saved.get("approve_url", ""),
+                      "amount": f"USD {money(total)}", "mandate_check": verdict.reason, "performed_through": LABEL,
+                      "instruction": "Open the link as the sandbox buyer and approve the payment."})
+    for spec in cases:
+        lines.append({"phase": "dispute", "case": spec.n, "action": "open_dispute", "order_id": state["cases"][str(spec.n)]["order_id"], "reason": spec.reason,
+                      "reason_ui": REASON_UI[spec.reason], "amount": money(spec.ask_minor), "planned": True, "performed_through": LABEL,
+                      "message": "drafted by the buyer agent's model at run time; the owner's note if the model's draft fails the code check: " + spec.message,
+                      "dispute_rule": mandate.dispute_rule.to_dict()})
+    lines.append({"phase": "next", "action": "run", "command": "python scripts/batch.py --sandbox --manual-buyer --resume --model ollama",
+                  "note": "Approve the ten links first. The run captures each order, asks for each dispute in turn and polls PayPal for every effect."})
+    for line in lines:
+        out(json.dumps(line, ensure_ascii=False))
+    return lines
 
 
 def save_report(report, folder=None):

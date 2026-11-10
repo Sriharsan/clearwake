@@ -17,8 +17,13 @@ Note on the field list: the Devpost page (https://paypalaihackathon.devpost.com/
 | `[BATCH_TOTAL]`, `[BATCH_SETTLED]`, `[BATCH_EVIDENCE]`, `[BATCH_ESCALATED]`, `[BATCH_REFUNDS]`, `[BATCH_SECONDS_PER_CASE]` | The agent to agent batch, from docs/RESULTS.md (agent B) |
 | `[HERO_DISPUTE_ID]` | The dispute id of the single buyer agent to merchant agent case in the video |
 | `[MODEL_NAME]`, `[MODEL_TAG]`, `[MODEL_CALLS]`, `[MODEL_MS_PER_CALL]` | docs/RESULTS.md "Model calls" (agent A) |
+| `[OVERRULED_EXAMPLE]`, `[OVERRULED_CAPTION]` | The ledger row where the model proposed something wrong and the policy stopped it (VIDEO_SCRIPT.md); from agent A's run files |
 | `[TESTS_PY]`, `[TESTS_UI]` | The final `python -m unittest discover -s tests` and `node --test` counts |
 | `[POSTMAN_RUN]` | The result of Sri's Newman or Postman CLI run (docs/POSTMAN.md) |
+
+The three numbers under the README headline are `[BATCH_SETTLED]` of `[BATCH_TOTAL]`, `[BATCH_SECONDS_PER_CASE]` with `[MODEL_CALLS]`, and the toolkit comparison (1 refund instead of 2, 5000.00 refused), which is already measured in `docs/TOOLKIT_FAILURE_CASES.md`. Read them from the files in `data/runs/`.
+
+The elevator pitch and tagline do not use the words air gapped or network isolated: PayPal is a cloud API, and the network cut run is one proof case lower down.
 
 ## 1. Project name
 
@@ -46,6 +51,8 @@ When an AI agent buys, Clearwake settles what goes wrong.
 3. The merchant's agent reads the dispute and the buyer's message. A local model proposes settle, fight or escalate. The policy file decides. Code checks every amount and every cited id. The agent checks its dispatch proof (SAM 3 counted the items at packing, the parcel was sealed, tracking shows it shipped) and offers a refund inside the owner's limit through PayPal's `send-message` and `make-offer`.
 4. The buyer's agent compares the offer with the dispute rule in its mandate (for example: accept any refund of 80 percent or more for a missing item) and accepts, counters or escalates.
 5. Clearwake says "settled, no fee" only when PayPal's own dispute record reads RESOLVED at the INQUIRY stage. A refund counts only when PayPal's refund record matches. Every step on both sides is a signed, hash chained receipt that anyone can verify offline, in Python or in a browser.
+
+We also ran PayPal's own agent toolkit with no guard on the same injected faults (no network, 31 October 2026): a lost reply followed by a retry paid the customer twice (2 refunds, 3.00 for a 1.50 dispute), and a dispute message saying to ignore the limits got a 5000.00 claim accepted. Through Clearwake the same faults gave 1 refund and a refusal before any PayPal call.
 
 We ran a batch: [BATCH_TOTAL] sandbox orders bought by the buyer agent and disputed by it for mixed reasons (item not received, missing items with dispatch proof, not as described). Read back from PayPal: [BATCH_SETTLED] settled at INQUIRY with no fee, [BATCH_EVIDENCE] answered with evidence, [BATCH_ESCALATED] escalated to an owner, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_SECONDS_PER_CASE] seconds per case, [MODEL_CALLS] model calls.
 
@@ -140,6 +147,8 @@ N/A
 New.
 
 Answer text if a free text box follows: Clearwake is new work from 30 October 2026, after the submission period opened on 1 October 2026. The first commit in the repository is 30 Oct 2026, 20:47 IST. It pins two of the author's own public MIT components, both also started after 1 October: Relayloom (first commit 27 Oct 2026, 00:05 IST; the workroom code 28 Oct 2026) and verdock-core (first commit 31 Oct 2026, 11:20 IST, tagged v0.2.0 the same day). Every commit, in all three repositories, is dated in `docs/HACKATHON_UPDATES.md`, from `git log`.
+
+Built milestone by milestone in `BUILT_DURING_HACKATHON.md` at the repository root (from `git log`; no commit in any of the three repositories is dated before 1 October 2026).
 
 Checked against git on 9 November 2026: `git log --reverse` in the repository shows 5586442 dated 2026-10-30 20:47:28 +0530 as the first of 59 commits; in `vendor/relayloom` the first commit ec6dc51 is dated 2026-10-27 00:05:53 +0530 (and 3668d31, the first with workroom code, 2026-10-28 18:38:33 +0530); in `vendor/verdock-core` the first commit 39b8c52 is dated 2026-10-31 11:20:58 +0530. The pinned submodule commits are e4654fa and f7ac784 (v0.2.0).
 

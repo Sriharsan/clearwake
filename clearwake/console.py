@@ -95,6 +95,9 @@ class Console:
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.secret = secrets.token_bytes(32)
         self._lock = threading.Lock()
+        self.hosted = False  # set by the server in hosted mode
+        self._neg_guard = threading.Lock()
+        self.negotiation = {}
         self.root.mkdir(parents=True, exist_ok=True)
         current = self.root / "current.txt"
         name = current.read_text(encoding="utf-8").strip() if current.exists() else ""
@@ -134,6 +137,41 @@ class Console:
                     if old.is_dir() and old != self.data and RUN_FOLDER.fullmatch(old.name):
                         shutil.rmtree(old, ignore_errors=True); removed += 1
             return {"ok": True, "folder": self.data.name, "wiped": bool(wipe), "removed_folders": removed}
+
+    # One live negotiation per click -------------------------------------------------------------
+    def start_negotiation(self):
+        """Run one rehearsal negotiation (case n: offer, buyer accepts, PayPal shaped record read back) in the background.
+        The step log is the merchant receipt log itself, read as it grows, so the page shows what was really signed."""
+        with self._neg_guard:
+            if self.negotiation.get("running"):
+                raise ConsoleError("A negotiation is already running. Wait for it to finish.", 409)
+            path = Path(self.swarm.receipts.path)
+            start = len(path.read_text(encoding="utf-8").splitlines()) if path.exists() else 0
+            self.negotiation = {"running": True, "from": start, "error": None, "case": None}
+        def work():
+            try:
+                made = self.run_case("n")
+                self.negotiation["case"] = made["entries"][0]["dispute_id"]
+            except Exception as error:  # shown to the page; nothing was retried
+                self.negotiation["error"] = f"{type(error).__name__}: {error}"[:200]
+            finally:
+                self.negotiation["running"] = False
+        threading.Thread(target=work, daemon=True).start()
+        return {"started": True, "from": start}
+
+    def negotiation_log(self):
+        neg = dict(self.negotiation)
+        path = Path(self.swarm.receipts.path)
+        lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+        steps = []
+        for i, raw in enumerate(lines[neg.get("from", 0):], neg.get("from", 0) + 1):
+            try:
+                r = json.loads(raw)
+            except ValueError:
+                continue
+            steps.append({"n": i, "step": r.get("step_id", ""), "action": r.get("action_id", ""), "ok": bool(r.get("success")),
+                          "at": datetime.fromtimestamp(r.get("ts_ms", 0) / 1000, timezone.utc).strftime("%H:%M:%S")})
+        return {"running": bool(neg.get("running")), "error": neg.get("error"), "case": neg.get("case"), "steps": steps}
 
     # Session ---------------------------------------------------------------------------------
     def csrf_for(self, sid):
@@ -473,7 +511,7 @@ class Console:
                      "case": refunds[-1]["id"] if refunds else None, "state": refunds[-1]["state"] if refunds else None}
             catalog = [{**p, "price": money(p["price_minor"])} for p in self.agent.products.values()]
             return {
-                "label": REHEARSAL, "mode": "rehearsal", "folder": self.data.name, "model": self.adapter.label(),
+                "label": REHEARSAL, "mode": "rehearsal", "hosted": self.hosted, "folder": self.data.name, "model": self.adapter.label(),
                 "network": "none: rehearsal gateway, no provider calls" + ("" if self.backend == "scripted" else "; model calls go to Ollama on loopback"),
                 "mandate": {"owner": MANDATE.owner, "budget": money(MANDATE.budget_minor), "per_item_cap": money(MANDATE.per_item_cap_minor),
                             "merchants": list(MANDATE.allowed_merchants), "categories": list(MANDATE.allowed_categories),

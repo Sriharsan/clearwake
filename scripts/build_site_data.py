@@ -138,6 +138,56 @@ def build():
     return {"source": "Real PayPal sandbox, cases c, d, e, i, m, n and o, recorded 31 Oct and 3 Nov 2026", "recorded": "2026-11-03", "rows": rows}
 
 
+def newest(pattern):
+    found = sorted((ROOT / "data" / "runs").glob(pattern))
+    for path in reversed(found):
+        try:
+            return path, json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+    return None, None
+
+
+def totals(ledger_rows):
+    """The few measured numbers the Home page and the console header lead with, read from the run files. Nothing is typed here.
+
+    public: real sandbox batch if one exists, else the real sandbox ledger; model calls from the newest ai-eval run; the newest baseline run's
+            "headline" list ([{"value", "label"}]) when agent E's run file has one.
+    local:  the same, but a rehearsal batch counts (the console is local and carries its own mode label)."""
+    out = {"public": [], "local": []}
+
+    def batch(kind_ok):
+        for path in sorted((ROOT / "data" / "runs").glob("batch-*.json"), reverse=True):
+            try:
+                body = json.loads(path.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            if kind_ok(str(body.get("mode", "")).lower()) and isinstance(body.get("summary"), dict):
+                return path, body["summary"]
+        return None, None
+
+    real = lambda m: "sandbox" in m and "rehearsal" not in m
+    for key, ok in (("public", real), ("local", lambda m: True)):
+        path, sm = batch(ok)
+        if sm:
+            n = sm.get("cases", 0)
+            out[key].append({"value": f"{sm.get('settled_inquiry_no_fee', 0)} of {n}", "label": "disputes settled at INQUIRY, no fee", "source": f"data/runs/{path.name}"})
+            if sm.get("seconds_per_case") is not None:
+                out[key].append({"value": f"{sm['seconds_per_case']} s", "label": "per negotiated case, buyer agent and merchant agent", "source": f"data/runs/{path.name}"})
+        else:
+            disputes = [r for r in ledger_rows if r["kind"] == "dispute"]
+            out[key].append({"value": f"{sum(r['settled_before_escalation'] for r in disputes)} of {len(disputes)}", "label": "real sandbox disputes settled at INQUIRY, no fee", "source": "site/data/ledger.json"})
+        path, ev = newest("ai-eval-*.json")
+        if ev and ev.get("totals"):
+            model, t = next(iter(ev["totals"].items()))
+            out[key].append({"value": f"{t['calls']} calls", "label": f"to {model}, median {t['median_ms'] / 1000:.1f} s each", "source": f"data/runs/{path.name}"})
+        path, base = newest("baseline-*.json")
+        if base and isinstance(base.get("headline"), list):
+            out[key] += [{"value": str(h["value"]), "label": str(h["label"]), "source": f"data/runs/{path.name}"} for h in base["headline"][:2] if "value" in h and "label" in h]
+        out[key] = out[key][:3]
+    return out
+
+
 def main():
     data = SITE / "data"
     data.mkdir(exist_ok=True)
@@ -160,7 +210,8 @@ def main():
             print("copied", source.name, "with", len(body["rows"]), "rows")
         else:
             print("skipped", source.name, "(not in the site row format, see the top of this file)")
-    files = sorted(p.name for p in data.glob("*.json") if p.name != "manifest.json")
+    (data / "totals.json").write_text(json.dumps(totals(build()["rows"]), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json"))
     files.remove("ledger.json"); files.insert(0, "ledger.json")
     (data / "manifest.json").write_text(json.dumps({"files": files}, indent=1) + "\n", encoding="utf-8")
     print("site/data/manifest.json lists:", ", ".join(files))

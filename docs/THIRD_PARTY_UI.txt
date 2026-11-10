@@ -42,3 +42,14 @@ AG Grid Community
   Decision:  not vendored. The ledger and receipts tables are plain HTML tables
              with sortable column buttons, written in web/console.js. The CSP
              was not loosened.
+
+AG Grid Community on the public site (site/control-room.html)
+  File:      site/vendor/ag-grid-community-35.3.1.min.js, the same unchanged file as web/vendor/, licence in
+             site/vendor/ag-grid-community-LICENSE.txt (MIT, Copyright (c) 2015-2026 AG GRID LTD)
+  Used for:  the dispute ledger on the Control Room
+  CSP:       Vercel cannot send a nonce, so site/vercel.json lists the exact SHA-256 of every style block the grid
+             writes (39 hashes) in style-src for /control-room only, plus font-src data: for the grid's icon font.
+             Colours are CSS variables, so the style text never changes. No 'unsafe-inline'. Every other page keeps
+             style-src 'self'. Checked in Chromium over the strict policy: zero violation events, including filter,
+             sort, row select, light theme and CSV export. Recompute with the same method if the vendored file changes.
+  Row detail: master/detail is an AG Grid Enterprise feature, so the detail is a panel built by hand under the grid.

@@ -100,7 +100,6 @@ function countdown(due) {
 
 function renderFees() {
   const f = data.fees;
-  $('fees-label').textContent = String(f.label);
   const rate = f.rate_percent === null ? null : Number(f.rate_percent);
   $('fee-rate').textContent = rate === null ? 'no sales yet' : `${f.rate_percent}%`;
   $('rate-fill').style.width = rate === null ? '0' : Math.min(100, rate / 3 * 100).toFixed(1) + '%';
@@ -119,7 +118,7 @@ function renderFees() {
 // 1. Buyer agent ---------------------------------------------------------------------------------
 function renderBuyer() {
   const m = data.mandate;
-  $('mandate-owner').textContent = `${m.owner} (rehearsal). Budget for this rehearsal folder.`;
+  $('mandate-owner').textContent = `${m.owner}. Budget for this data folder.`;
   $('mandate-remaining').textContent = `${m.currency} ${m.remaining}`;
   $('mandate-budget').textContent = `${m.currency} ${m.budget}`;
   $('mandate-spent').textContent = `${m.currency} ${m.spent}`;
@@ -442,6 +441,37 @@ function exportCsv() {
   download(name, L.toCsv(heads, disputeRows()));
 }
 
+// Lead numbers: read from the run files by scripts/build_site_data.py, never written here.
+async function loadTotals() {
+  try {
+    const list = await call('/console/api/totals');
+    if (!Array.isArray(list) || !list.length) return;
+    $('lead-numbers').replaceChildren(...list.slice(0, 3).map(n => el('div', {}, el('dd', { class: 'num', text: String(n.value) }), el('dt', { text: String(n.label) }), el('dd', { class: 'src', text: String(n.source || '') }))));
+    $('lead-numbers').hidden = false;
+  } catch (e) { /* no numbers rather than invented ones */ }
+}
+
+// One negotiation per click. The log is the signed merchant receipt log, polled while the run goes.
+let negTimer = null;
+function drawSteps(log) {
+  $('neg-log').replaceChildren(...log.steps.map(s => el('li', { class: s.ok ? 'ok' : 'bad' }, el('span', { class: 'mono', text: s.at }), el('span', { text: L.plain(s.action.replace('clearwake.', '').replaceAll('.', ': ')) }), el('span', { class: 'mono dim', text: s.step }), el('span', { class: 'mark ' + (s.ok ? 'pass' : 'fail'), text: s.ok ? 'done' : 'not done' }))));
+}
+async function pollNegotiation() {
+  try {
+    const log = await call('/console/api/negotiation');
+    drawSteps(log);
+    if (log.running) { negTimer = setTimeout(pollNegotiation, 600); return; }
+    $('neg-run').disabled = false;
+    $('neg-status').textContent = log.error ? `The run stopped: ${log.error}` : `Done: ${log.steps.length} signed steps, dispute ${log.case || ''}. The ledger below has the row.`;
+    logs = []; await refresh();
+  } catch (e) { $('neg-run').disabled = false; showError(e.message); }
+}
+async function runNegotiation() {
+  showError(''); $('neg-run').disabled = true; $('neg-status').textContent = 'Running...'; $('neg-log').replaceChildren();
+  try { await call('/console/api/negotiate', {}); pollNegotiation(); }
+  catch (e) { $('neg-run').disabled = false; $('neg-status').textContent = ''; showError(e.message); }
+}
+
 async function start() {
   grids.ledger = makeGrid($('ledger-grid'), [
     { field: 'at', headerName: 'Time (UTC)', minWidth: 170, cellClass: 'cell-mono' },
@@ -449,8 +479,7 @@ async function start() {
     { field: 'movement', headerName: 'Movement', flex: 2, minWidth: 220 },
     { field: 'amount', headerName: 'Amount USD', minWidth: 120, cellClass: 'cell-mono' },
     { field: 'record', headerName: 'Provider record', minWidth: 170, cellClass: 'cell-mono' },
-    { field: 'state', headerName: 'State', minWidth: 140, cellClassFor: r => /^(VERIFIED|matches|verified)/.test(r.state) ? 'cell-ok' : r.state === 'UNKNOWN' ? 'cell-wait' : '' },
-    { field: 'source', headerName: 'Source', minWidth: 190 }
+    { field: 'state', headerName: 'State', minWidth: 140, cellClassFor: r => /^(VERIFIED|matches|verified)/.test(r.state) ? 'cell-ok' : r.state === 'UNKNOWN' ? 'cell-wait' : '' }
   ], 'ledger-empty', 'Ledger of money movements');
   grids.disputes = makeAgGrid($('dispute-grid'), DISPUTE_COLUMNS, 'dispute-ledger-empty', 'Dispute ledger', {
     getRowId: p => p.data.dispute,
@@ -476,11 +505,12 @@ async function start() {
     { field: 'time', headerName: 'Signed at (UTC)', minWidth: 170, cellClass: 'cell-mono' },
     { field: 'result', headerName: 'Result', flex: 2, minWidth: 200, tooltip: true, cellClassFor: r => r.result === 'pass' ? 'cell-ok' : r.result.startsWith('FAIL') ? 'cell-bad' : '' }
   ], 'receipts-empty', 'Receipt lines and verification results');
+  $('neg-run').addEventListener('click', runNegotiation);
   wire();
   route();
   try {
     csrf = (await call('/console/api/session')).csrf;
-    await refresh();
+    await refresh(); loadTotals();
     $('model-pill').textContent = 'Agents: ' + data.model;
     if (location.hash === '#verify') await loadReceipts();
   } catch (e) { showError(e.message); }
@@ -488,6 +518,7 @@ async function start() {
 
 function render() {
   if (!data) return;
+  $('hosted-line').hidden = !data.hosted;
   $('model-pill').textContent = 'Agents: ' + data.model;
   renderBuyer();
   renderMerchant();

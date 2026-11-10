@@ -211,6 +211,26 @@ class ConsoleHTTPTests(unittest.TestCase):
         self.assertTrue(row["due"])
 
 
+    def test_healthz_totals_and_one_live_negotiation_per_click(self):
+        status, headers, raw = self.request("GET", "/healthz", headers={"Host": "anything.example"})  # a health check needs no cookie and no origin
+        self.assertEqual((status, json.loads(raw)), (200, {"ok": True}))
+        status, _, raw = self.request("GET", "/console/api/totals")
+        self.assertEqual(status, 200); self.assertIsInstance(json.loads(raw), list)
+        status, started = self.post("/console/api/negotiate", {})
+        self.assertEqual((status, started["started"]), (200, True))
+        import time
+        for _ in range(100):
+            log = json.loads(self.request("GET", "/console/api/negotiation")[2])
+            if not log["running"]:
+                break
+            time.sleep(0.1)
+        self.assertFalse(log["running"]); self.assertIsNone(log["error"]); self.assertTrue(log["case"])
+        actions = [s["action"] for s in log["steps"]]
+        self.assertIn("clearwake.dispute.offer_sent", actions); self.assertTrue(all(s["ok"] or s["action"].endswith("settlement") for s in log["steps"]))
+        _, _, raw = self.request("GET", "/console/api/state")
+        self.assertEqual([r["paypal_status"] for r in json.loads(raw)["disputes"]], ["RESOLVED"])
+
+
 class HostedTests(unittest.TestCase):
     """CLEARWAKE_HOSTED=1: reset wipes the demo folder only, and each address has a rate limit."""
 
@@ -286,6 +306,27 @@ class HostedTests(unittest.TestCase):
         self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "evil.test"})[0], 403)
         self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test", "Origin": "https://evil.test"})[0], 403)
         self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test", "Origin": "https://demo.example.test"})[0], 200)
+
+
+class BindTests(unittest.TestCase):
+    def test_only_hosted_mode_may_listen_beyond_loopback(self):
+        with tempfile.TemporaryDirectory() as folder:
+            controller = RefundController(Path(folder) / "b.sqlite3")
+            try:
+                with self.assertRaises(ValueError):
+                    ClearwakeServer(("0.0.0.0", 0), controller, hosted=False)
+                hosted = ClearwakeServer(("0.0.0.0", 0), controller, hosted=True)
+                self.assertTrue(hosted.hosted); hosted.server_close()
+                local = ClearwakeServer(("127.0.0.1", 0), controller, hosted=False); local.server_close()
+            finally:
+                controller.close()
+
+    def test_main_refuses_a_public_host_without_hosted_mode(self):
+        import subprocess, sys, os
+        env = {k: v for k, v in os.environ.items() if k != "CLEARWAKE_HOSTED"}
+        done = subprocess.run([sys.executable, "-m", "clearwake", "--host", "0.0.0.0", "--port", "0"], capture_output=True, text=True, env=env, timeout=30,
+                              cwd=str(Path(__file__).resolve().parent.parent))
+        self.assertNotEqual(done.returncode, 0); self.assertIn("CLEARWAKE_HOSTED=1", done.stderr)
 
 
 class ConsoleRestartTests(unittest.TestCase):

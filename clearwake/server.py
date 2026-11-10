@@ -12,6 +12,8 @@ import secrets
 import threading
 import time
 
+from http.server import ThreadingHTTPServer
+
 from relayloom.server import Handler, LocalServer, COOKIE
 from relayloom.controller import Rejected
 
@@ -53,6 +55,7 @@ FONT_FILES = ("Figtree-var",)
 CONSOLE_ASSETS.update({f"/fonts/{name}.woff2": (f"fonts/{name}.woff2", "font/woff2") for name in FONT_FILES})
 
 
+TOTALS = Path(__file__).resolve().parent.parent / "site" / "data" / "totals.json"
 HOSTED_ENV = "CLEARWAKE_HOSTED"
 
 
@@ -158,12 +161,20 @@ class ClearwakeHandler(Handler):
                 finally:
                     self.style_nonce = None
             return self.send_asset(lambda: source.read_bytes(), kind)
+        if path == "/healthz":  # for Render's health check and a keep-warm ping: no data, no origin check, never rate limited
+            return self.health()
         if path == "/":  # the refund workroom is not a product page any more
             return self.redirect("/console")
         asset = {"/theme.css": (lambda: (ASSETS / "theme.css").read_bytes(), "text/css")}.get(path)
         if asset is None:
             return super().do_GET()
         return self.send_asset(*asset)
+
+    def health(self):
+        body = b'{"ok":true}'
+        self.send_response(200); self.headers_common()
+        self.send_header("Content-Type", "application/json; charset=utf-8"); self.send_header("Content-Length", str(len(body)))
+        self.end_headers(); self.wfile.write(body)
 
     def redirect(self, location):
         self.send_response(302); self.headers_common()
@@ -215,6 +226,13 @@ class ClearwakeHandler(Handler):
                 return self.console_reply(200, {"csrf": console.csrf_for(sid), "label": "rehearsal data"}, sid)
             if path == "/console/api/state":
                 return self.console_reply(200, console.state())
+            if path == "/console/api/negotiation":
+                return self.console_reply(200, console.negotiation_log())
+            if path == "/console/api/totals":  # measured numbers for the console header, built from the run files
+                try:
+                    return self.console_reply(200, json.loads(TOTALS.read_text(encoding="utf-8")).get("local", []))
+                except (OSError, ValueError):
+                    return self.console_reply(200, [])
             if path == "/console/api/receipts":
                 return self.console_reply(200, console.receipts())
             raise Rejected("This page was not found.", 404)
@@ -259,6 +277,8 @@ class ClearwakeHandler(Handler):
                 result = console.approve(body.get("approval_id"), body.get("approver"))
             elif action == "reconcile":
                 result = console.reconcile(body.get("case_id"))
+            elif action == "negotiate":
+                result = console.start_negotiation()
             elif action == "reset":
                 result = console.reset(wipe=self.server.hosted)
             else:
@@ -278,10 +298,18 @@ def hosted_from_environment():
 
 class ClearwakeServer(LocalServer):
     def __init__(self, address, controller, console=None, hosted=None, clock=time.monotonic):
-        super().__init__(address, controller)
+        self.hosted = hosted_from_environment() if hosted is None else bool(hosted)
+        if self.hosted and address[0] not in ("127.0.0.1", "::1", "localhost"):
+            # Only hosted mode (CLEARWAKE_HOSTED=1) may listen beyond loopback. Otherwise LocalServer refuses, as before.
+            self.controller = controller
+            self.stream_slots = threading.BoundedSemaphore(12)
+            ThreadingHTTPServer.__init__(self, address, ClearwakeHandler)
+        else:
+            super().__init__(address, controller)
         self.RequestHandlerClass = ClearwakeHandler
         self.console = console
-        self.hosted = hosted_from_environment() if hosted is None else bool(hosted)
+        if console is not None:
+            console.hosted = self.hosted
         names = [h.strip().lower() for h in os.environ.get("CLEARWAKE_ALLOWED_HOSTS", "").split(",") if h.strip()]
         render = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip().lower()
         self.allowed_hosts = set(names + ([render] if render else []))

@@ -35,6 +35,7 @@ REASON_LABEL = {   # visible wording of the three reasons, matched case insensit
     "item_not_received": re.compile(r"(didn.?t|did not|haven.?t|have not)\s+receive|not received", re.I),
     "not_as_described": re.compile(r"not as described|different from (the )?description", re.I),
     "missing_items": re.compile(r"missing", re.I),
+    "unauthorised": re.compile(r"(don.?t|do not) recogni[sz]e|unauthori[sz]ed", re.I),
 }
 BLOCK_WORDS = re.compile(r"captcha|not a robot|verify (that )?you.?re human|verify you are human|security challenge|security check|"
                          r"confirm it.?s you|verification code|enter the code|unusual activity|are you a robot|"

@@ -34,28 +34,31 @@ class RehearsalBatchTests(unittest.TestCase):
     def test_the_outcome_mix(self):
         s = self.report["summary"]
         self.assertEqual((s[batch.SETTLED], s[batch.EVIDENCE], s[batch.BUYER_OWNER], s[batch.MERCHANT_OWNER]), (5, 3, 1, 1))
-        self.assertEqual({n for n, r in self.rows.items() if r["outcome"] == batch.SETTLED}, {3, 4, 7, 8, 10})
+        self.assertEqual({n for n, r in self.rows.items() if r["outcome"] == batch.SETTLED}, {3, 4, 5, 6, 8})
+        self.assertEqual({n for n, r in self.rows.items() if r["outcome"] == batch.EVIDENCE}, {1, 9, 10})
+        reasons = sorted(r["reason"] for r in self.rows.values())
+        self.assertEqual((reasons.count("item_not_received"), reasons.count("not_as_described"), reasons.count("unauthorised")), (4, 4, 2))
 
     def test_settled_means_paypals_record_says_resolved_at_inquiry_with_the_refund(self):
-        for n in (3, 4, 7, 8, 10):
+        for n in (3, 4, 5, 6, 8):
             r = self.rows[n]
             self.assertEqual((r["paypal_status"], r["paypal_stage"], r["settlement"]), ("RESOLVED", "INQUIRY", "VERIFIED"))
             self.assertEqual(r["refund_confirmed"], r["ask"])
         self.assertEqual(self.report["summary"]["refunds_confirmed_total"], "12.00")
 
     def test_unsettled_cases_never_claim_a_refund(self):
-        for n in (1, 2, 5, 6, 9):
+        for n in (1, 2, 7, 9, 10):
             self.assertEqual(self.rows[n]["refund_confirmed"], "0.00")
             self.assertNotEqual(self.rows[n]["paypal_status"], "RESOLVED")
 
-    def test_dispatch_proof_cases_use_the_recorded_sam_count_and_the_merchant_fights(self):
-        for n in (5, 6):
-            self.assertIn("recorded", self.rows[n]["dispatch_counter"])
+    def test_unauthorised_cases_are_answered_with_the_signed_mandate_and_the_buyer_hands_them_to_its_owner(self):
+        for n in (9, 10):
             self.assertEqual(self.rows[n]["merchant_decision"], "fight_with_evidence")
             self.assertEqual(self.rows[n]["buyer_end"], "escalated_owner")
+            self.assertEqual(self.rows[n]["outcome"], batch.EVIDENCE)
 
     def test_the_rule_drives_the_buyer(self):
-        self.assertEqual(self.rows[9]["counters"], 1)   # 55% offer: one counter, then the owner
+        self.assertEqual(self.rows[7]["counters"], 1)   # 55% offer: one counter, then the owner
         self.assertEqual(self.rows[3]["counters"], 0)   # 100% offer: accepted at once
 
     def test_both_logs_verify_and_every_buyer_step_carries_a_mandate_receipt_hash(self):
@@ -70,12 +73,84 @@ class RehearsalBatchTests(unittest.TestCase):
         self.assertEqual(len(digests), 10)   # one mandate receipt per order
 
     def test_scripted_means_zero_model_calls_and_says_so(self):
-        self.assertEqual(self.report["summary"]["model_calls"], 0)
+        self.assertEqual(self.report["summary"]["model_calls"] + self.report["summary"]["buyer_model_calls"], 0)
         self.assertGreater(self.report["summary"]["scripted_decisions"], 0)
         self.assertIn("scripted", self.report["merchant_agent"])
 
     def test_the_table_has_a_row_per_case(self):
         self.assertEqual(len(batch.table(self.report["cases"]).splitlines()), 12)
+
+
+class DispatchMixTests(unittest.TestCase):
+    def test_missing_items_with_dispatch_proof_use_the_recorded_sam_count_and_the_merchant_fights(self):
+        cases = tuple(c for c in batch.CASES_DISPATCH if c.n in (5, 7))
+        report = batch.run_rehearsal(cases=cases)
+        rows = {r["n"]: r for r in report["cases"]}
+        self.assertIn("recorded", rows[5]["dispatch_counter"])
+        self.assertEqual((rows[5]["merchant_decision"], rows[5]["buyer_end"], rows[5]["outcome"]), ("fight_with_evidence", "escalated_owner", batch.EVIDENCE))
+        self.assertEqual(rows[7]["outcome"], batch.SETTLED)
+
+
+class BuyerModelTests(unittest.TestCase):
+    """The buyer agent makes model calls; code checks every one. A stub stands in for the model here, so these test the checks only."""
+
+    @staticmethod
+    def stub(draft, action):
+        def send(url, payload, headers):
+            keys = payload["messages"][0]["content"].rsplit("keys: ", 1)[1]
+            body = {"message": draft} if keys.startswith("message") else {"action": action}
+            return {"choices": [{"message": {"content": json.dumps(body)}}], "usage": {"prompt_tokens": 10, "completion_tokens": 5}}
+        return send
+
+    def run_cases(self, numbers, draft, action):
+        from clearwake.models import Adapter
+        cases = tuple(c for c in batch.CASES if c.n in numbers)
+        return batch.run_rehearsal(cases=cases, buyer_adapter=Adapter("ollama", "stub-model", send=self.stub(draft, action)))
+
+    def test_a_good_draft_is_used_and_the_calls_are_counted_and_receipted(self):
+        report = self.run_cases((3,), "My notebook never arrived and I would like a refund of 3.00 USD please.", "accept")
+        row = report["cases"][0]
+        self.assertEqual((row["draft"]["used"], row["buyer_model_calls"], row["outcome"]), ("model", 2, batch.SETTLED))
+        self.assertIn("3.00", row["draft"]["message"])
+        self.assertEqual(report["summary"]["buyer_model_calls"], 2)
+        lines = read_lines(Path(report["work_dir"]) / "buyer" / "buyer-receipts.ndjson")
+        calls = [l["params"] for l in lines if l["action_id"] in ("clearwake.buyer.model_draft", "clearwake.buyer.model_decision")]
+        self.assertEqual(len(calls), 2)
+        self.assertTrue(all(c["model"] == "stub-model" and c["prompt_sha256"] for c in calls))
+
+    def test_a_draft_with_a_wrong_amount_or_a_link_is_replaced_by_the_owners_note(self):
+        report = self.run_cases((3,), "Refund me 99.00 now, see http://example.com/pay", "accept")
+        self.assertEqual(report["cases"][0]["draft"]["used"], "fallback to the owner's note")
+        self.assertEqual(report["cases"][0]["draft"]["message"], "My notebook never arrived.")
+
+    def test_a_model_cannot_be_bolder_than_the_rule_but_may_be_more_careful(self):
+        bold = self.run_cases((1,), "My notebook never arrived and I would like 9.00 USD back.", "accept")   # the rule says escalate: records, no offer
+        self.assertEqual((bold["cases"][0]["outcome"], bold["summary"]["buyer_model_overrides"]), (batch.EVIDENCE, 1))
+        careful = self.run_cases((3,), "My notebook never arrived and I would like 3.00 USD back.", "escalate")   # the rule says accept
+        self.assertEqual(careful["cases"][0]["buyer_end"], "escalated_owner")
+        self.assertNotEqual(careful["cases"][0]["outcome"], batch.SETTLED)
+
+    def test_garbage_from_the_model_changes_nothing(self):
+        report = self.run_cases((3,), "x", "give everything away")
+        self.assertEqual(report["cases"][0]["outcome"], batch.SETTLED)   # not a permitted action: the rule's own action is taken
+
+
+class PlanTests(unittest.TestCase):
+    def test_the_plan_prints_one_approval_link_per_order_then_the_disputes_and_saves_the_orders(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
+            fake, printed = FakeSandbox(Path(d) / "p.sqlite3"), []
+            lines = batch.plan_sandbox(work=Path(d) / "m", gateway=fake, out=printed.append)
+            approve = [l for l in lines if l["action"] == "approve_order"]
+            self.assertEqual(len(approve), 10)
+            self.assertTrue(all(l["url"].startswith("https://www.sandbox.paypal.com/") for l in approve))
+            self.assertEqual(len({l["order_id"] for l in approve}), 10)
+            disputes = [l for l in lines if l["action"] == "open_dispute"]
+            self.assertEqual(sorted(l["reason"] for l in disputes).count("unauthorised"), 2)
+            self.assertEqual(len(printed), 21)
+            self.assertIn("--resume", lines[-1]["command"])
+            again = batch.plan_sandbox(work=Path(d) / "m", gateway=fake, out=lambda x: None)
+            self.assertEqual(len(fake.orders), 10)   # a second plan creates no new orders
+            self.assertEqual([l["order_id"] for l in again if l["action"] == "approve_order"], [l["order_id"] for l in approve])
 
 
 class HelperTests(unittest.TestCase):
@@ -167,7 +242,7 @@ class ManualBuyerTests(unittest.TestCase):
     def test_manual_mode_prints_actions_polls_paypal_and_receipts_each_effect(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
             fake, printed = FakeSandbox(Path(d) / "p.sqlite3"), []
-            cases = tuple(c for c in batch.CASES if c.n in (3, 9))
+            cases = tuple(c for c in batch.CASES if c.n in (3, 7))
             report = batch.run_sandbox(cases=cases, manual=True, work=Path(d) / "manual", timeout_s=2, out=lambda l: fake.hands(l, printed), gateway=fake, poll_s=0)
             rows = {r["n"]: r for r in report["cases"]}
             self.assertEqual(rows[3]["outcome"], batch.SETTLED)
@@ -182,7 +257,7 @@ class ManualBuyerTests(unittest.TestCase):
                 self.assertIn(needed, names)
             self.assertTrue(all("lead's browser" in l["params"]["source"] for l in lines if l["action_id"] != "clearwake.buyer.mandate"))
             self.assertTrue(report["buyer_log"]["verifies"])
-            self.assertEqual(rows[9]["outcome"], batch.MERCHANT_OWNER)   # the merchant owner's approval stays manual against the sandbox
+            self.assertEqual(rows[7]["outcome"], batch.MERCHANT_OWNER)   # the merchant owner's approval stays manual against the sandbox
 
     def test_a_missing_effect_times_out_receipted_and_stops_for_a_person_then_resume_continues(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:

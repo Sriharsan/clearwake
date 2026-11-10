@@ -2,13 +2,31 @@
 
 Researched on 9 November 2026 from Channel3's public documentation and terms. Nothing was signed up for and no key was requested or entered anywhere.
 
-## Decision: skip
+## Decision: use it as a market price reference, nothing else
 
-Channel3 would sit in front of the buyer agent's mandate check. In Clearwake the purchase that follows the mandate check is a PayPal sandbox order against the one sandbox merchant this app owns. Channel3 returns real products from real retailers (100 million items across many stores), each with the retailer's own product page as the buy link. A product from Channel3 therefore cannot be bought through our sandbox order: the order would name an item from a catalog that the sandbox merchant does not sell. Putting the search in front of the check would change what is shown, not what happens. It would not change a single outcome in the dispute path, which is what the product is about.
+Sri signed up for a key. The first reading of this research said to skip Channel3, because a retailer product cannot be bought through the sandbox order. That still holds for a shopping flow. It does not hold for a price reference, which needs no purchase from Channel3: before the buyer agent buys, `clearwake/market.py` asks Channel3 for the typical retail price of the item, and the mandate refuses or flags an order whose price is far above it (owner rule `max_over_market_percent`, wired in by the buyer module). That changes a real outcome: an order is refused or flagged. Nothing else uses Channel3. No product links are shown, and the catalog is not browsed.
 
-Using it anyway would also mean a shopping flow that sends the buyer to a retailer's page, outside PayPal's sandbox. The hackathon rules ask for a working PayPal build that judges can run, and a flow that leaves the sandbox cannot be run or checked by them.
+Interface (agent B wires it into the mandate check):
 
-So: no integration, no Channel3 prize entry. On the Devpost form, Channel3 is not ticked.
+`price_check(query, our_price_minor, currency="USD", tolerance_percent=None, transport=None, usage_path=None) -> MarketCheck`
+
+The result has `reference_minor` (median of up to 5 products' offers in that currency, or None), `source_domain`, `title`, `brand`, `within_tolerance` (True, False, or None when there is no reference or no tolerance; None means flag, not refuse), `credits_used`, `note`, `ts_ms`. `to_receipt_params()` returns only these compact fields.
+
+## Usage rules (enforced in code and tests)
+
+- The key lives only in the environment variable `CHANNEL3_API_KEY` (from the ignored `.env`). It is never printed, logged, cached, or put in a receipt or error.
+- `CHANNEL3_MAX_CALLS` is a hard cap on live calls per calendar month (UTC). It defaults to 0: every live call is refused until Sri raises it in `.env`. The free tier is 1000 credits a month; one search is one credit.
+- `data/channel3-usage.json` records every attempted live call with its timestamp, before it is sent. It also holds the 24 hour cache of compact results (price, domain, title, brand per query), so one query never costs twice. No catalog is stored.
+- No retries. A 401, 402, 429, 5xx, timeout or bad reply ends the check with a note, and the credit is counted as spent.
+- Dry run first: `python scripts/market_check.py --plan` prints the live queries and the credit cost and makes no call. `--live` runs them and refuses unless the cap allows it. Planned run: the six catalog products, 6 credits.
+- Tests use a fake transport only. No test and no agent makes a live call; Sri decides.
+
+## Terms that apply
+
+- Do not publish Channel3 benchmark or evaluation results without written consent. Public run summaries say only: price reference used: yes, N calls. No reference prices, no comparisons, no accuracy claims.
+- Where a Channel3 product link is shown in any UI, put this exact text next to it: "Channel3 may earn a commission on purchases made through links shown here." (`market.DISCLOSURE`). The current design shows no link, so no UI needs it yet.
+- Do not share the key, do not cache or store a significant part of the output, do not train on it.
+- On the Devpost form, Channel3 may be ticked only if Sri has run the live check and the mandate step is part of the demo.
 
 ## Facts
 
@@ -22,11 +40,3 @@ So: no integration, no Channel3 prize entry. On the Devpost form, Channel3 is no
 | Restrictions that matter | Do not cache or store a significant portion of the catalog or of the output. Do not publish benchmark or evaluation results without written consent. Show a commission disclosure near product links. Do not share the key. Do not use output to train models. | terms, sections 6 to 9 |
 | How Channel3 earns | A commission on sales made through its buy links (FAQ: a default take rate of 50 percent that falls as referred sales grow). | https://docs.trychannel3.com/faq |
 | Agent payments | The pricing page mentions that agents can pay through MPP without a key. Not examined further. | pricing page |
-
-## Why not "integrate anyway for the prize"
-
-The sponsor rule in this project is that every tool has a real step. A Channel3 step here would be a search box whose result nobody can buy in the sandbox. The terms would also add work for no outcome: a commission disclosure next to every product link, and a ban on publishing evaluation results without written consent, while Clearwake publishes the numbers of its runs.
-
-## If this changes
-
-If a later version of the buyer agent buys from real retailers through PayPal, the integration is one function: search Channel3, pass the chosen offer to the existing mandate check, which already compares the price with the per item cap, the budget and the allowed categories. The cost then is one credit per search. Until then it stays out.

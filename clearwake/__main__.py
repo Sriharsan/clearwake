@@ -11,7 +11,8 @@ from .server import ClearwakeServer
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--port", type=int, default=8810)
+    parser.add_argument("--host", default="127.0.0.1", help="Address to listen on. Anything but loopback is accepted only with CLEARWAKE_HOSTED=1 (hosted mode)")
+    parser.add_argument("--port", type=int, default=None, help="Default 8810; in hosted mode the PORT variable the host provides")
     parser.add_argument("--database", type=Path, default=Path("data/clearwake.sqlite3"))
     parser.add_argument("--enable-paypal-sandbox", action="store_true", help="Explicitly enable sandbox-only network requests; never production")
     parser.add_argument("--enable-meta-synthetic", action="store_true", help="Separate opt-in for the upstream fixed synthetic AI fixture; may consume provider credits")
@@ -20,6 +21,13 @@ def main():
                         help="Agents in the /console rehearsal: scripted rules (default, no model calls) or a local Ollama model on loopback")
     parser.add_argument("--rehearsal-outcome", choices=("completed", "pending", "lost-response"), default="completed")
     args = parser.parse_args()
+    hosted = os.environ.get("CLEARWAKE_HOSTED") == "1"
+    if args.port is None:
+        args.port = int(os.environ.get("PORT", "8810")) if hosted and os.environ.get("PORT", "").isdigit() else 8810
+    if args.host not in ("127.0.0.1", "::1", "localhost") and not hosted:
+        parser.error("--host beyond loopback needs CLEARWAKE_HOSTED=1 (hosted mode). Local runs stay on loopback.")
+    if hosted and os.environ.get("CLEARWAKE_CONSOLE_MODEL") in ("scripted", "ollama") and args.console_model == "scripted":
+        args.console_model = os.environ["CLEARWAKE_CONSOLE_MODEL"]  # real local-model calls only where the host has a model
     if args.enable_meta_synthetic and args.enable_local_ai:
         parser.error("Choose local AI or Meta, not both.")
     if not 1 <= args.port <= 65535:
@@ -42,7 +50,7 @@ def main():
         console = Console(args.database.resolve().parent / "console", args.console_model)
     except (ValueError, OSError) as error:
         parser.error(str(error))
-    server = ClearwakeServer(("127.0.0.1", args.port), controller, console)
+    server = ClearwakeServer((args.host, args.port), controller, console, hosted=hosted)
     print(f"Clearwake: http://127.0.0.1:{args.port}")
     print(f"Console:   http://127.0.0.1:{args.port}/console (rehearsal data; agents: {console.adapter.label()})")
     print(f"Payments: {gateway.mode}. Specialists: {controller.mode}. No calls occur just by opening the page.")

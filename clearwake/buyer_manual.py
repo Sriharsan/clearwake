@@ -14,7 +14,7 @@ from .buyer_browser import NeedsHuman, Thread, minor, sandbox_site
 
 LABEL = "buyer step performed through the lead's browser"
 REASON_UI = {"item_not_received": "I didn't receive my item", "not_as_described": "My item is significantly not as described",
-             "missing_items": "An item is missing from my order"}
+             "missing_items": "An item is missing from my order", "unauthorised": "I don't recognise this payment"}
 
 
 def thread_from_record(dispute_id, record):

@@ -103,7 +103,7 @@ class DriverTests(unittest.TestCase):
 
     def test_all_three_reasons_open_and_are_read_back(self):
         rc = self.centre()
-        for reason, label in (("item_not_received", "item_not_received"), ("not_as_described", "not_as_described"), ("missing_items", "missing_items")):
+        for reason, label in (("item_not_received", "item_not_received"), ("not_as_described", "not_as_described"), ("missing_items", "missing_items"), ("unauthorised", "unauthorised")):
             with self.subTest(reason=reason):
                 opened = rc.open_dispute("CAP-FIXTURE-1", reason, f"Test message for {reason}.", amount="9.00")
                 state = self.page.evaluate(f"RC.disputes['{opened['dispute_id']}']")
@@ -164,7 +164,7 @@ class DriverTests(unittest.TestCase):
 
     def test_bad_input_is_refused_before_the_browser_moves(self):
         rc = self.centre()
-        for args in (("CAP-FIXTURE-1", "unauthorised", "x"), ("bad id", "item_not_received", "x"), ("CAP-FIXTURE-1", "item_not_received", "  ")):
+        for args in (("CAP-FIXTURE-1", "something_else", "x"), ("bad id", "item_not_received", "x"), ("CAP-FIXTURE-1", "item_not_received", "  ")):
             with self.subTest(args=args), self.assertRaises(ValueError):
                 rc.open_dispute(*args)
 

@@ -51,13 +51,15 @@ def negotiate(argv):
     from clearwake.models import Adapter
     n = int(argv[argv.index("--case") + 1]) if "--case" in argv else 3
     cases = tuple(c for c in batch.CASES if c.n == n)
-    adapter = Adapter(argv[argv.index("--model") + 1] if "--model" in argv else "scripted")
+    backend = argv[argv.index("--model") + 1] if "--model" in argv else "scripted"
+    adapter = Adapter(backend)
+    buyer_adapter = Adapter(argv[argv.index("--buyer-model") + 1] if "--buyer-model" in argv else backend)
     try:
         if "--rehearsal" in argv:
-            report = batch.run_rehearsal(adapter, cases)
+            report = batch.run_rehearsal(adapter, cases, buyer_adapter=buyer_adapter)
         else:
             timeout = int(argv[argv.index("--manual-timeout") + 1]) if "--manual-timeout" in argv else 900
-            report = batch.run_sandbox(adapter, cases, manual="--manual-buyer" in argv, resume="--resume" in argv, timeout_s=timeout)
+            report = batch.run_sandbox(adapter, cases, manual="--manual-buyer" in argv, resume="--resume" in argv, timeout_s=timeout, buyer_adapter=buyer_adapter)
     except NeedsHuman as stop:
         print("A person must do this step:", stop.why)
         for number, line in enumerate(stop.steps, 1):

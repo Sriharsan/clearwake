@@ -26,6 +26,14 @@ class SiteDataTests(unittest.TestCase):
         self.assertEqual(written, rows)  # run scripts/build_site_data.py after a change
         self.assertIn("ledger.json", json.loads((SITE / "data" / "manifest.json").read_text(encoding="utf-8"))["files"])
 
+    def test_totals_come_from_the_run_files_and_a_rehearsal_batch_stays_out_of_the_public_set(self):
+        t = json.loads((SITE / "data" / "totals.json").read_text(encoding="utf-8"))
+        self.assertTrue(t["public"]); self.assertLessEqual(len(t["public"]), 3)
+        for n in t["public"] + t["local"]:
+            self.assertTrue(n["value"] and n["label"] and n["source"])
+        self.assertFalse([n for n in t["public"] if "batch-rehearsal" in n["source"]])
+        self.assertEqual(t, builder.totals(builder.build()["rows"]))  # run scripts/build_site_data.py after a new run file
+
     def test_a_rehearsal_batch_is_never_published_and_a_sandbox_batch_becomes_rows(self):
         case = {"n": 1, "reason": "item_not_received", "ask": "9.00", "paypal_stage": "INQUIRY", "paypal_status": "RESOLVED", "outcome": "settled_inquiry_no_fee",
                 "merchant_decision": "settle_by_offer", "merchant_state": "VERIFIED", "refund_confirmed": "3.00", "dispute_id": "PP-R-ABC-1", "steps": ["buyer: accept"]}

@@ -5,6 +5,7 @@ The model may only name a product id. The mandate check reads numbers and ids, n
 from dataclasses import dataclass, field
 import json
 from pathlib import Path
+import re
 
 CATALOG = Path(__file__).resolve().parent / "catalog.json"
 
@@ -15,8 +16,9 @@ def load_catalog(path=CATALOG):
 
 
 ESCALATE_ON = ("merchant_evidence", "no_response", "counters_exhausted", "below_counter_floor", "offer_exceeds_request")
-REASONS = ("item_not_received", "missing_items", "not_as_described")
-PAYPAL_REASONS = {"MERCHANDISE_OR_SERVICE_NOT_RECEIVED": "item_not_received", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED": "not_as_described"}
+REASONS = ("item_not_received", "missing_items", "not_as_described", "unauthorised")
+PAYPAL_REASONS = {"MERCHANDISE_OR_SERVICE_NOT_RECEIVED": "item_not_received", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED": "not_as_described",
+                  "UNAUTHORISED": "unauthorised", "UNAUTHORIZED": "unauthorised"}
 
 
 @dataclass(frozen=True)
@@ -169,6 +171,30 @@ def mandate_receipt(log, mandate, product, merchant_id, order_id, ts_ms=None):
     line = log.append(f"mandate:{order_id}", "clearwake.buyer.mandate", params, True, actor={"agent": "clearwake-buyer", "user": mandate.owner}, ts_ms=ts_ms)
     return {"order_id": order_id, "owner": mandate.owner, "item": product["id"], "price": f"{mandate.currency} {product['price_minor'] / 100:.2f}",
             "cap": f"{mandate.currency} {mandate.per_item_cap_minor / 100:.2f}", "digest": line_hash(line), "line": line, "public_key": log.public_key}
+
+
+# What a model may do with the buyer's decision. The rule's action is the ceiling: a model may be more cautious, never bolder.
+PERMITTED = {"accept": ("accept", "escalate"), "counter": ("counter", "escalate"), "escalate": ("escalate",), "wait": ("wait",)}
+NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
+
+
+def final_action(rule_action, proposed):
+    """The action that is taken: the model's proposal only if the owner's rule permits it, otherwise the rule's own action."""
+    return proposed if proposed in PERMITTED[rule_action] else rule_action
+
+
+def check_draft(text, asked_minor, limit=500):
+    """Code check on a model's dispute message. Returns (ok, problems). It may state only the amount asked, no links, no addresses."""
+    problems = []
+    if not isinstance(text, str) or not 10 <= len(text.strip()) <= limit:
+        return False, [f"the message must be 10 to {limit} characters"]
+    if re.search(r"https?://|www\.|@|\bPP-[A-Z]-", text, re.I):
+        problems.append("it contains a link, an address or an id")
+    allowed = {f"{asked_minor / 100:.2f}", str(asked_minor // 100) if asked_minor % 100 == 0 else "x"}
+    for number in NUMBER.findall(text):
+        if number.replace(",", ".").rstrip("0").rstrip(".") not in {a.rstrip("0").rstrip(".") for a in allowed} | {"1", "2", "3"}:
+            problems.append(f"it states the number {number}, which is not the amount asked")
+    return not problems, problems
 
 
 class BuyerAgent:

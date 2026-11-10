@@ -3,11 +3,18 @@ TODO for the lead before submission (remove this comment when done):
 * Screenshots: docs/img/console-merchant.png and docs/img/site-home.png are made by agent C and did not exist when this README was written, so they are not referenced. Add them under the headline when the files exist:
     ![Clearwake console, merchant control room with the dispute ledger](docs/img/console-merchant.png)
     ![Clearwake public site](docs/img/site-home.png)
+* The three numbers under the headline come from data/runs/ files (batch by agent B, model calls by agent A); fill them first.
 * Fill every [PLACEHOLDER] in the status table (list at the top of D:\paypal hackathon\DEVPOST_ENTRY.md).
 -->
 # Clearwake
 
 **When an AI agent buys, Clearwake settles what goes wrong.** The buyer's agent and the merchant's agent resolve the dispute inside PayPal's own conversation, each within limits its owner signed, before it becomes a claim or a fee. PayPal's record decides when it is done, and both sides keep proof.
+
+Measured, from the run files in `data/runs/`:
+
+* **[BATCH_SETTLED] of [BATCH_TOTAL]** disputes opened by the buyer agent on the PayPal sandbox settled at the INQUIRY stage with no fee, as PayPal's record reads.
+* **[BATCH_SECONDS_PER_CASE] seconds** per case, agent to agent, with [MODEL_CALLS] model calls.
+* **1 refund instead of 2** after a lost response, and a 5000.00 claim refused instead of paid, against PayPal's agent toolkit on the same injected faults (no network) ([docs/TOOLKIT_FAILURE_CASES.md](docs/TOOLKIT_FAILURE_CASES.md)).
 
 ```sh
 git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git && cd clearwake && python -m clearwake --port 8810
@@ -98,7 +105,7 @@ Still photos use **SAM 3** (`facebook/sam3`). Meta's SAM 3.1 checkpoint is the v
 | Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox | 4 of 4 PASS. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED |
 | Cases a to o (`scripts/cases.py`) | rehearsal, no PayPal calls | 15 of 15 PASS (1 November) |
 | Cases k, l (a dispute near its deadline, ten at once) | real sandbox | Not run on the sandbox on their own: k needs a dispute close to its deadline. The batch above replaces l |
-| Console (`/console`), AG Grid dispute ledger and fee leak gauge | rehearsal locally; hosted on Render, not network isolated, at [RENDER_URL] | runs |
+| Console (`/console`), AG Grid dispute ledger and fee leak gauge | rehearsal locally; hosted at [RENDER_URL] | runs |
 | Public site, https://clearwake-mu.vercel.app | static on Vercel, recorded sandbox run | verifies the real case m receipts in the browser |
 | Tests | offline | [TESTS_PY] Python and [TESTS_UI] UI tests pass |
 | Postman collection, 18 requests | checked offline; run against the sandbox by Sri | structure and scripts verified ([docs/POSTMAN.md](docs/POSTMAN.md)); sandbox run [POSTMAN_RUN] |
