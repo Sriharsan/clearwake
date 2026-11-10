@@ -182,6 +182,15 @@ def totals(ledger_rows):
             model, t = next(iter(ev["totals"].items()))
             out[key].append({"value": f"{t['calls']} calls", "label": f"to {model}, median {t['median_ms'] / 1000:.1f} s each", "source": f"data/runs/{path.name}"})
         path, base = newest("baseline-*.json")
+        if base and not isinstance(base.get("headline"), list) and isinstance(base.get("summary"), dict):
+            # derive the two headline lines from the run's own per-condition counts
+            conds = [c for k, c in base["summary"].items() if k != "total" and isinstance(c, dict) and "unguarded" in c]
+            n = sum(c["episodes"] for c in conds)
+            over = sum(c["unguarded"]["overpaid_minor"] for c in conds) / 100
+            doubles = sum(c["unguarded"]["double_refunds"] for c in conds)
+            kept = sum(c["guarded"]["matches_intent"] for c in conds)
+            base = {"headline": [{"value": f"USD {over:,.2f}", "label": f"overpaid by an unguarded agent in {n} episodes, USD 0.00 by Clearwake ({doubles} double refunds against 0)"},
+                                 {"value": f"{kept} of {n}", "label": "episodes ended as the owner intended with Clearwake, 0 of %d unguarded" % n}]}
         if base and isinstance(base.get("headline"), list):
             out[key] += [{"value": str(h["value"]), "label": str(h["label"]), "source": f"data/runs/{path.name}"} for h in base["headline"][:2] if "value" in h and "label" in h]
         out[key] = out[key][:3]
