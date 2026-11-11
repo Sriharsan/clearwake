@@ -34,6 +34,15 @@
       <p class="eyebrow">Developers</p>
       <h1>Run it <span>yourself.</span></h1>
       <p class="lede">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice. Everything on this page comes from the repository and from the recorded sandbox runs.</p>
+      <dl class="lead-numbers" aria-label="Measured numbers from the repository and the recorded runs">
+        <div><dd class="v">11 operations, 22 schemas</dd><dt>OpenAPI 3.1 spec checked against the running server, routes match <code>clearwake/server.py</code></dt><dd class="src">openapi/clearwake-console.openapi.yaml, python openapi/check_openapi.py --live</dd></div>
+        <div><dd class="v">47 tools</dd><dt>PayPal Agent Toolkit tools listed, each one guarded</dt><dd class="src">docs/PAYPAL_MCP_TOOLS.md</dd></div>
+        <div><dd class="v">20 assertions, 0 failed</dd><dt>Postman, newman run on 3 read only PayPal sandbox requests, from a collection of 29 requests</dt><dd class="src">docs/postman-run-2026-11-11.json</dd></div>
+        <div><dd class="v">382 to 104</dd><dt>APIMatic validation findings before and after the spec edit</dt><dd class="src">docs/APIMATIC.md</dd></div>
+        <div><dd class="v">463 and 14</dd><dt>Python and Node tests passed in a clean clone, 0 failed</dt><dd class="src">data/runs/final-check-20261111-190624.json</dd></div>
+        <div><dd class="v">18 of 18</dd><dt>signed logs verify with WebCrypto in the browser and in Python</dt><dd class="src">data/runs/final-check-20261111-190624.json</dd></div>
+      </dl>
+      <p class="numnote">Local run on the local provider for the tests and the spec check, real PayPal sandbox for the three Postman requests. Each figure sits beside the file it comes from.</p>
       <p class="status" role="note"><span class="dot" aria-hidden="true"></span><span><b>Real PayPal sandbox disputes, signed and checked in your browser.</b> Every request below is a call Clearwake makes to PayPal; every receipt verifies on this site.</span></p>
       <div class="findrow"><label class="sr" for="docsearch">Search this page</label><input class="search" id="docsearch" type="search" placeholder="Search this page (press /)" autocomplete="off"><button class="kbd" type="button" id="palopen">Command palette <kbd>Ctrl K</kbd></button><p class="searchnote" id="findnote" role="status" aria-live="polite"></p></div>
       <p class="meta">Repository: <a href="https://github.com/Sriharsan/clearwake">github.com/Sriharsan/clearwake</a></p>

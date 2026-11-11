@@ -244,11 +244,24 @@
     box.appendChild(fig(t.held_for_person + ' of ' + t.episodes, 'teal', 'episodes the guard held for a person instead of paying. A person decides each of those.'));
   }
 
+  // Lead numbers: the same totals as the section below, read from data/break.json (built from the run file named in source_file).
+  function lead() {
+    var t = DATA.totals, host = $('lead-numbers'), N = root.ClearwakeNumbers;
+    if (!host || !N) return;
+    var mode = 'Planted failure · Local run on the local provider', src = DATA.source_file;
+    var list = [
+      { value: usd(t.unguarded_overpaid_minor), label: "overpaid by an agent using PayPal's Agent Toolkit directly over " + t.episodes + ' attack episodes. With the guard in front: ' + usd(t.guarded_overpaid_minor) + '.', source: src, mode: mode },
+      { value: t.unguarded_double_refunds + ' vs ' + t.guarded_double_refunds, label: 'double refunds in the same ' + t.episodes + ' episodes, unguarded against guarded', source: src, mode: mode },
+      { value: t.held_for_person + ' of ' + t.episodes, label: 'episodes the guard held for a person instead of paying, nothing sent until the person decides', source: src + ', guard replayed on the same episodes', mode: mode }
+    ];
+    N.render(host, list); N.render($('end-numbers'), list);
+  }
+
   function start() {
     fetch('data/break.json').then(function (r) { if (!r.ok) throw new Error('data'); return r.json(); }).then(function (data) {
       DATA = data; LIMIT = data.owner_limit_minor;
       $('label').textContent = 'Replay of a recorded run: ' + data.episodes + ' episodes, seed ' + data.seed + ', on the ' + data.layer + '. No PayPal call is made and no money moves.';
-      totals();
+      totals(); lead();
       Array.prototype.forEach.call(document.querySelectorAll('input[name="attack"]'), function (radio) {
         radio.addEventListener('change', function () { choose(radio.value); });
       });

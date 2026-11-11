@@ -78,6 +78,27 @@
         .catch(function () { out.className = "verify-out fail"; out.textContent = "This browser could not run the check (Ed25519 in WebCrypto is required). Run python -m verdock_core verify on the log."; });
     });
   });
+  // Lead number: every log listed in receipts/manifest.json is fetched and checked here, with the same verifier as the buttons below.
+  (function () {
+    var num = $("#v-num"), label = $("#v-label"), src = $("#v-src");
+    if (!num) return;
+    function done(ok, total, lines) {
+      num.textContent = ok + " of " + total;
+      label.textContent = "signed logs verify in this browser, " + lines + " lines checked: Ed25519 signatures and the SHA-256 hash chain";
+      num.classList.toggle("bad", ok !== total);
+    }
+    function skip() { num.textContent = "Not run"; label.textContent = "This browser could not run the check (Ed25519 in WebCrypto is required). Use the Verify buttons or python -m verdock_core verify."; num.classList.add("bad"); }
+    fetch("receipts/manifest.json", { credentials: "omit" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (man) {
+      var logs = man.logs || [];
+      return import("./verify.js").then(function (m) {
+        return Promise.all(logs.map(function (l) {
+          return fetch(l.file, { credentials: "omit" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (t) { return m.verifyLog(t, l.public_key); });
+        }));
+      }).then(function (res) {
+        done(res.filter(function (x) { return x.ok; }).length, logs.length, res.reduce(function (a, x) { return a + (x.count || 0); }, 0));
+      });
+    }).catch(skip);
+  })();
   var first = $(".lane .mark");
   if (first) select(first, false);
 

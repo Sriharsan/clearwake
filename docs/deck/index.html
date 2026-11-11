@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearwake deck</title>
+<meta name="description" content="Nine slides: the line, the loss, the anatomy, ten real sandbox disputes, the check, and the sponsor tools.">
+<style>
+:root {
+  --bg: #0b1220;
+  --panel: #131d33;
+  --fg: #eef3fb;
+  --muted: #aab8d0;
+  --accent: #6db3ff;
+  --good: #4ed08a;
+  --rule: #263552;
+  --tag-bg: #16294a;
+  --tag-fg: #cfe3ff;
+  --num: 96px;
+}
+:root[data-theme="light"] {
+  --bg: #f7f7f2;
+  --panel: #ffffff;
+  --fg: #0d1b2a;
+  --muted: #46546a;
+  --accent: #0a55c8;
+  --good: #11743f;
+  --rule: #d3d8e0;
+  --tag-bg: #e3edff;
+  --tag-fg: #0a3a8a;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f7f7f2;
+    --panel: #ffffff;
+    --fg: #0d1b2a;
+    --muted: #46546a;
+    --accent: #0a55c8;
+    --good: #11743f;
+    --rule: #d3d8e0;
+    --tag-bg: #e3edff;
+    --tag-fg: #0a3a8a;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 20px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+.deck { position: relative; height: 100vh; height: 100dvh; }
+.slide {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  padding: 56px 8vw 72px;
+  overflow-y: auto;
+}
+.slide.is-active { display: flex; }
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+}
+.stat { border-left: 4px solid var(--accent); padding-left: 32px; }
+.tag {
+  display: inline-block;
+  background: var(--tag-bg);
+  color: var(--tag-fg);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 4px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+}
+.num {
+  font-size: var(--num);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--accent);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.cap { font-size: 22px; color: var(--fg); margin: 12px 0 0; max-width: 28em; }
+h1, h2 { margin: 0 0 16px; line-height: 1.2; }
+h1 { font-size: 34px; }
+h2 { font-size: 34px; }
+p { margin: 0 0 16px; max-width: 40em; }
+.lead { font-weight: 700; font-size: 30px; line-height: 1.3; }
+.slogan { color: var(--accent); font-size: 24px; font-weight: 600; }
+.proof { color: var(--muted); font-size: 20px; }
+.muted { color: var(--muted); }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; max-width: 40em; }
+.pair div { background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 12px 16px; }
+.pair b { display: block; font-size: 28px; }
+.pair .good b { color: var(--good); }
+ol.layers { list-style: none; padding: 0; margin: 16px 0 0; counter-reset: l; max-width: 40em; }
+ol.layers li { counter-increment: l; padding: 6px 0 6px 40px; position: relative; border-bottom: 1px solid var(--rule); }
+ol.layers li::before {
+  content: counter(l);
+  position: absolute; left: 0; top: 6px;
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--accent); color: var(--bg);
+  font-weight: 700; font-size: 16px; text-align: center; line-height: 28px;
+}
+ol.layers strong { display: inline-block; min-width: 9.5em; }
+ol.layers span { color: var(--muted); }
+.stack svg { width: 100%; max-width: 360px; height: auto; display: block; margin: 0 auto 16px; }
+.counts { list-style: none; padding: 0; margin: 12px 0; max-width: 40em; }
+.counts li { display: flex; gap: 16px; padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.counts b { min-width: 2.6em; font-size: 28px; color: var(--accent); }
+code, .cmd {
+  font-family: ui-monospace, Consolas, "Courier New", monospace;
+  font-size: 18px;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  padding: 2px 8px;
+  word-break: break-all;
+}
+.cmd { display: block; padding: 12px 16px; margin: 12px 0; max-width: 44em; }
+.facts { margin: 12px 0 0; padding: 0; list-style: none; max-width: 40em; }
+.facts li { padding: 6px 0; border-bottom: 1px solid var(--rule); }
+.facts b { color: var(--fg); }
+a { color: var(--accent); }
+.bar {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 12px 8vw;
+  background: var(--bg); border-top: 1px solid var(--rule);
+  font-size: 16px; color: var(--muted);
+}
+.bar button {
+  background: var(--panel); color: var(--fg);
+  border: 1px solid var(--rule); border-radius: 8px;
+  font: inherit; padding: 4px 16px; cursor: pointer; min-height: 36px;
+}
+.bar button:focus-visible, a:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.bar .group { display: flex; gap: 8px; align-items: center; }
+@media (max-width: 860px) {
+  :root { --num: 56px; }
+  .grid { grid-template-columns: 1fr; gap: 24px; }
+  .stat { border-left: 0; border-top: 4px solid var(--accent); padding: 16px 0 0; }
+  .slide { padding: 32px 24px 80px; justify-content: flex-start; }
+  h1, h2 { font-size: 26px; }
+  .lead { font-size: 24px; }
+  .pair { grid-template-columns: 1fr; }
+  ol.layers strong { display: block; }
+  .bar { padding: 8px 16px; }
+}
+@media print {
+  body { overflow: visible; height: auto; }
+  .deck { height: auto; }
+  .slide { display: flex; position: relative; min-height: 100vh; page-break-after: always; }
+  .bar { display: none; }
+}
+</style>
+</head>
+<body>
+<main class="deck" id="deck" aria-label="Clearwake deck">
+
+<section class="slide is-active" id="s1" aria-label="Slide 1 of 9">
+  <div class="grid">
+    <div>
+      <p class="lead">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</p>
+      <p class="slogan">When an agent's order goes missing, agents fix it.</p>
+      <p class="proof"><b>Real PayPal sandbox run, 11 November 2026.</b> 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.</p>
+    </div>
+    <div class="stat">
+      <span class="tag">Real PayPal sandbox run</span>
+      <p class="num">4 of 10</p>
+      <p class="cap">disputes settled by the two agents at INQUIRY with no fee. USD 20.00 refunded.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s2" aria-label="Slide 2 of 9">
+  <div class="grid">
+    <div>
+      <h2>The bad outcome, then the same action stopped</h2>
+      <p>Same 200 episodes, same faults on both sides: a lost response, an injected instruction, an over limit request, a duplicate delivery.</p>
+      <div class="pair">
+        <div><span class="muted">Agent Toolkit alone</span><b>USD 2,633.25</b>61 double refunds, 160 wrongly accepted claims, 40 of 200 as the owner intended</div>
+        <div class="good"><span class="muted">With Clearwake</span><b>USD 0.00</b>0 double refunds, 0 wrongly accepted claims, 200 of 200 as the owner intended</div>
+      </div>
+    </div>
+    <div class="stat">
+      <span class="tag">Planted failure</span>
+      <p class="num">USD 2,633.25</p>
+      <p class="cap">overpaid over 200 episodes by an agent on the PayPal Agent Toolkit alone. Clearwake: USD 0.00.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s3" aria-label="Slide 3 of 9">
+  <div class="grid">
+    <div>
+      <h2>The anatomy: one dispute, six layers</h2>
+      <p class="muted">Case 3, <code>PP-R-ISN-10198775</code>, runs through every layer.</p>
+      <ol class="layers">
+        <li><strong>Owner's rules</strong><span>Spoken once. Read back. Signed.</span></li>
+        <li><strong>Buyer agent</strong><span>Files the claim. Cannot pay itself.</span></li>
+        <li><strong>Merchant agent</strong><span>Answers with proof, inside its limits.</span></li>
+        <li><strong>Policy gate</strong><span>Every action checked before money moves.</span></li>
+        <li><strong>Signed receipts</strong><span>Each link checks the one before.</span></li>
+        <li><strong>PayPal's record</strong><span>The judge. Nothing counts until it matches.</span></li>
+      </ol>
+    </div>
+    <div class="stat stack">
+      <svg viewBox="0 0 360 342" role="img" aria-label="Six stacked layers with one thread through them and one bead on the last layer">
+        <g stroke-width="2">
+          <polygon points="180,6 340,36 180,66 20,36" fill="#6db3ff" fill-opacity="0.22" stroke="#6db3ff"/>
+          <polygon points="180,60 340,90 180,120 20,90" fill="#6db3ff" fill-opacity="0.22" stroke="#6db3ff"/>
+          <polygon points="180,114 340,144 180,174 20,144" fill="#6db3ff" fill-opacity="0.22" stroke="#6db3ff"/>
+          <polygon points="180,168 340,198 180,228 20,198" fill="#4ed08a" fill-opacity="0.28" stroke="#4ed08a"/>
+          <polygon points="180,222 340,252 180,282 20,252" fill="#6db3ff" fill-opacity="0.22" stroke="#6db3ff"/>
+          <polygon points="180,276 340,306 180,336 20,306" fill="#6db3ff" fill-opacity="0.38" stroke="#6db3ff"/>
+        </g>
+        <line x1="180" y1="6" x2="180" y2="306" stroke="#ff6b4a" stroke-width="3"/>
+        <circle cx="180" cy="306" r="9" fill="#ff6b4a"/>
+      </svg>
+      <span class="tag">Real PayPal sandbox run, case 3</span>
+      <p class="num">USD 5.00</p>
+      <p class="cap">paid once, inside PayPal. PayPal's record reads RESOLVED at INQUIRY.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s4" aria-label="Slide 4 of 9">
+  <div class="grid">
+    <div>
+      <h2>The ten case batch, counted aloud</h2>
+      <ul class="counts">
+        <li><b>4</b><span>settled at INQUIRY with no fee, in 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps</span></li>
+        <li><b>3</b><span>answered with proof, under PayPal review</span></li>
+        <li><b>2</b><span>awaiting the merchant owner, an offer above the approval line</span></li>
+        <li><b>1</b><span>refused by the buyer's mandate: USD 20.00 claimed on a USD 9.00 order</span></li>
+      </ul>
+      <p class="muted">4 cases moved by PayPal to CHARGEBACK once tracking was on the order. 0 errors, 0 double refunds.</p>
+    </div>
+    <div class="stat">
+      <span class="tag">Real PayPal sandbox run</span>
+      <p class="num">10 of 10</p>
+      <p class="cap">real sandbox disputes handled with 0 errors and 0 double refunds. 24 model calls, 0 scripted.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s5" aria-label="Slide 5 of 9">
+  <div class="grid">
+    <div>
+      <h2>Do not trust us. Check it.</h2>
+      <p>Two signed receipts, one from each side, name the same dispute id. Verify them offline in Python or in your browser.</p>
+      <p>Change one character in a log and the chain breaks.</p>
+      <span class="cmd">python scripts/verify_pair.py data/runs/batch-sandbox-20261111-132948.json</span>
+    </div>
+    <div class="stat">
+      <span class="tag">Verified in your browser</span>
+      <p class="num">18 of 18</p>
+      <p class="cap">signed logs verify, in your browser with WebCrypto and in Python.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s6" aria-label="Slide 6 of 9">
+  <div class="grid">
+    <div>
+      <h2>Built during the hackathon</h2>
+      <ul class="facts">
+        <li><b>Built after 1 October 2026</b>, sole author Sri, MIT, sandbox only, no real money.</li>
+        <li><b>Clone and run:</b></li>
+      </ul>
+      <span class="cmd">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git &amp;&amp; cd clearwake &amp;&amp; python -m clearwake --port 8810</span>
+      <ul class="facts">
+        <li>Site: <a href="https://clearwake-mu.vercel.app">clearwake-mu.vercel.app</a></li>
+        <li>Console: <a href="https://clearwake-console.onrender.com/console">clearwake-console.onrender.com/console</a></li>
+        <li>Code: <a href="https://github.com/Sriharsan/clearwake">github.com/Sriharsan/clearwake</a></li>
+      </ul>
+    </div>
+    <div class="stat">
+      <span class="tag">Planted failure</span>
+      <p class="num">200 of 200</p>
+      <p class="cap">episodes ended as the owner intended with Clearwake, against 40 of 200 for the Agent Toolkit alone.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s7" aria-label="Slide 7 of 9">
+  <div class="grid">
+    <div>
+      <h2>PayPal Agent Toolkit and the MCP guard</h2>
+      <ul class="facts">
+        <li><b>Read from source:</b> <code>@paypal/agent-toolkit</code> 1.11.0 and <code>@paypal/mcp</code> 1.8.1.</li>
+        <li><b>The MCP guard proxy</b> and the 3 line toolkit guard put the signed policy in front of every money tool.</li>
+        <li><b>Result:</b> USD 2,633.25 overpaid by the toolkit alone over 200 episodes, USD 0.00 with the guard.</li>
+      </ul>
+    </div>
+    <div class="stat">
+      <span class="tag">Planted failure</span>
+      <p class="num">47</p>
+      <p class="cap">PayPal Agent Toolkit tools listed one by one and guarded. Record in docs/PAYPAL_MCP_TOOLS.md.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s8" aria-label="Slide 8 of 9">
+  <div class="grid">
+    <div>
+      <h2>APIMatic</h2>
+      <ul class="facts">
+        <li><b>OpenAPI 3.1 spec</b> of the console API: 11 operations, 22 schemas, checked against the running server.</li>
+        <li><b>CLI validation:</b> 382 findings before, 104 after, no errors in any run.</li>
+        <li><b>Python SDK</b> <code>clearwake-console-api</code> 0.6.1 and a static portal at <a href="https://clearwake-api.vercel.app">clearwake-api.vercel.app</a>.</li>
+        <li><b>Context Plugin for PayPal 0.4.1</b> was run as a review of every PayPal call.</li>
+      </ul>
+    </div>
+    <div class="stat">
+      <span class="tag">Local run</span>
+      <p class="num">104</p>
+      <p class="cap">findings after the fixes, from 382 before. An SDK call against the console returned case n VERIFIED.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s9" aria-label="Slide 9 of 9">
+  <div class="grid">
+    <div>
+      <h2>Postman, Render and AG Grid</h2>
+      <ul class="facts">
+        <li><b>Postman:</b> 75 assertions on the 11 request local attack suite (docs/POSTMAN.md) and 20 assertions on 3 read only sandbox requests (docs/postman-run-2026-11-11.json). 0 failed.</li>
+        <li><b>Render:</b> the live console at <a href="https://clearwake-console.onrender.com/console">clearwake-console.onrender.com/console</a>, on the free plan.</li>
+        <li><b>AG Grid Community:</b> the dispute ledger with a stage filter, a deadline countdown, the model's proposal beside the policy decision, and CSV export.</li>
+      </ul>
+    </div>
+    <div class="stat">
+      <span class="tag">Local run and Real PayPal sandbox run</span>
+      <p class="num">95</p>
+      <p class="cap">Postman assertions, 0 failed: 75 on the local attack suite, 20 on the sandbox.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<nav class="bar" aria-label="Deck controls">
+  <span id="count" aria-live="polite">1 / 9</span>
+  <span class="group">
+    <button type="button" id="prev" aria-label="Previous slide">Prev</button>
+    <button type="button" id="next" aria-label="Next slide">Next</button>
+    <button type="button" id="theme" aria-label="Switch dark and light">Dark or light (T)</button>
+  </span>
+  <span class="muted">Arrow keys move. Home and End jump.</span>
+</nav>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var count = document.getElementById('count');
+  var current = 0;
+
+  function show(n) {
+    if (n < 0) { n = 0; }
+    if (n > slides.length - 1) { n = slides.length - 1; }
+    current = n;
+    slides.forEach(function (s, i) { s.classList.toggle('is-active', i === n); });
+    count.textContent = (n + 1) + ' / ' + slides.length;
+    try { history.replaceState(null, '', '#' + (n + 1)); } catch (e) { /* file or sandboxed frame */ }
+    slides[n].scrollTop = 0;
+  }
+
+  function fromHash() {
+    var m = /^#(\d+)$/.exec(location.hash);
+    show(m ? parseInt(m[1], 10) - 1 : 0);
+  }
+
+  function toggleTheme() {
+    var root = document.documentElement;
+    var dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    var now = root.getAttribute('data-theme') || (dark ? 'dark' : 'light');
+    root.setAttribute('data-theme', now === 'dark' ? 'light' : 'dark');
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) { return; }
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'ArrowDown' || k === 'PageDown' || k === ' ') { e.preventDefault(); show(current + 1); }
+    else if (k === 'ArrowLeft' || k === 'ArrowUp' || k === 'PageUp') { e.preventDefault(); show(current - 1); }
+    else if (k === 'Home') { e.preventDefault(); show(0); }
+    else if (k === 'End') { e.preventDefault(); show(slides.length - 1); }
+    else if (k === 't' || k === 'T') { toggleTheme(); }
+  });
+
+  document.getElementById('prev').addEventListener('click', function () { show(current - 1); });
+  document.getElementById('next').addEventListener('click', function () { show(current + 1); });
+  document.getElementById('theme').addEventListener('click', toggleTheme);
+  window.addEventListener('hashchange', fromHash);
+
+  var startX = null;
+  document.addEventListener('touchstart', function (e) { startX = e.changedTouches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (startX === null) { return; }
+    var dx = e.changedTouches[0].clientX - startX;
+    startX = null;
+    if (Math.abs(dx) > 60) { show(current + (dx < 0 ? 1 : -1)); }
+  }, { passive: true });
+
+  fromHash();
+}());
+</script>
+</body>
+</html>

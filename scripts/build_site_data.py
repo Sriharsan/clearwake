@@ -223,8 +223,14 @@ def public_numbers(found):
         src = f"data/runs/{path.name}"
         out.append({"value": f"{n - errors} of {n}", "label": f"disputes handled with {errors} errors and {doubles} double refunds",
                     "source": src, "mode": "real PayPal sandbox"})
+        rows = body.get("cases", [])
+        inside = [r for r in rows if r.get("paypal_stage") == "INQUIRY" and r.get("outcome") not in ("escalated_to_merchant_owner", "handled_by_mandate")]
+        done = [r for r in inside if r.get("outcome") == "settled_inquiry_no_fee"]
+        out.append({"value": f"{len(done)} of {len(inside)}",
+                    "label": f"settled at INQUIRY with no fee: every dispute inside the owner's limit that stayed at INQUIRY, USD {sm.get('refunds_confirmed_total', '0.00')} refunded",
+                    "source": src, "mode": "real PayPal sandbox"})
         out.append({"value": f"{sm.get('settled_inquiry_no_fee', 0)} of {n}",
-                    "label": f"settled at INQUIRY with no fee, USD {sm.get('refunds_confirmed_total', '0.00')} refunded, all inside the owner's limit",
+                    "label": f"settled at INQUIRY with no fee out of all ten, USD {sm.get('refunds_confirmed_total', '0.00')} refunded; the other six are counted on the Control Room",
                     "source": src, "mode": "real PayPal sandbox"})
     path, ev = newest("ai-eval-*.json")
     if ev and ev.get("totals"):
@@ -233,6 +239,31 @@ def public_numbers(found):
             out.append({"value": f"{t['policy_correct']} of {t['calls']}", "label": f"policy decisions correct across {t['calls']} model calls to {model}, median {t['median_ms'] / 1000:.1f} s each",
                         "source": f"data/runs/{path.name}", "mode": "local run on the local provider"})
     return out[:6]
+
+
+def room_numbers():
+    """The lead numbers of the Control Room, read from the newest clean real sandbox batch and the settle times file. Nothing is typed.
+    A number that cannot be read from its run file is left out."""
+    path, body = clean_sandbox_batch()
+    out = {"public": []}
+    if not body:
+        return out
+    sm, src = body.get("summary", {}), f"data/runs/{path.name}"
+    n, errors = sm.get("cases", 0), sm.get("error", 0)
+    doubles = (sm.get("result") or {}).get("double_refunds", 0)
+    mode = "Real PayPal sandbox run"
+    out["public"].append({"value": f"{n - errors} of {n}", "label": f"disputes handled with {errors} errors and {doubles} double refunds", "source": src, "mode": mode})
+    if sm.get("refunds_confirmed_by_paypal") is not None and sm.get("refunds_confirmed_total") is not None:
+        out["public"].append({"value": f"USD {sm['refunds_confirmed_total']}", "label": f"refunded in {sm['refunds_confirmed_by_paypal']} refunds, each confirmed by PayPal's record, across {sm.get('settled_inquiry_no_fee', 0)} of {n} disputes settled at INQUIRY", "source": src, "mode": mode})
+    times = sorted(ROOT.glob("data/runs/settle-times-*.json"))
+    if times:
+        st = json.loads(times[-1].read_text(encoding="utf-8"))
+        if st.get("fastest_minutes") is not None and st.get("slowest_minutes") is not None:
+            out["public"].append({"value": f"{round(st['fastest_minutes'])} to {round(st['slowest_minutes'])} min", "label": f"from filing to RESOLVED in PayPal's own timestamps, {len(st.get('rows', []))} settled disputes", "source": f"data/runs/{times[-1].name}", "mode": mode})
+    chargeback = [c for c in body.get("cases", []) if str(c.get("paypal_stage", "")).upper() == "CHARGEBACK"]
+    if chargeback:
+        out["public"].append({"value": f"{len(chargeback)} of {n}", "label": f"moved by PayPal to the CHARGEBACK stage, cases {', '.join(str(c['n']) for c in chargeback[:-1])} and {chargeback[-1]['n']}" if len(chargeback) > 1 else "moved by PayPal to the CHARGEBACK stage", "source": src, "mode": mode})
+    return out
 
 
 HUD_CASE = 3
@@ -306,6 +337,32 @@ def hud_case():
     print("hud-case.json written from", path.name, "case", HUD_CASE, did)
 
 
+def batch_tally(public):
+    """web/batch-tally.json for the hosted console: the counted batch tally and the baseline line, read from the run files. Nothing is typed."""
+    path, body = clean_sandbox_batch()
+    out = {}
+    if body:
+        rows, sm = body.get("cases", []), body.get("summary", {})
+        n, errors = sm.get("cases", len(rows)), sm.get("error", 0)
+        doubles = (sm.get("result") or {}).get("double_refunds", 0)
+        settled = sum(1 for r in rows if r.get("outcome") == "settled_inquiry_no_fee")
+        proof = sum(1 for r in rows if r.get("outcome") == "pending" and r.get("merchant_state") == "VERIFIED")
+        owner = sum(1 for r in rows if r.get("outcome") == "escalated_to_merchant_owner")
+        mandate = sum(1 for r in rows if r.get("outcome") == "handled_by_mandate")
+        out["batch"] = {"tag": "Real PayPal sandbox run", "source": f"data/runs/{path.name}", "items": [
+            {"value": f"{n - errors} of {n}", "label": f"disputes handled, {errors} errors, {doubles} double refunds"},
+            {"value": str(settled), "label": f"settled at INQUIRY with no fee, USD {sm.get('refunds_confirmed_total', '0.00')} refunded"},
+            {"value": str(proof), "label": "answered with proof, under PayPal review"},
+            {"value": str(owner), "label": "awaiting the merchant owner"},
+            {"value": str(mandate), "label": "refused by the mandate"}]}
+    base = [x for x in public if "/baseline-" in x["source"]][:1]
+    if base:
+        out["baseline"] = {"tag": "Local run on the local provider", "source": base[0]["source"],
+                           "value": base[0]["value"] + " vs USD 0.00" if not base[0]["value"].endswith("0.00") else base[0]["value"],
+                           "label": "overpaid over 200 episodes, an agent using PayPal's Agent Toolkit directly vs Clearwake"}
+    return out
+
+
 def main():
     data = SITE / "data"
     data.mkdir(exist_ok=True)
@@ -329,8 +386,11 @@ def main():
         else:
             print("skipped", source.name, "(not in the site row format, see the top of this file)")
     hud_case()
-    (data / "totals.json").write_text(json.dumps(totals(build()["rows"]), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json", "hud-case.json"))
+    (data / "room.json").write_text(json.dumps(room_numbers(), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    tot = totals(build()["rows"])
+    (data / "totals.json").write_text(json.dumps(tot, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    (ROOT / "web" / "batch-tally.json").write_text(json.dumps(batch_tally(tot["public"]), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json", "hud-case.json", "room.json"))
     files.remove("ledger.json"); files.insert(0, "ledger.json")
     (data / "manifest.json").write_text(json.dumps({"files": files}, indent=1) + "\n", encoding="utf-8")
     print("site/data/manifest.json lists:", ", ".join(files))

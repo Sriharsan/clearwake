@@ -12,6 +12,7 @@
 <script src="theme.js"></script>
 <script src="vendor/ag-grid-community-35.3.1.min.js" defer></script>
 <script src="ledger-lib.js" defer></script>
+<script src="numbers.js" defer></script>
 <script src="ledger.js" defer></script>
 <script src="room.js" defer></script>
 </head>
@@ -39,12 +40,16 @@
     <p class="eyebrow">Control Room, batch ledger</p>
     <h1 id="h-batch">10 real sandbox disputes. 4 settled at INQUIRY with no fee.</h1>
     <p class="tags" aria-label="Tags used on this page"><span class="tag">Real PayPal sandbox run</span><span class="tag amber">Planted failure</span><span class="tag ink">Verified in your browser</span></p>
+    <dl class="lead-numbers" id="lead-numbers" data-numbers-src="data/room.json" aria-label="Measured numbers from the recorded batch">
+      <div data-tail><dd class="num tnum" id="v-num">Checking</dd><dt id="v-label">signed logs published with this page, checked by your browser now</dt><dd class="src" id="v-src">Verified in your browser · receipts/manifest.json</dd></div>
+    </dl>
     <p class="lede">The batch of 11 Nov 2026 ran against <code>api-m.sandbox.paypal.com</code>. The counts and the rows below are computed in your browser from <a href="data/batch-sandbox-20261111-132948.json">data/batch-sandbox-20261111-132948.json</a>.</p>
+    <p class="tally-head">The counted tally of the 10 disputes</p>
     <dl class="tally" id="tally">
-      <div><dd class="tnum" id="t-settled">4</dd><dt>Settled at INQUIRY, no fee</dt></div>
-      <div><dd class="tnum" id="t-review">3</dd><dt>Answered with proof, under PayPal review</dt></div>
-      <div><dd class="tnum" id="t-owner">2</dd><dt>Awaiting the merchant owner</dt></div>
-      <div><dd class="tnum" id="t-mandate">1</dd><dt>Refused by the mandate</dt></div>
+      <div><dd class="tnum" id="t-settled">4</dd><dt>of 10 settled at INQUIRY, no fee</dt></div>
+      <div><dd class="tnum" id="t-review">3</dd><dt>of 10 answered with proof, under PayPal review</dt></div>
+      <div><dd class="tnum" id="t-owner">2</dd><dt>of 10 awaiting the merchant owner</dt></div>
+      <div><dd class="tnum" id="t-mandate">1</dd><dt>of 10 refused by the mandate</dt></div>
     </dl>
     <ol class="batch-list" id="batch-list" aria-label="The ten disputes of the batch"></ol>
     <p class="note" id="batch-hash">SHA-256 of the batch file is computed in your browser when this page loads.</p>
@@ -268,6 +273,14 @@ egress:
     <p class="note">Amounts are in cents. Comments in the file are left out here. The receipts of the settlement and the dispatch proof carry policy hash <span class="id wrap-any">396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271</span>.</p>
   </section>
 </main>
+
+<section class="endcard wrap" aria-labelledby="end-h">
+  <p class="eyebrow">The record</p>
+  <h2 id="end-h">Ten disputes, counted, signed and checked.</h2>
+  <dl class="lead-numbers" id="end-numbers" data-numbers-src="data/room.json" data-numbers-pick="0,1,2" aria-label="Numbers from the recorded runs"></dl>
+  <p class="end-links"><a class="btn primary" href="https://github.com/Sriharsan/clearwake">Repository</a> <a class="btn" href="https://clearwake-console.onrender.com/console">Live console</a></p>
+  <p class="end-run">Run it yourself: <code>python -m clearwake</code></p>
+</section>
 
 <footer class="foot">
   <div class="wrap">

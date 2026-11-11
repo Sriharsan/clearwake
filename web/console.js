@@ -441,14 +441,36 @@ function exportCsv() {
   download(name, L.toCsv(heads, disputeRows()));
 }
 
-// Lead numbers: read from the run files by scripts/build_site_data.py, never written here.
+// The counted tally is already in the page. This reads the shipped file (web/batch-tally.json) and keeps the page equal to it.
+// The extra tile is this console's own state: the signed logs it holds, checked in this browser with WebCrypto.
 async function loadTotals() {
   try {
-    const list = await call('/console/api/totals');
-    if (!Array.isArray(list) || !list.length) return;
-    $('lead-numbers').replaceChildren(...list.slice(0, 3).map(n => el('div', {}, el('dd', { class: 'num', text: String(n.value) }), el('dt', { text: String(n.label) }), el('dd', { class: 'src', text: String(n.source || '') }))));
-    $('lead-numbers').hidden = false;
-  } catch (e) { /* no numbers rather than invented ones */ }
+    const t = await call('/console/api/tally');
+    if (t.batch && Array.isArray(t.batch.items) && t.batch.items.length) {
+      $('tally-batch-tag').textContent = t.batch.tag;
+      $('tally-batch-src').textContent = t.batch.source;
+      $('tally-batch').replaceChildren(...t.batch.items.map((n, i) => el('div', i ? {} : { class: 'lead' }, el('dd', { class: 'num', text: String(n.value) }), el('dt', { text: String(n.label) }))));
+    }
+    if (t.baseline && t.baseline.value) {
+      $('tally-base-tag').textContent = t.baseline.tag;
+      $('tally-base-value').textContent = t.baseline.value;
+      $('tally-base-label').textContent = t.baseline.label;
+      $('tally-base-src').textContent = t.baseline.source;
+    }
+  } catch (e) { /* the tally in the page stays */ }
+  const tiles = [];
+  try {
+    const held = (await call('/console/api/receipts')).logs.filter(l => l.text && l.text.trim());
+    if (held.length && crypto?.subtle) {
+      const reports = [];
+      for (const l of held) reports.push(await verifyLog(l.text, l.public_key));
+      const ok = reports.filter(r => r.ok).length;
+      tiles.push(el('div', {}, el('dd', { class: 'num', text: `${ok} of ${held.length}` }), el('dt', { text: 'signed logs in this console verify in your browser' }), el('dd', { class: 'src', text: 'Verified in your browser, the logs held by this console' })));
+    }
+  } catch (e) { /* no number rather than an invented one */ }
+  if (!tiles.length) return;
+  $('lead-numbers').replaceChildren(...tiles);
+  $('lead-numbers').hidden = false;
 }
 
 // One negotiation per click. The log is the signed merchant receipt log, polled while the run goes.

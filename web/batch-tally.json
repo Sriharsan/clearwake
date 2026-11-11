@@ -1,0 +1,34 @@
+{
+  "batch": {
+    "tag": "Real PayPal sandbox run",
+    "source": "data/runs/batch-sandbox-20261111-132948.json",
+    "items": [
+      {
+        "value": "10 of 10",
+        "label": "disputes handled, 0 errors, 0 double refunds"
+      },
+      {
+        "value": "4",
+        "label": "settled at INQUIRY with no fee, USD 20.00 refunded"
+      },
+      {
+        "value": "3",
+        "label": "answered with proof, under PayPal review"
+      },
+      {
+        "value": "2",
+        "label": "awaiting the merchant owner"
+      },
+      {
+        "value": "1",
+        "label": "refused by the mandate"
+      }
+    ]
+  },
+  "baseline": {
+    "tag": "Local run on the local provider",
+    "source": "data/runs/baseline-20261110-172506.json",
+    "value": "USD 2,633.25 vs USD 0.00",
+    "label": "overpaid over 200 episodes, an agent using PayPal's Agent Toolkit directly vs Clearwake"
+  }
+}

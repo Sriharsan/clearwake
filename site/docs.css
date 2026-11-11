@@ -18,6 +18,17 @@
 .search:focus-visible{outline:2px solid var(--teal);outline-offset:4px}
 .searchnote{margin:0;color:var(--mist);font-size:.9rem}
 
+/* numbers strip, same tiles as the Home numbers (home.css .lead-numbers) */
+.lead-numbers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:1.75rem 2rem;margin:2rem 0 1rem;padding:0}
+.lead-numbers>div{display:grid;align-content:start;gap:.45rem;min-width:0;padding-top:1rem;border-top:2px solid var(--teal)}
+.lead-numbers>div:nth-child(2n){border-top-color:var(--amber)}
+.lead-numbers dd,.lead-numbers dt{margin:0}
+.lead-numbers .v{font:700 clamp(1.9rem,3.4vw,2.8rem)/1.05 var(--font-display);letter-spacing:-.04em;color:var(--teal);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.lead-numbers>div:nth-child(2n) .v{color:var(--amber)}
+.lead-numbers dt{font:500 .98rem/1.4 var(--font-sans);color:var(--foreground);max-width:24rem}
+.lead-numbers .src{font:400 .72rem/1.4 var(--font-code);color:var(--mist);overflow-wrap:anywhere}
+.numnote{margin:0 0 1.5rem;color:var(--mist);font-size:.9rem;max-width:44rem}
+
 /* the chain rail: one link per section, hashed from this page's own text */
 .rail{position:sticky;top:4rem;z-index:15;background:color-mix(in oklab,var(--background) 94%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);margin-inline:-1rem;padding:0 1rem}
 .chain{list-style:none;margin:0;padding:0;display:flex;overflow-x:auto;scrollbar-width:none}

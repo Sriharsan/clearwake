@@ -14,6 +14,7 @@
 <script src="theme.js"></script>
 <script src="app.js" type="module"></script>
 <script src="totals.js" defer></script>
+<script src="hero-numbers.js" defer></script>
 <script src="hud.js" defer></script>
 <script src="anatomy.js" defer></script>
 </head>
@@ -42,14 +43,17 @@
       <path class="hr-cross" d="M300 6v60M300 534v60M6 300h60M534 300h60"/>
     </svg>
     <div class="hero-in wrap">
-      <p class="eyebrow">After an agent buys</p>
-      <h1 id="h1" class="line">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</h1>
-      <p class="tagline">When an agent's order goes missing, agents fix it.</p>
-      <p class="proof-strip"><b>Real PayPal sandbox run, 11 November 2026.</b> 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.</p>
-      <div class="cta">
-        <a class="btn primary" href="/control-room">Open the Control Room</a>
-        <a class="btn" href="#conversation">Watch the conversation</a>
+      <div class="hero-copy">
+        <p class="eyebrow">After an agent buys</p>
+        <h1 id="h1" class="line">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</h1>
+        <p class="tagline">When an agent's order goes missing, agents fix it.</p>
+        <p class="proof-strip"><b>Real PayPal sandbox run, 11 November 2026.</b> 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.</p>
+        <div class="cta">
+          <a class="btn primary" href="/control-room">Open the Control Room</a>
+          <a class="btn" href="#conversation">Watch the conversation</a>
+        </div>
       </div>
+      <dl class="hero-numbers" id="hero-numbers" aria-label="Lead numbers from the recorded runs" hidden></dl>
     </div>
     <a class="cue" href="#conversation"><span>Scroll</span><i aria-hidden="true"></i></a>
   </section>
@@ -570,6 +574,24 @@ cd clearwake
 python -m clearwake --port 8810</pre>
       <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. Speak to it from a phone with <span class="mono">python -m clearwake --phone</span>. The network isolated run needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
     </div>
+  </section>
+
+  <section class="endcard wrap" aria-labelledby="end-h">
+    <h2 id="end-h">The result in four numbers</h2>
+    <ul class="end-nums">
+      <li><b class="num tnum">10 of 10</b><span>real sandbox disputes handled, 0 errors, 0 double refunds</span><span class="tag">Real PayPal sandbox run</span></li>
+      <li><b class="num tnum">4 of 10</b><span>settled at INQUIRY with no fee, USD 20.00 refunded</span><span class="tag">Real PayPal sandbox run</span></li>
+      <li><b class="num tnum">18 of 18</b><span>signed logs verify in your browser and in Python</span><span class="tag">Verified in your browser</span></li>
+      <li><b class="num tnum">USD 2,633.25 vs 0.00</b><span>overpaid over 200 episodes, Agent Toolkit alone against Clearwake</span><span class="tag">Planted failure</span></li>
+    </ul>
+    <div class="end-links">
+      <div>
+        <p><a href="https://github.com/Sriharsan/clearwake">Repository: github.com/Sriharsan/clearwake</a></p>
+        <p><a href="https://clearwake-console.onrender.com/console">Live console: clearwake-console.onrender.com/console</a></p>
+      </div>
+      <pre class="codeblock">python -m clearwake --port 8810</pre>
+    </div>
+    <p class="end-built">Built during the hackathon.</p>
   </section>
 
   <section class="closing" aria-labelledby="close-h">

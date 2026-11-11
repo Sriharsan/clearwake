@@ -28,9 +28,28 @@
 </header>
 
 <main id="main" class="wrap" tabindex="-1">
-  <div class="status-row"><span class="pill rehearsal" id="mode-pill">Local run on the local provider</span><span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: loading</span></div>
+  <div class="status-row"><span class="pill rehearsal" id="mode-pill">Local run on the local provider</span><span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: local provider</span></div>
+  <section class="tally" id="tally" aria-label="Counted numbers from the run files">
+    <div class="tally-block">
+      <p class="tag" id="tally-batch-tag">Real PayPal sandbox run</p>
+      <dl class="tally-grid" id="tally-batch">
+        <div class="lead"><dd class="num">10 of 10</dd><dt>disputes handled, 0 errors, 0 double refunds</dt></div>
+        <div><dd class="num">4</dd><dt>settled at INQUIRY with no fee, USD 20.00 refunded</dt></div>
+        <div><dd class="num">3</dd><dt>answered with proof, under PayPal review</dt></div>
+        <div><dd class="num">2</dd><dt>awaiting the merchant owner</dt></div>
+        <div><dd class="num">1</dd><dt>refused by the mandate</dt></div>
+      </dl>
+      <p class="src" id="tally-batch-src">data/runs/batch-sandbox-20261111-132948.json</p>
+    </div>
+    <div class="tally-block">
+      <p class="tag" id="tally-base-tag">Local run on the local provider</p>
+      <p class="base"><span class="num" id="tally-base-value">USD 2,633.25 vs USD 0.00</span> <span id="tally-base-label">overpaid over 200 episodes, an agent using PayPal's Agent Toolkit directly vs Clearwake</span></p>
+      <p class="src" id="tally-base-src">data/runs/baseline-20261110-172506.json</p>
+    </div>
+  </section>
   <a class="phone-go button primary" href="#merchant">Run a case</a>
-  <dl class="lead-numbers" id="lead-numbers" aria-label="Measured numbers from the run files" hidden></dl>
+  <dl class="lead-numbers" id="lead-numbers" aria-label="Measured in this browser" hidden></dl>
+  <p class="numbers-more" id="numbers-more">The batch of ten real sandbox disputes, the model call count and the check of every signed log are on the <a href="//clearwake-mu.vercel.app/control-room">Control Room</a>, each beside its run file.</p>
   <p class="hosted-line" id="hosted-line" hidden>Hosted on Render, local provider. The real PayPal sandbox runs are in the ledger below, recorded.</p>
   <div id="server-error" class="banner error" role="alert" hidden></div>
 
@@ -286,6 +305,19 @@
     </section>
   </section>
 </main>
+<section class="endcard" id="endcard" aria-labelledby="endcard-title">
+  <div class="wrap">
+    <h2 id="endcard-title">Ten real sandbox disputes handled. No double refunds. USD 0.00 overpaid.</h2>
+    <ul class="end-nums">
+      <li><span class="num">10 of 10</span> handled, 0 errors</li>
+      <li><span class="num">4</span> settled, USD 20.00 refunded</li>
+      <li><span class="num">USD 2,633.25 vs USD 0.00</span> overpaid over 200 episodes</li>
+    </ul>
+    <p class="end-run"><code>git clone --recurse-submodules //github.com/Sriharsan/clearwake.git</code></p>
+    <p class="end-run"><code>python -m clearwake --port 8810</code> then open <code>/console</code></p>
+    <p class="end-link"><a href="//github.com/Sriharsan/clearwake">github.com/Sriharsan/clearwake</a></p>
+  </div>
+</section>
 <footer class="foot"><div class="wrap"><p>Every run on this console reads and writes the local provider. An outcome is called verified only when it matches PayPal's own record, so local outcomes read "matches local record".</p></div></footer>
 </body>
 </html>

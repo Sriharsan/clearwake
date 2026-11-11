@@ -96,3 +96,20 @@ body{font-size:1.125rem;line-height:1.65}
 .tag.amber{color:var(--amber)}.tag.ink{color:var(--foreground)}
 .tags{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1.1rem}
 .side .tags{margin:0 0 .5rem}
+
+/* Lead numbers, same tiles as the Home numbers section */
+.lead-numbers{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr));gap:2.5rem 3rem;margin:2.25rem 0 1.75rem}
+.lead-numbers[hidden]{display:none}
+.lead-numbers>div{display:grid;align-content:start;gap:.55rem;min-width:0;padding-top:1.1rem;border-top:2px solid var(--teal)}
+.lead-numbers>div:nth-child(1),.lead-numbers>div:nth-child(2){border-top-color:var(--coral)}
+.lead-numbers dd{margin:0}
+.lead-numbers .num{font:700 clamp(2.4rem,5vw,3.8rem)/1 var(--font-display);letter-spacing:-.045em;color:var(--teal)}
+.lead-numbers>div:nth-child(1) .num,.lead-numbers>div:nth-child(2) .num{color:var(--coral)}
+.lead-numbers dt{text-transform:none;letter-spacing:0;font:500 1rem/1.4 var(--font-sans);color:var(--foreground);max-width:24rem}
+.lead-numbers .src{font:400 .8rem/1.4 var(--font-code);color:var(--mist);overflow-wrap:anywhere}
+
+/* End card */
+.endcard{margin-top:4rem;padding-top:2rem;border-top:1px solid var(--border)}
+.endcard h2{font-size:clamp(1.6rem,3.5vw,2.4rem);margin-bottom:.5rem}
+.end-links{display:flex;flex-wrap:wrap;gap:.75rem;margin:0 0 1rem}
+.end-run{margin:0}

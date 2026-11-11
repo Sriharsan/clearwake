@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="break.css">
 <script src="theme.js"></script>
+<script src="numbers.js" defer></script>
 <script src="break.js" defer></script>
 </head>
 <body>
@@ -30,6 +31,7 @@
     <p class="eyebrow">Break it</p>
     <h1 id="h1">Attack an agent that uses PayPal's Agent Toolkit. See who pays.</h1>
     <p class="tags"><span class="tag amber">Planted failure</span><span class="tag">Replay of a recorded run</span><span class="tag ink">Verified in your browser</span></p>
+    <dl class="lead-numbers" id="lead-numbers" aria-label="Attack numbers from the recorded run" hidden></dl>
     <p class="lede">Pick an attack and press Run. On the left is the unguarded agent, read from the recorded run. On the right is the same episode with a guard in front of the tool, and a signed receipt your browser verifies with Ed25519 and SHA-256.</p>
     <p class="label" id="label">Loading the recorded episodes.</p>
   </section>
@@ -66,6 +68,14 @@ api.accept_dispute_claim(dispute_id, note)</code></pre>
   </section>
   <noscript><p class="note">This page needs JavaScript to show the recorded episodes and to verify receipts in your browser.</p></noscript>
 </main>
+
+<section class="endcard wrap" aria-labelledby="end-h">
+  <p class="eyebrow">The record</p>
+  <h2 id="end-h">Eighty attacks, one guard.</h2>
+  <dl class="lead-numbers" id="end-numbers"  aria-label="Numbers from the recorded runs"  hidden></dl>
+  <p class="end-links"><a class="btn primary" href="https://github.com/Sriharsan/clearwake">Repository</a> <a class="btn" href="https://clearwake-console.onrender.com/console">Live console</a></p>
+  <p class="end-run">Run it yourself: <code>python -m clearwake</code></p>
+</section>
 
 <footer class="foot">
   <div class="wrap">
