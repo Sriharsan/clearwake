@@ -248,3 +248,8 @@ main p,main li,main dd{overflow-wrap:anywhere}
 .qr-c{position:absolute;width:1.4rem;height:1.4rem;border:3px solid var(--teal)}
 .qr-tl{top:-.5rem;left:-.5rem;border-right:0;border-bottom:0}.qr-tr{top:-.5rem;right:-.5rem;border-left:0;border-bottom:0}
 .qr-bl{bottom:-.5rem;left:-.5rem;border-right:0;border-top:0}.qr-br{bottom:-.5rem;right:-.5rem;border-left:0;border-top:0}
+
+/* hero proof strip: the real result in the first screen */
+.proof-strip{max-width:44rem;margin:1.1rem 0 0;padding-left:1rem;border-left:3px solid var(--amber);font-size:1.05rem;line-height:1.5;color:var(--ink,inherit)}
+.proof-strip b{color:var(--teal);font-weight:700}
+@media (max-width:560px){.proof-strip{font-size:.98rem}}

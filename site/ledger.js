@@ -32,13 +32,24 @@
   var TITLES = { c: 'Refund under the limit', d: 'Refund above the approval line, approved', e: 'Lost reply, reconciled', m1: 'Refund before the network cut', m2: 'Refund held offline, then resumed', m3: 'Refund held offline, then resumed',
     i: 'Item not received, tracking sent', n: 'Dispute settled by offer', o: 'Dispatch proof sent as evidence' };
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  function titleOf(c) { var b = /^b(\d+)$/.exec(c); return TITLES[c] || (b ? 'Batch dispute ' + b[1] + ' of 10' : String(c)); }
+  var KINDS = { settled: 'Settled at INQUIRY, no fee', review: 'Answered with proof, under PayPal review', owner: 'Awaiting the merchant owner', mandate: 'Buyer claim refused by the mandate' };
+  function kindOf(r) {
+    var o = String(r.outcome || '').toLowerCase();
+    if (/^handled by mandate/.test(o)) return 'mandate';
+    if (r.state === 'awaiting approval' || /^escalated to merchant owner/.test(o)) return 'owner';
+    if (r.paypal_status === 'RESOLVED' && r.stage === 'INQUIRY') return 'settled';
+    return 'review';
+  }
+  function titleOf(c, r) { var b = /^b(\d+)$/.exec(c); return TITLES[c] || (b ? 'Batch dispute ' + b[1] + ' of 10' + (r ? ', ' + KINDS[kindOf(r)] : '') : String(c)); }
   function dateOf(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
-  function idOf(r) { return /^(refund of case|batch-sandbox)/.test(r.dispute || '') ? 'not written to the run file' : r.dispute; }
+  function idOf(r) {
+    if (/^batch-sandbox/.test(r.dispute || '')) return 'none, refused before PayPal was called' + (r.record && r.record.order_id ? ' (order ' + r.record.order_id + ')' : '');
+    return /^refund of case/.test(r.dispute || '') ? 'not written to the run file' : r.dispute;
+  }
   function text(v) { return v === null || v === undefined || v === '' ? L.DASH : String(v); }
   function prepare(r) {
     return Object.assign({}, r, {
-      what_text: titleOf(r.case), id_text: text(idOf(r)), date_text: text(dateOf(r.recorded)),
+      what_text: titleOf(r.case, r), id_text: text(idOf(r)), date_text: text(dateOf(r.recorded)),
       stage_text: r.kind === 'refund' ? 'Refund, no dispute' : text(r.stage), proposal_text: L.proposalOf(r), model_text: r.proposed ? text(r.model) : L.DASH,
       decided_text: text(L.plain(r.decided)), amount_text: text(r.amount), reason_text: text(L.readable(r.reason)), dispatch_text: text(r.dispatch), outcome: text(r.outcome)
     });
@@ -78,7 +89,7 @@
     selected = r ? r.dispute : null;
     $('row-detail').hidden = !r; $('detail-hint').hidden = !!r;
     if (!r) return;
-    var facts = [['PayPal id', text(idOf(r))], ['What ran', titleOf(r.case)], ['Recorded', text(dateOf(r.recorded))], ['Reason', text(L.readable(r.reason))], ['Amount', r.amount ? 'USD ' + r.amount : L.DASH], ['Stage', r.stage_text],
+    var facts = [['PayPal id', text(idOf(r))], ['What ran', titleOf(r.case, r)], ['Recorded', text(dateOf(r.recorded))], ['Reason', text(L.readable(r.reason))], ['Amount', r.amount ? 'USD ' + r.amount : L.DASH], ['Stage', r.stage_text],
       ['PayPal record', text(r.paypal_status)], ['Deadline', r.due ? r.due + ' (' + L.deadlineOf(r, Date.now()) + ')' : L.DASH],
       ['Model proposal', r.proposal_text + (r.proposed && r.model ? ', by ' + r.model : '')], ['Policy decision', r.decided_text], ['Outcome', r.outcome],
       ['Run', text(r.mode) + ', ' + text(r.recorded)]];
@@ -99,6 +110,42 @@
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([text], { type: 'text/csv;charset=utf-8' })); a.download = name;
     document.body.append(a); a.click(); a.remove();
+  }
+
+  // ---- batch ledger: counts and rows computed here from the batch file ----
+  var BATCH = 'batch-sandbox-20261111-132948.json';
+  function mk(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; }
+  function paintBatch() {
+    var list = $('batch-list'); if (!list) return;
+    var batch = rows.filter(function (r) { return r.file === BATCH; }).sort(function (a, b) { return +a.case.slice(1) - +b.case.slice(1); });
+    if (!batch.length) return;
+    var n = { settled: 0, review: 0, owner: 0, mandate: 0 };
+    list.textContent = '';
+    batch.forEach(function (r, i) {
+      var k = kindOf(r); n[k]++;
+      var li = mk('li', 'b-' + k), head = mk('div', 'b-head'), meta = mk('p', 'b-meta');
+      head.append(mk('span', 'b-n tnum', (i + 1) + ' of ' + batch.length), mk('h3', null, KINDS[k]));
+      if (k === 'mandate') head.append(mk('span', 'tag amber', 'Planted failure'));
+      var idTxt = k === 'mandate' ? 'No dispute id. The mandate refused before PayPal was called' + (r.record && r.record.order_id ? ', order ' + r.record.order_id : '') : r.dispute;
+      meta.append(mk('span', 'id wrap-any', idTxt), document.createTextNode(' , ' + dateOf(r.recorded) + ', USD ' + r.amount + (r.stage ? ', stage ' + r.stage : '') + (r.paypal_status ? ', PayPal ' + readableStatus(r.paypal_status) : '')));
+      li.append(head, meta, mk('p', 'b-out', sentence(r, k)));
+      list.append(li);
+    });
+    $('t-settled').textContent = n.settled; $('t-review').textContent = n.review; $('t-owner').textContent = n.owner; $('t-mandate').textContent = n.mandate;
+  }
+  function readableStatus(v) { return String(v).replaceAll('_', ' '); }
+  function sentence(r, k) {
+    if (k === 'settled') return 'Refund USD 5.00 confirmed by PayPal. The case ended at INQUIRY, so no dispute fee applied.';
+    if (k === 'review') return 'Evidence sent. PayPal holds the case UNDER REVIEW. No decision has been returned.';
+    if (k === 'owner') return 'Above the policy limit, so the merchant agent handed it to the owner with the evidence. Nothing was paid.';
+    return 'The buyer agent claimed USD ' + r.amount + ', above its mandate. Refused, and handed to its person with the evidence.';
+  }
+  function hashBatch() {
+    var el = $('batch-hash'); if (!el || !window.crypto || !crypto.subtle) return;
+    fetch('data/' + BATCH, { credentials: 'omit' }).then(function (r) { return r.arrayBuffer(); }).then(function (b) { return crypto.subtle.digest('SHA-256', b); }).then(function (d) {
+      var hex = Array.prototype.map.call(new Uint8Array(d), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+      el.textContent = ''; el.append(document.createTextNode('SHA-256 of data/' + BATCH + ' computed in your browser: '), mk('code', 'id wrap-any', hex));
+    }).catch(function () {});
   }
 
   // ---- grid, or a plain table when AG Grid did not load ----
@@ -149,6 +196,7 @@
   loadAll().then(function (list) {
     rows = list;
     if (!rows.length) { $('ledger-count').textContent = 'No recorded rows could be loaded.'; return; }
+    paintBatch(); hashBatch();
     build();
     var upd = document.createEvent('Event'); upd.initEvent('clearwake:ledger', true, false); document.dispatchEvent(upd);
   });

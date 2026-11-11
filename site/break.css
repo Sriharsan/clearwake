@@ -6,7 +6,7 @@ main{padding-bottom:2rem}
 .intro{padding-block:clamp(2.5rem,7vw,5rem) 1.5rem}
 .intro h1{font-size:clamp(2.4rem,6.2vw,5rem);font-weight:700;letter-spacing:-.04em;line-height:.98;max-width:19ch;margin-bottom:1.25rem}
 .intro .lede{max-width:42rem}
-.label{margin:0;font-size:.85rem;color:var(--mist);border-left:3px solid var(--teal);padding-left:.75rem;max-width:42rem}
+.label{margin:0;font-size:1rem;color:var(--mist);border-left:3px solid var(--teal);padding-left:.75rem;max-width:42rem}
 .eyebrow{font-weight:600}
 
 /* attack picker: four large choices, no boxes around the page */
@@ -16,7 +16,8 @@ main{padding-bottom:2rem}
 .attack{display:block;cursor:pointer}
 .attack>span{display:grid;gap:.15rem;height:100%;padding:.8rem .9rem;min-height:3.5rem;border:1px solid var(--border);border-radius:var(--radius);color:var(--mist)}
 .attack b{color:var(--foreground);font-weight:600;font-size:1rem;line-height:1.25}
-.attack small{font-size:.8rem;line-height:1.35}
+.attack small{font-size:.9rem;line-height:1.4}
+.attack .tag{justify-self:start;margin-top:.35rem}
 .attack:hover>span{background:var(--surface)}
 .attack input:checked+span{border-color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal);background:var(--surface)}
 .attack input:checked+span b{color:var(--teal)}
@@ -37,11 +38,11 @@ main{padding-bottom:2rem}
 .side{border-top:4px solid var(--teal);padding-top:1rem;min-width:0}
 .side.bad{border-top-color:var(--coral)}
 .side-title{font-size:1.15rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
-.side-note{margin:.25rem 0 1rem;color:var(--mist);font-size:.88rem}
+.side-note{margin:.25rem 0 1rem;color:var(--mist);font-size:1rem}
 .big{margin:0;font:700 clamp(3rem,8vw,5.2rem)/1 var(--font-display);letter-spacing:-.045em}
 .bad .big{color:var(--coral)}
 .guarded .big{color:var(--teal)}
-.big-cap{margin:.35rem 0 1rem;color:var(--mist);font-size:.9rem}
+.big-cap{margin:.35rem 0 1rem;color:var(--mist);font-size:1rem}
 .verdict{margin:0 0 1rem;font-size:1.15rem;font-weight:600;line-height:1.35}
 .stats{display:flex;flex-wrap:wrap;gap:.75rem 2rem;margin:0 0 1.25rem}
 .stat{min-width:0}
@@ -49,11 +50,11 @@ main{padding-bottom:2rem}
 .stat dd{margin:.15rem 0 0;font:700 1.35rem/1.2 var(--font-sans);font-variant-numeric:tabular-nums}
 .coral{color:var(--coral)}.teal{color:var(--teal)}
 .mini{margin:0 0 .35rem;font:600 .7rem/1.2 var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--mist)}
-.steps{margin:0;padding-left:1.2rem;color:var(--mist);font-size:.92rem}
+.steps{margin:0;padding-left:1.2rem;color:var(--mist);font-size:1rem}
 
 /* receipts and the injected sentence */
 .receipts,.inject{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);max-width:52rem}
-.chain-list{margin:0 0 1rem;padding-left:1.4rem;font-size:.92rem}
+.chain-list{margin:0 0 1rem;padding-left:1.4rem;font-size:1rem}
 .chain-list li{margin-bottom:.35rem}
 .rname{display:block}
 .rid{display:block;font-size:.75rem;color:var(--mist);overflow-wrap:anywhere}
@@ -71,7 +72,7 @@ main{padding-bottom:2rem}
 .inj-read p{margin:0 0 .5rem}
 .flag{color:var(--amber);font-weight:600}
 .noflag{color:var(--teal);font-weight:600}
-.mini-note{color:var(--mist);font-size:.9rem}
+.mini-note{color:var(--mist);font-size:1rem}
 
 /* totals and usage */
 .totals-sec,.use{margin-top:3.5rem;padding-top:2rem;border-top:1px solid var(--border)}
@@ -87,6 +88,11 @@ main{padding-bottom:2rem}
 .codeblock{max-width:44rem}
 
 /* readable body text and even section rhythm */
-body{font-size:1.0625rem;line-height:1.65}
-.note{font-size:1rem}
+body{font-size:1.125rem;line-height:1.65}
+.note{font-size:1.0625rem}
 .foot{margin-top:2.5rem}
+
+.tag{display:inline-block;font:600 .72rem/1.4 var(--font-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--teal);border:1px solid currentColor;border-radius:3px;padding:.05rem .4rem;vertical-align:middle}
+.tag.amber{color:var(--amber)}.tag.ink{color:var(--foreground)}
+.tags{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1.1rem}
+.side .tags{margin:0 0 .5rem}

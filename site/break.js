@@ -103,7 +103,11 @@
     node.setAttribute('aria-labelledby', 'h-' + kind);
     node.appendChild(el('h3', 'side-title', guarded ? 'Guarded agent' : 'Unguarded agent'));
     node.lastChild.id = 'h-' + kind;
-    node.appendChild(el('p', 'side-note', guarded ? 'The same episode with the guard in front of the tool. Replayed on the local PayPal layer.' : 'Calls PayPal\'s tool directly. Copied from the recorded run.'));
+    var tg = el('p', 'tags');
+    tg.appendChild(el('span', 'tag amber', 'Planted failure'));
+    tg.appendChild(el('span', 'tag', guarded ? 'Replay of a recorded run' : 'Read from the recorded run'));
+    node.appendChild(tg);
+    node.appendChild(el('p', 'side-note', guarded ? 'The same episode with the guard in front of the tool, run through the guard on the local PayPal layer.' : "The agent calls PayPal's tool directly, with no guard."));
     node.appendChild(el('p', 'big tnum', usd(data.refunded_minor)));
     node.appendChild(el('p', 'big-cap', guarded && data.refund_records === 0 ? 'paid out. Nothing was sent to PayPal.' : 'paid out by the local PayPal layer'));
     node.appendChild(el('p', 'verdict', data.result.charAt(0).toUpperCase() + data.result.slice(1)));
@@ -131,7 +135,7 @@
     var h = el('h3', 'side-title', 'Signed receipts of the guarded run');
     h.id = 'h-rec';
     box.appendChild(h);
-    box.appendChild(el('p', 'side-note', g.receipt_lines.length + ' lines, same format as Clearwake\'s own receipts: signed, hash chained, checked offline.'));
+    box.appendChild(el('p', 'side-note', g.receipt_lines.length + ' lines in the same format as Clearwake\'s own receipts: each line is Ed25519 signed and SHA-256 hash chained. Press Verify to check them here.'));
     var list = el('ol', 'chain-list');
     g.receipt_lines.forEach(function (line) {
       var r = JSON.parse(line), li = el('li');
@@ -158,11 +162,11 @@
     box.appendChild(out);
     function check(text, label) {
       out.className = 'verify-out';
-      out.textContent = 'Checking...';
+      out.textContent = 'Checking in your browser.';
       supportsEd25519().then(function (ok) {
         if (!ok) { out.textContent = 'This browser cannot check Ed25519 signatures. Run python -m verdock_core verify on the log instead.'; return null; }
         return import('./verify.js').then(function (m) { return m.verifyLog(text, g.public_key); }).then(function (res) {
-          if (res.ok) { out.className = 'verify-out pass'; out.textContent = label + ': all ' + res.count + ' lines verify (signatures and hash chain) against key ' + g.public_key.slice(0, 16) + '...'; }
+          if (res.ok) { out.className = 'verify-out pass'; out.textContent = label + ': all ' + res.count + ' lines verify (Ed25519 signatures and SHA-256 hash chain), computed in your browser, against key ' + g.public_key.slice(0, 16) + '...'; }
           else { out.className = 'verify-out fail'; out.textContent = label + ': does not verify. ' + res.failures.slice(0, 3).map(function (f) { return 'line ' + f.line + ', ' + f.reason; }).join('; ') + '.'; }
         });
       }).catch(function () { out.className = 'verify-out fail'; out.textContent = 'The verifier could not run here.'; });
@@ -206,7 +210,7 @@
     var list = DATA.attacks[ATTACK].shown, i = SHOWN[ATTACK] % list.length, item = list[i];
     var out = clear($('result'));
     out.className = 'result rise';
-    var head = el('p', 'episode', DATA.attacks[ATTACK].title + '. Recorded episode ' + item.episode.n + ' of the ' + DATA.episodes + ' (' + (i + 1) + ' of ' + list.length + ' shown here; press Run for the next).');
+    var head = el('p', 'episode', DATA.attacks[ATTACK].title + '. Recorded episode ' + item.episode.n + ' of the ' + DATA.episodes + ' (' + (i + 1) + ' of ' + list.length + ' shown; press Run for the next).');
     out.appendChild(head);
     if (ATTACK === 'injection') out.appendChild(el('blockquote', 'quote', item.episode.message));
     var sides = el('div', 'sides');
@@ -245,7 +249,7 @@
     if (theme && !theme.textContent) theme.textContent = 'Light';
     fetch('data/break.json').then(function (r) { if (!r.ok) throw new Error('data'); return r.json(); }).then(function (data) {
       DATA = data; LIMIT = data.owner_limit_minor;
-      $('label').textContent = 'Recorded from the ' + data.episodes + ' episode run, seed ' + data.seed + ', on the ' + data.layer + '. Replayed with no PayPal call, and no money moves.';
+      $('label').textContent = 'Replay of a recorded run: ' + data.episodes + ' episodes, seed ' + data.seed + ', on the ' + data.layer + '. No PayPal call is made and no money moves.';
       totals();
       Array.prototype.forEach.call(document.querySelectorAll('input[name="attack"]'), function (radio) {
         radio.addEventListener('change', function () { choose(radio.value); });

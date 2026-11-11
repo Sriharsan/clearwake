@@ -264,6 +264,9 @@ def hud_case():
     offer = find(m, lambda r: r["step_id"] == f"{did}:offer")[-1]
     call = find(m, lambda r: r["step_id"] == f"{did}:model-call")[-1]
     read = find(m, lambda r: r["step_id"] == f"{did}:settlement" and r["params"].get("status") == "RESOLVED")[0]
+    pending = next(i for i in find(m, lambda r: r["step_id"] == f"{did}:settlement") if i > offer)
+    decision = call - 1
+    assert m[decision - 1]["action_id"] == "clearwake.dispute.decision" and m[decision - 1]["step_id"] == f"{did}:decision"
     closed = find(b, lambda r: r["step_id"].startswith(f"{order}:case_closed") and r["params"].get("outcome") == "settled_inquiry_no_fee")[-1]
     draft = find(b, lambda r: r["step_id"].startswith(f"{order}:model_draft"))[-1]
     mc, bc = m[call - 1]["params"], b[draft - 1]["params"]
@@ -280,7 +283,8 @@ def hud_case():
         "overridden": mc["overridden"], "offer": usd(mc["offer_minor"]), "limit_alone": usd(mo.group(2)), "ceiling": usd(mo.group(1)),
         "policy_hash": mc["policy_hash"], "status": case["paypal_status"], "stage": case["paypal_stage"], "outcome": case["paypal_outcome"],
         "refund": case["refund_confirmed"], "fee": "0.00", "settlement": case["outcome"],
-        "merchant": {"file": "receipts/batch-merchant.ndjson", "key": keys["merchant"], "offer_line": offer, "read_line": read, "call_line": call},
+        "merchant": {"file": "receipts/batch-merchant.ndjson", "key": keys["merchant"], "offer_line": offer, "read_line": read, "call_line": call,
+                     "decision_line": decision, "pending_line": pending, "wake_lines": [decision, call, offer, pending, read]},
         "buyer": {"file": "receipts/batch-buyer.ndjson", "key": keys["buyer"], "closed_line": closed},
     }
     (SITE / "data" / "hud-case.json").write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")

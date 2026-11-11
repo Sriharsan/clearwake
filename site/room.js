@@ -64,6 +64,20 @@
       var s = secs[+k - 1]; if (s) s.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     }
   });
+  // Receipts: each Verify button fetches its log and checks Ed25519 signatures and the SHA-256 hash chain with WebCrypto, in this browser.
+  all(".verify").forEach(function (b) {
+    var out = b.closest("li").querySelector(".verify-out");
+    b.addEventListener("click", function () {
+      out.className = "verify-out"; out.textContent = "Fetching the log and checking it in this browser.";
+      fetch(b.dataset.log, { credentials: "omit" }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(function (text) { return import("./verify.js").then(function (m) { return m.verifyLog(text, b.dataset.key); }); })
+        .then(function (res) {
+          if (res.ok) { out.className = "verify-out pass"; out.textContent = "All " + res.count + " lines verify: Ed25519 signatures and SHA-256 hash chain, against the key above."; }
+          else { out.className = "verify-out fail"; out.textContent = "Does not verify. " + res.failures.slice(0, 3).map(function (f) { return "line " + f.line + ", " + f.reason; }).join("; ") + "."; }
+        })
+        .catch(function () { out.className = "verify-out fail"; out.textContent = "This browser could not run the check (Ed25519 in WebCrypto is required). Run python -m verdock_core verify on the log."; });
+    });
+  });
   var first = $(".lane .mark");
   if (first) select(first, false);
 

@@ -153,7 +153,7 @@ clearwake.dispute.settlement  success true   RESOLVED     stage INQUIRY  RESOLVE
     <ul>
       <li>Evidence comes from the record only: the PayPal order, the tracking, the mandate receipt, the dispatch receipt. The buyer's message is read as a claim to check.</li>
       <li>Evidence goes to <code>POST /v1/customer/disputes/{id}/provide-evidence</code> as multipart. Part <code>input</code> is JSON <code>{"evidences": [...]}</code>. Each photo is an <code>evidence-file</code> part.</li>
-      <li>Send <strong>one merged evidence entry</strong>. PayPal needs an <code>item_id</code> when there are several entries, and a disputed item may show none. Two entries (tracking and dispatch proof) were refused with <code>ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES</code>.</li>
+      <li>Send <strong>one merged evidence entry</strong>. PayPal needs an <code>item_id</code> when there are several entries, and a disputed item can carry none. Two entries (tracking and dispatch proof) were refused with <code>ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES</code>.</li>
       <li>If the case has already moved to UNDER_REVIEW and PayPal no longer offers <code>provide_evidence</code> (item not received, dispute PP-R-SLI-10195419, stage CHARGEBACK, 31 Oct 2026), Clearwake sends the tracking note through <code>provide-supporting-info</code> instead.</li>
       <li>Then it reads the dispute back. Evidence counts as sent only when PayPal's record shows it: <code>clearwake.dispute.evidence_checked</code> with <code>dispatch_evidence_seen</code> true.</li>
     </ul>
@@ -172,7 +172,7 @@ read   PROOF_OF_FULFILLMENT, SUBMITTED_BY_SELLER, 3 Nov 2026 10:13 UTC, status W
     <ol>
       <li>On Hugging Face, request access to <code>facebook/sam3</code> (needed) and <code>facebook/sam3.1</code> (optional). Both are gated.</li>
       <li>Add <code>HF_TOKEN=</code> and your read token to <code>.env</code>. It is read only by the setup script and never printed.</li>
-      <li>Run the setup. It installs CPU PyTorch and Meta's code into <code>tools/sam/.venv</code> and downloads about 3.5 GB of weights next to the repository.</li>
+      <li>Run the setup. It installs CPU PyTorch and Meta's code into <code>tools/sam/.venv</code> and downloads 3.5 GB of weights next to the repository.</li>
     </ol>
     <figure class="cb"><div class="cb-head"><span class="cb-label"><span class="tag">shell</span> Windows, from the repository root</span></div>
 <pre tabindex="0"><code>.\tools\sam\setup.ps1</code></pre></figure>
@@ -366,7 +366,7 @@ egress:
     <ul>
       <li><strong>Integers only.</strong> A non integer number anywhere in a line is rejected, so the Python and browser verifiers always agree. Money is in minor units.</li>
       <li>Signed bytes: compact JSON of <code>step_id</code>, <code>action_id</code>, <code>params</code>, <code>success</code>, <code>ts_ms</code>, <code>actor</code> (agent, then user) and <code>prev_hash</code>, in that order, leaving out any that are absent.</li>
-      <li>Other members may be added. They are not signed, but the next line's <code>prev_hash</code> covers them.</li>
+      <li>Other members are added. They are not signed, but the next line's <code>prev_hash</code> covers them.</li>
       <li>Limit: a log with its newest lines removed still verifies. Keep the head digest somewhere else to catch that.</li>
     </ul>
     <figure class="cb real"><div class="cb-head"><span class="cb-label">one line of case-n-settle.ndjson, pretty printed</span></div>

@@ -29,7 +29,8 @@
   <section class="intro" aria-labelledby="h1">
     <p class="eyebrow">Break it</p>
     <h1 id="h1">Attack an agent that uses PayPal's Agent Toolkit. See who pays.</h1>
-    <p class="lede">Pick an attack and press Run. On the left is the unguarded agent, as recorded. On the right is the same episode with a guard in front of the tool, and a signed receipt you can verify here.</p>
+    <p class="tags"><span class="tag amber">Planted failure</span><span class="tag">Replay of a recorded run</span><span class="tag ink">Verified in your browser</span></p>
+    <p class="lede">Pick an attack and press Run. On the left is the unguarded agent, read from the recorded run. On the right is the same episode with a guard in front of the tool, and a signed receipt your browser verifies with Ed25519 and SHA-256.</p>
     <p class="label" id="label">Loading the recorded episodes.</p>
   </section>
 
@@ -37,10 +38,10 @@
     <h2 id="h-pick" class="sr">Choose an attack</h2>
     <fieldset class="attacks">
       <legend class="sr">Attack</legend>
-      <label class="attack"><input class="sr" type="radio" name="attack" value="lost_response" checked><span><b>Lost response</b><small>PayPal applied the refund, the answer was lost</small></span></label>
-      <label class="attack"><input class="sr" type="radio" name="attack" value="injection"><span><b>Injected instruction</b><small>The buyer's message gives orders</small></span></label>
-      <label class="attack"><input class="sr" type="radio" name="attack" value="over_limit"><span><b>Over limit request</b><small>More than the owner allows</small></span></label>
-      <label class="attack"><input class="sr" type="radio" name="attack" value="duplicate"><span><b>Duplicate delivery</b><small>The same case, again</small></span></label>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="lost_response" checked><span><b>Lost response</b><small>PayPal applied the refund, the answer was lost</small><span class="tag amber">Planted failure</span></span></label>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="injection"><span><b>Injected instruction</b><small>The buyer's message gives orders</small><span class="tag amber">Planted failure</span></span></label>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="over_limit"><span><b>Over limit request</b><small>More than the owner allows</small><span class="tag amber">Planted failure</span></span></label>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="duplicate"><span><b>Duplicate delivery</b><small>The same case, again</small><span class="tag amber">Planted failure</span></span></label>
     </fieldset>
     <div class="go">
       <p class="blurb" id="blurb"></p>
@@ -53,7 +54,7 @@
   <section class="totals-sec" aria-labelledby="h-tot">
     <h2 id="h-tot">All 80 attack episodes of the run</h2>
     <dl class="totals" id="totals"></dl>
-    <p class="note">The attack episodes are 20 each of lost response, injected instruction, over limit request and duplicate delivery. The unguarded numbers are read from the recorded run. The guarded numbers come from the same episodes replayed through the guard.</p>
+    <p class="note">The attack episodes are 20 each of lost response, injected instruction, over limit request and duplicate delivery. The unguarded numbers are read from the recorded run. The guarded numbers are the same episodes run through the guard on the local PayPal layer. Every attack here is a planted failure.</p>
   </section>
 
   <section class="use" aria-labelledby="h-use">

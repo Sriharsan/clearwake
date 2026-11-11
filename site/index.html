@@ -45,6 +45,7 @@
       <p class="eyebrow">After an agent buys</p>
       <h1 id="h1" class="line">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</h1>
       <p class="tagline">When an agent's order goes missing, agents fix it.</p>
+      <p class="proof-strip"><b>Real PayPal sandbox run, 11 November 2026.</b> 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.</p>
       <div class="cta">
         <a class="btn primary" href="/control-room">Open the Control Room</a>
         <a class="btn" href="#conversation">Watch the conversation</a>
@@ -304,13 +305,13 @@
     <div class="wrap">
       <p class="eyebrow">Settled in conversation</p>
       <h2 id="wake-h">The wake of one dispute. Each ring is a signed step.</h2>
-      <p class="lede">Real sandbox run, 3 Nov 2026. Scroll, and the rings follow the five signed receipts of dispute PP-R-OBG-10196144. Pick any step and change one value in it: your browser checks every signature and hash with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
+      <p class="lede">Real PayPal sandbox run, 11 Nov 2026, case 3 of a ten case batch. Scroll, and the rings follow five signed receipts of dispute PP-R-ISN-10198775, order 0HW636872W597254K. Pick any step and change one value in it: your browser checks every signature and hash of the whole 107 line merchant log and the 277 line buyer log with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
     </div>
     <div class="wake-scene wrap" id="wake-scene">
       <div class="wake-sticky">
         <svg id="wake-svg" viewBox="0 0 300 300" role="img" aria-labelledby="wk-t wk-d">
           <title id="wk-t">Five rings around a dispute</title>
-          <desc id="wk-d">Each ring is one signed receipt of case n. A ring turns red when its signature or hash link fails.</desc>
+          <desc id="wk-d">Each ring is one signed receipt of case 3. A ring turns red when its signature or hash link fails.</desc>
           <circle class="w-core" cx="150" cy="150" r="9"/>
         </svg>
         <p class="result-box" id="chain-msg" aria-live="polite">Checking the receipts.</p>
@@ -318,45 +319,46 @@
       </div>
       <ol class="wake-steps" id="wake-steps">
         <li class="step" data-i="-1">
-          <p class="eyebrow">Buyer</p>
+          <p class="eyebrow">Buyer agent</p>
           <h3>A dispute opens.</h3>
-          <p>The sandbox buyer opened PP-R-OBG-10196144 in PayPal's Resolution Center. The buyer's own words were not saved in the recorded run, so none are shown.</p>
+          <p>The buyer agent (qwen3.5:4b) wrote in PayPal's Resolution Center on dispute PP-R-ISN-10198775: "Order 0HW636872W597254K ($9.00) item not received. Request refund for the affected amount." The merchant's rule: settle an item that has not arrived on its own up to USD 5.00, ask the owner from USD 5.01 up to USD 9.00, never more.</p>
         </li>
         <li class="step" data-i="0">
-          <p class="eyebrow">Receipt 1, decision</p>
-          <h3>The policy decides.</h3>
-          <p>The decider proposes settle_by_offer (a rule in this 3 Nov run; the ten case batch of 11 Nov used a local model, qwen3.5:4b, with 0 scripted decisions). The policy agrees: offer USD 2.50, inside the owner's limit of USD 5.00, no approval needed (approval above USD 3.00, from policy/merchant.yaml).</p>
+          <p class="eyebrow">Receipt 1, dispute.decision</p>
+          <h3>The model proposes, the policy decides.</h3>
+          <p>qwen3.5:4b proposed settle_by_offer. The policy accepted it: offer USD 5.00, inside the owner's limit of USD 5.00 alone, no approval needed.</p>
           <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
         </li>
         <li class="step" data-i="1">
-          <p class="eyebrow">Receipt 2, decision</p>
-          <h3>The same decision, recorded again.</h3>
-          <p>The run was repeated before the offer went out, and the decision came out the same. The policy hash is identical in both receipts.</p>
+          <p class="eyebrow">Receipt 2, model.call</p>
+          <h3>The model call is signed too.</h3>
+          <p>qwen3.5:4b on ollama, 14.6 s, 211 prompt tokens, 17 completion tokens. Overridden: false. Fallback: false. Injection signals: none. The receipt holds the SHA-256 of the prompt and the policy hash.</p>
           <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
         </li>
         <li class="step" data-i="2">
-          <p class="eyebrow">Receipt 3, offer sent</p>
+          <p class="eyebrow">Receipt 3, dispute.offer_sent</p>
           <h3>One offer, sent alone.</h3>
-          <p>"We are sorry about this order. To settle it now, we offer a refund of 2.50 USD". Wording from <span class="mono">clearwake/swarm.py</span>. It goes as an offer alone, because PayPal refuses an offer after a seller message.</p>
+          <p>USD 5.00, sent as an offer alone, because PayPal refuses an offer after a seller message.</p>
           <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
         </li>
         <li class="step" data-i="3">
-          <p class="eyebrow">Receipt 4, PayPal read</p>
+          <p class="eyebrow">Receipt 4, dispute.settlement</p>
           <h3>PayPal's record is the judge.</h3>
-          <p>PayPal reads UNDER_REVIEW at INQUIRY. Nothing is counted as settled until PayPal's own record says RESOLVED, so the receipt waits.</p>
+          <p>PayPal reads UNDER_REVIEW at INQUIRY. Nothing is counted as settled until PayPal's own record says RESOLVED, so the receipt is signed as pending.</p>
           <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
         </li>
         <li class="step" data-i="4">
-          <p class="eyebrow">Receipt 5, PayPal read</p>
+          <p class="eyebrow">Receipt 5, dispute.settlement</p>
           <h3>Resolved, no claim, no fee.</h3>
-          <p>The buyer accepted in PayPal's Resolution Center, because this app cannot act for the buyer. PayPal paid refund 0TB11858A85953644 and reads RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage.</p>
+          <p>PayPal reads RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage. Refund USD 5.00, fee USD 0.00. The buyer agent signed its own closing receipt on its side.</p>
           <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
         </li>
       </ol>
     </div>
     <div class="wrap wake-foot">
       <button class="btn" type="button" id="chain-reset">Restore the original</button>
-      <a class="btn" href="receipts/case-n-settle.ndjson" download>Download the log</a>
+      <a class="btn" href="receipts/batch-merchant.ndjson" download>Download the merchant log</a>
+      <a class="btn" href="receipts/batch-buyer.ndjson" download>Download the buyer log</a>
     </div>
   </section>
 

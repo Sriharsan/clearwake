@@ -1,14 +1,18 @@
 # Clearwake video: dialogue script (2:45 maximum, Sri speaks, captions on)
 
-Format: **SAY** is what Sri says, **[click]** is what to do on screen, **CAPTION** is the burned in caption. Record the browser and one terminal only. Upload publicly to YouTube, captions on, no music, no third party logos. Speak in your own words; the lines are about 400 words, which fits 2:40 at a calm pace.
+**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
 
-The one line, first in the video (as it is on the site, README and Devpost About): "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice." Say it in your own breath, in two parts if needed.
+**When an agent's order goes missing, agents fix it.**
 
-Labels: one short caption per shot saying how it ran (**Real sandbox**, **Injected faults, local run on the local provider**, **Recorded sandbox run**). The phrase "local run on the local provider" appears once, on the unguarded segment.
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
 
-Live product on screen: 0:15 to 0:45 (the half that runs Clearwake), 0:45 to 1:50, 1:50 to 2:20 (the ledger, with the table overlay for the last 10 seconds) and 2:20 to 2:45. Only the title card (15 s), the recorded comparison page (about 15 s) and the 10 second table overlay are not live: 40 of 165 seconds, so the live share is 76 percent. Keep it at 75 or above if you cut anything.
+Format: **SAY** is what Sri says, **[click]** is what to do on screen, **CAPTION** is the burned in caption, **TAG** is the small label top left of every shot. Record the browser and one terminal only. Upload publicly to YouTube, captions on, no music, no third party logos. Speak in your own words; the lines are about 400 words, which fits 2:40 at a calm pace (130 words a minute, one claim per sentence).
 
-Bracketed numbers come from the real batch run file `data/runs/batch-sandbox-*.json`; the lead fills them from `docs/RESULTS.md`. Do not say a number that is still in brackets. The baseline numbers are already measured (`data/runs/baseline-20261110-172506.json`).
+Shape, taken from the winning videos: the real result is on screen in the first frame, no title card. The bad outcome comes first and the same action is stopped second. The key number is spoken while its proof is on screen. Every shot carries a tag that says how it ran: **Real PayPal sandbox run**, **Planted failure**, **Verified in your browser**, **Local run**. Hold each proof screen 4 to 5 seconds and cut at the end of a sentence. The outcomes are counted aloud.
+
+The one line, spoken at 0:08: "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice."
+
+Every number comes from a run file: `data/runs/batch-sandbox-20261111-132948.json` (the batch), `data/runs/settle-times-20261111.json` (settle times), `data/runs/baseline-20261110-172506.json` (the 200 episodes). Do not say a number that is not in those files.
 
 ## Before recording
 
@@ -16,71 +20,88 @@ Bracketed numbers come from the real batch run file `data/runs/batch-sandbox-*.j
 python -m clearwake --port 8810              # console: http://127.0.0.1:8810/console
 python -m clearwake --phone                  # only for the voice shot; wait for "Speech model ready"
 python scripts\cases.py --only e,g           # both must print PASS
+python scripts\verify_pair.py data\runs\batch-sandbox-20261111-132948.json
 ```
 
 Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verifier, 4 Voice); PayPal's sandbox Resolution Center logged in as the sandbox buyer (log in by hand before recording, never show the login or email); `docs/BASELINE.md` and `docs/TOOLKIT_FAILURE_CASES.md` open; the Render link `https://clearwake-console.onrender.com/console`; a terminal with `python scripts\show_dispute.py PP-R-ISN-10198775` typed. Never show `.env` or the PayPal developer credentials page.
 
-## 0:00 to 0:15 The problem, in dollars
+## 0:00 to 0:12 The real result, first frame (line spoken, number on screen)
 
-**[click]** Title card on screen: `USD 15.00` per dispute that escalates to a claim. `USD 30.00` per dispute above 1.5% and 100 sales. `Built for the PayPal AI Hackathon`. Source line under it: PayPal Merchant Fees, US, 1 Oct 2026; help350.
+**[click]** PayPal's record of dispute `PP-R-ISN-10198775` on screen from the first frame: status RESOLVED, stage INQUIRY, refund USD 5.00.
 
-**SAY:** "When an AI agent buys something and it never arrives, PayPal charges fifteen dollars when the dispute escalates, thirty above one and a half percent. Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal, in minutes, with proof, and nothing is ever paid twice. Built for the PayPal AI Hackathon."
+**TAG:** Real PayPal sandbox run, case 3
 
-**CAPTION:** PayPal fee rules, linked in the repo
+**SAY:** "An AI agent bought something. It never arrived. Five dollars. PayPal's own record reads resolved, at the inquiry stage, no fee."
 
-## 0:15 to 0:45 The unguarded agent
+**CAPTION:** PayPal's record: RESOLVED at INQUIRY, no fee
 
-**[click]** Browser on `docs/BASELINE.md`, the total row: an agent using PayPal's Agent Toolkit directly against Clearwake, 200 episodes. Then `docs/TOOLKIT_FAILURE_CASES.md`, the lost response table (2 refunds, 3.00 for one 1.50 dispute) and the injected message table (5000.00 refunded).
+## 0:12 to 0:25 The claim, then the bad outcome
 
-**SAY:** "First, an agent using PayPal's official Agent Toolkit directly, with no guard. A response is lost, the agent retries, and the customer is paid twice. A dispute message says ignore your limits, and a claim is accepted. Over two hundred episodes it overpaid twenty six hundred dollars and made sixty one double refunds."
+**SAY:** "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice. First, what happens without it."
 
-**CAPTION:** Injected faults, local run on the local provider. PayPal Agent Toolkit 1.11.0
+**[click]** Browser on `docs/BASELINE.md`, the total row: an agent using PayPal's Agent Toolkit directly, 200 episodes. Then `docs/TOOLKIT_FAILURE_CASES.md`, the lost response table.
 
-**[click]** Console, tab 2, **Run case**: e, then g. Point at the rows: e shows one refund, UNKNOWN then VERIFIED; g shows "Policy refused: above limit".
+**TAG:** Planted failure, local run, PayPal Agent Toolkit 1.11.0
 
-**SAY:** "Same faults through Clearwake: zero dollars overpaid, zero double refunds. The injected message is refused before any PayPal call."
+**SAY:** "A response is lost, the agent retries, and the customer is paid twice. A message says ignore your limits, and a claim is accepted. Over two hundred episodes: twenty six hundred and thirty three dollars overpaid, sixty one double refunds."
 
-**CAPTION:** Same faults, same layer
+**CAPTION:** 200 episodes: USD 2,633.25 overpaid, 61 double refunds
 
-## 0:45 to 1:50 Clearwake live on the sandbox
+## 0:25 to 0:40 The same action, stopped
 
-**[click]** Tab 4, **Voice** (or the phone): hold the button and say the rules. Show the plain words readback, then say yes. Show the signed policy hash.
+**[click]** Console, tab 2, **Run case**: e, then g. Point at e (one refund, UNKNOWN then VERIFIED) and g ("Policy refused: above limit"). Cut to the baseline row for Clearwake.
 
-**SAY:** "Step zero. I say my rules once: refund anything under thirty dollars that has not arrived in ten days, ask me above that, never refund twice. The system reads them back in plain words, I say yes, and they are signed. The model can propose anything now. It can never go past this."
+**TAG:** Planted failure, same faults, same layer
 
-**CAPTION:** Real sandbox. Rules said once, signed
+**SAY:** "Same faults through Clearwake. Zero dollars overpaid. Zero double refunds. The injected message is refused before any PayPal call."
 
-**[click]** Tab 1, **Buyer agent**: the order inside its signed mandate, the tracking stalled. PayPal sandbox Resolution Center: the buyer's agent opens the item not received dispute.
+**CAPTION:** Clearwake: USD 0.00 overpaid, 0 double refunds, 200 of 200 as the owner intended
 
-**SAY:** "The buyer's agent bought inside a mandate its owner signed. The tracking stalls, so it opens the item not received dispute in PayPal, and only for an order its mandate covers."
+## 0:40 to 1:05 Rules said once, by voice
 
-**CAPTION:** Real sandbox, buyer agent through a local browser
+**[click]** Tab 4, **Voice** (or the phone): hold the button, say the rule, show the plain words readback, say yes, show the signed policy hash.
 
-**[click]** Tab 2, **Merchant control room**, AG Grid ledger: the new row, stage INQUIRY. Point at the **Proposed** and **Policy decision** columns, then the dispatch record.
+**TAG:** Real PayPal sandbox run, rules said by the owner
 
-**SAY:** "The merchant's agent reads the dispute, the order, the tracking on PayPal and the signed dispatch record. The model drafts. The rules decide. Here it offers a refund inside my limit, sent alone through PayPal's own offer call."
+**SAY:** "I say my rule once. Settle an item that has not arrived on its own, up to five dollars. Ask me up to nine. Never more. The system reads it back in plain words, I say yes, and it is signed. The model can propose anything now. It can never go past this."
 
-**CAPTION:** Real sandbox. Local model `qwen3.5:4b`; the policy decides
+**CAPTION:** Settle up to USD 5.00. Ask up to USD 9.00. Never more.
 
-**[click]** Scroll the ledger to the row where the two columns differ: `case 1 (delivered with proof), dispute PP-R-YYA-10198768`.
+## 1:05 to 1:35 The two agents settle it
 
-**SAY:** "Here the model proposed the wrong move once. The policy stopped it. The model only proposes."
+**[click]** Tab 1, **Buyer agent**: the order inside its signed mandate. PayPal's Resolution Center: the buyer's agent opens the item not received dispute. Tab 2, AG Grid ledger: the new row, stage INQUIRY, the **Proposed** and **Policy decision** columns.
 
-**CAPTION:** `The buyer agent's model proposed counter. The owner's rule stopped it and decided wait.`
+**TAG:** Real PayPal sandbox run, buyer agent through a local browser
 
-**[click]** The buyer agent log: the offer is read, its mandate allows it, it accepts. Then the terminal: `python scripts\show_dispute.py PP-R-ISN-10198775`, PayPal's record: status RESOLVED, stage INQUIRY. Then tab 3, **Receipt verifier**: the two receipts, same dispute id, Verify.
+**SAY:** "The buyer's agent bought inside a mandate its owner signed, and opens the dispute only for an order that mandate covers. The merchant's agent reads the dispute, the order, the tracking and the signed dispatch record. The model drafts. The rules decide. The offer goes alone, through PayPal's own offer call."
 
-**SAY:** "The buyer's agent accepts what its mandate allows. PayPal's own record now reads resolved, at the inquiry stage. No claim, no fee. Two signed receipts, one from each side, the same dispute id, verified offline."
+**CAPTION:** The model proposes. The signed policy decides.
 
-**CAPTION:** Real sandbox, read from PayPal's record
+**[click]** The ledger row where the two columns differ, case 1, `PP-R-YYA-10198768`.
 
-## 1:50 to 2:20 The results
+**SAY:** "Here the model proposed the wrong move once. The owner's rule stopped it."
 
-**[click]** Tab 2, ledger after the batch: filter by stage, point at the countdown cells, press CSV export. For the last 10 seconds, overlay the table below (it comes from `docs/RESULTS.md`).
+**CAPTION:** Model proposed counter. The owner's rule decided wait.
 
-**SAY:** "Ten agent bought cases on the real sandbox. 4 settled by the two agents with no fee, 3 correctly handed to a person, 4 refunds confirmed by PayPal's record. Any other dispute reason goes to the owner untouched. That is the honest limit."
+## 1:35 to 1:55 Do not trust us. Check it.
 
-**CAPTION:** Real sandbox batch of `10`, read back from PayPal
+**[click]** Terminal: `python scripts\show_dispute.py PP-R-ISN-10198775`, then tab 3, **Receipt verifier**: the two receipts, same dispute id, Verify. Then edit one character of a log and verify again: it fails.
+
+**TAG:** Verified in your browser
+
+**SAY:** "Two signed receipts, one from each side, the same dispute id. Verify them offline. Change one line and the chain breaks."
+
+**CAPTION:** Two receipts, one dispute id. Change one line, the chain breaks.
+
+## 1:55 to 2:25 All ten cases, counted aloud
+
+**[click]** Tab 2, ledger after the batch: stage filter, deadline countdown, CSV export. For the last 10 seconds overlay the table below (from `docs/RESULTS.md`).
+
+**TAG:** Real PayPal sandbox run, batch of 10, read back from PayPal
+
+**SAY:** "Ten cases on the real sandbox. Four settled at inquiry with no fee, in twenty four to sixty two minutes in PayPal's timestamps. Three answered with proof and are under PayPal review. Two are waiting for the merchant owner. One was refused by the buyer's mandate: twenty dollars claimed on a nine dollar order. PayPal moved four cases to chargeback once tracking was on the order. Zero double refunds."
+
+**CAPTION:** 4 settled, 3 under PayPal review, 2 awaiting the owner, 1 refused by the mandate
 
 Overlay table:
 
@@ -90,19 +111,21 @@ Overlay table:
 | Double refunds | 61 | 0 |
 | Wrongly accepted claims | 160 | 0 |
 | Episodes ended as the owner intended | 40 of 200 | 200 of 200 |
-| Real sandbox batch of `10` | not run | `4` settled at INQUIRY, `4` refunds confirmed |
+| Real sandbox batch of 10 | not run | 4 settled at INQUIRY, 0 double refunds |
 
-## 2:20 to 2:45 Who it is for, how to run it
+## 2:25 to 2:45 End card: numbers, one command, links
 
-**[click]** Console in the browser at the Render link, then the GitHub page, then a terminal showing the one clone command.
+**[click]** Console in the browser at the Render link, then the GitHub page, then a terminal showing the one clone command. End card: three numbers and the command.
 
-**SAY:** "Clearwake is for the person whose agent shops for them, and the small merchant on PayPal who sells to agents. Run it yourself with one command, or open the live console, hosted on Render. The code is MIT on GitHub, sandbox only, no real money."
+**TAG:** Verified in your browser
 
-**CAPTION:** `https://clearwake-console.onrender.com` (hosted on Render, not network isolated). github.com/Sriharsan/clearwake
+**SAY:** "Four of ten settled with no fee. Zero dollars overpaid against twenty six hundred. Zero double refunds against sixty one. One command runs it, or open the live console on Render. MIT, sandbox only, no real money."
+
+**CAPTION:** 4 of 10 settled. USD 0.00 against USD 2,633.25. 0 against 61 double refunds. clearwake-console.onrender.com  github.com/Sriharsan/clearwake
 
 ## Notes
 
 * Do not stage a step. If the sandbox shows a CAPTCHA or blocks the buyer's browser, record the owner doing that step by hand, say so in one sentence, and caption it "Real sandbox, buyer step done by hand". Never get past a CAPTCHA.
-* The unguarded agent segment is a recorded comparison, not the product; keep it to about 15 seconds on screen.
-* The network cut (case m) and the broken receipt chain are good extras if the batch leaves seconds to spare. They are not in the 2:45 cut. Caption the cut "Real sandbox, network isolated containers" and the chain "Recorded sandbox run, verified in this browser".
+* The unguarded agent segment is a recorded comparison on the local PayPal layer; keep it under 20 seconds.
+* The network cut (case m) and the broken receipt chain are extras if the cut leaves seconds to spare. Caption the cut "Real PayPal sandbox run, network isolated containers" and the chain "Verified in your browser".
 * Keep to plain speech and the public text rules in the build brief.

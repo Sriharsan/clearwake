@@ -147,7 +147,8 @@ async function loadReceipts() {
     box.classList.toggle('ok', report.ok); box.classList.toggle('bad', !report.ok);
     box.textContent = report.ok ? 'Pass: the signature on the dispatch receipt verifies against the published key.' : `Fail: ${report.failures[0].reason}`;
   });
-  await wake(await get('receipts/case-n-settle.ndjson'));
+  const hud = await (await fetch('data/hud-case.json')).json();
+  await wake(await get(hud.merchant.file), await get(hud.buyer.file), hud);
 }
 
 function change(line) {
@@ -160,26 +161,25 @@ function change(line) {
   return { text: JSON.stringify(obj), what: `success ${was} to ${!was}` };
 }
 
-async function wake({ log, text }) {
-  const lines = text.replace(/\n$/, '').split('\n');
+async function wake(merchant, buyer, hud) {
+  const all = merchant.text.replace(/\n$/, '').split('\n');
+  const buyerCount = buyer.text.replace(/\n$/, '').split('\n').length;
+  const idx = hud.merchant.wake_lines.map(n => n - 1);          // the five case 3 receipts inside the full merchant log
   const svg = $('wake-svg'), msg = $('chain-msg'), scene = $('wake-scene');
   const steps = [...document.querySelectorAll('#wake-steps .step')];
-  $('chain-key').textContent = `Public key ${log.public_key}`;
-  const rings = lines.map((_, i) => {
+  $('chain-key').textContent = `Merchant agent public key ${merchant.log.public_key}`;
+  const rings = idx.map((_, i) => {
     const r = 34 + i * 26;
     const c = svgEl('circle', { class: 'ring', cx: '150', cy: '150', r: String(r) });
     const t = svgEl('text', { class: 'ring-n', x: '150', y: String(150 - r + 4) }); t.textContent = String(i + 1);
     svg.append(c, t); return c;
   });
   const info = [];
-  for (let i = 0; i < lines.length; i++) {
-    const rec = JSON.parse(lines[i]);
-    info.push({ hash: await sha(lines[i]), rec });
-  }
+  for (const at of idx) info.push({ hash: await sha(all[at]), rec: JSON.parse(all[at]), at });
   steps.filter(s => s.dataset.i !== '-1').forEach(s => {
-    const i = Number(s.dataset.i), { hash, rec } = info[i];
+    const i = Number(s.dataset.i), { hash, rec, at } = info[i];
     const time = new Date(rec.ts_ms).toISOString().slice(11, 19) + ' UTC';
-    s.querySelector('.rec').textContent = `${time}. Line hash ${hash.slice(0, 16)}. ${rec.prev_hash ? 'Links to ' + rec.prev_hash.slice(0, 16) + '. ' : 'First link. '}Signed ${rec.signature.slice(0, 16)}.`;
+    s.querySelector('.rec').textContent = `Log line ${at + 1} of ${all.length}, ${time}. Line hash ${hash.slice(0, 16)}. Links to ${rec.prev_hash.slice(0, 16)}. Signed ${rec.signature.slice(0, 16)}.`;
   });
   let picked = -1, current = -1;
   const paintCurrent = () => {
@@ -195,30 +195,32 @@ async function wake({ log, text }) {
     steps.forEach(s => io.observe(s));
     paintCurrent();
   }
+  const buyerReport = await verifyLog(buyer.text, buyer.log.public_key);
   async function run() {
-    const body = lines.slice(); let what = '';
-    if (picked >= 0) { const c = change(lines[picked]); body[picked] = c.text; what = c.what; }
-    const report = await verifyLog(body.join('\n') + '\n', log.public_key);
+    const body = all.slice(); let what = '';
+    if (picked >= 0) { const c = change(all[idx[picked]]); body[idx[picked]] = c.text; what = c.what; }
+    const report = await verifyLog(body.join('\n') + '\n', merchant.log.public_key);
     const bad = new Map();
     for (const f of report.failures) bad.set(f.line - 1, [...(bad.get(f.line - 1) || []), f.reason]);
     const firstBad = bad.size ? Math.min(...bad.keys()) : -1;
     rings.forEach((r, i) => {
-      r.classList.toggle('broken', bad.has(i));
-      r.classList.toggle('after', firstBad >= 0 && i > firstBad && !bad.has(i));
+      r.classList.toggle('broken', bad.has(idx[i]));
+      r.classList.toggle('after', firstBad >= 0 && idx[i] > firstBad && !bad.has(idx[i]));
     });
     steps.forEach(s => {
       const i = Number(s.dataset.i); if (i < 0) return;
-      s.classList.toggle('bad', bad.has(i));
+      s.classList.toggle('bad', bad.has(idx[i]));
       const b = s.querySelector('.hit'); b.textContent = i === picked ? 'Undo the change' : 'Change one value here';
       b.setAttribute('aria-pressed', i === picked ? 'true' : 'false');
     });
     paintCurrent();
-    msg.classList.toggle('ok', report.ok); msg.classList.toggle('bad', !report.ok);
-    if (report.ok) msg.textContent = `Pass: all ${report.count} receipts verify, every hash links to the one before, signed by the published key.`;
-    else {
-      const where = [...bad.keys()].sort((a, b) => a - b).map(i => `${i + 1} (${bad.get(i).join(', ')})`).join(' and ');
+    const ok = report.ok && buyerReport.ok;
+    msg.classList.toggle('ok', ok); msg.classList.toggle('bad', !ok);
+    if (ok) msg.textContent = `Pass: all ${report.count} merchant receipts and all ${buyerReport.count} buyer receipts verify, every hash links to the one before, each log signed by its published key.`;
+    else if (!report.ok) {
+      const where = [...bad.keys()].sort((a, b) => a - b).map(i => `log line ${i + 1} (${bad.get(i).join(', ')})`).join(' and ');
       msg.textContent = `Receipt ${picked + 1} changed (${what}). The wake breaks at ${where}. Rings after the break hang from a broken link.`;
-    }
+    } else msg.textContent = `Fail: the buyer log has ${buyerReport.failures.length} problem${buyerReport.failures.length === 1 ? '' : 's'}, first at line ${buyerReport.failures[0].line}, ${buyerReport.failures[0].reason}.`;
   }
   steps.forEach(s => {
     const b = s.querySelector('.hit'); if (!b) return;

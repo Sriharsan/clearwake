@@ -1,12 +1,22 @@
 # Documentation index
 
+**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
+
+**When an agent's order goes missing, agents fix it.**
+
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+
 Every document in `docs/`, grouped by what a reader needs it for. Back to the [README](../README.md).
 
 ## Start here
 
-The result in one line: on a real PayPal sandbox run, 4 of 10 agent bought item not received disputes settled at INQUIRY with no fee, 0 double refunds, 3 pending with PayPal, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate, and 4 cases moved by PayPal to CHARGEBACK. The run file is `data/runs/batch-sandbox-20261111-132948.json`.
+**Real PayPal sandbox run, 11 November 2026:** 10 orders bought by a buyer agent, 10 item not received disputes. 4 settled at INQUIRY with no fee (24 to 62 minutes from filing to RESOLVED in PayPal's timestamps, `data/runs/settle-times-20261111.json`), 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 0 double refunds. PayPal moved 4 cases to CHARGEBACK once tracking was on the order. The run file is `data/runs/batch-sandbox-20261111-132948.json`.
 
-Tags used on every page: **Real PayPal sandbox run**, **Planted failure**, **Verified in your browser**, **Local run**.
+**Planted failure, 200 episodes:** USD 2,633.25 overpaid by an agent using PayPal's Agent Toolkit directly, USD 0.00 with Clearwake.
+
+Run it with one command: `git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git && cd clearwake && python -m clearwake --port 8810`, then open `/console`. Built during the hackathon: dated in [HACKATHON_UPDATES.md](HACKATHON_UPDATES.md) and [../BUILT_DURING_HACKATHON.md](../BUILT_DURING_HACKATHON.md).
+
+Tags used on every page, each item carries one: **Real PayPal sandbox run**, **Planted failure**, **Verified in your browser**, **Local run**.
 
 * [RESULTS.md](RESULTS.md): every measured number, by case and by run file.
 * [SANDBOX_RUN.md](SANDBOX_RUN.md): the real PayPal sandbox runs with their ids.

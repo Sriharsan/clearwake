@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clearwake Control Room</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="description" content="The recorded sandbox run of Clearwake as a time river of disputes: every mark is a signed receipt line. Every mark is a signed receipt that verifies in your browser.">
+<meta name="description" content="Ten real PayPal sandbox disputes with outcomes counted, then the time river of the recorded runs. Each receipt log is checked in your browser with WebCrypto: Ed25519 signatures and a SHA-256 hash chain.">
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="room.css">
@@ -30,15 +30,31 @@
 
 <nav class="index" aria-label="On this page">
   <div class="wrap index-in">
-    <a href="#today">Today</a><a href="#river-s">River</a><a href="#disputes">Disputes</a><a href="#refunds">Refunds</a><a href="#dispatch">Dispatch proof</a><a href="#approvals">Approvals</a><a href="#receipts">Receipts</a><a href="#settings">Settings</a>
+    <a href="#batch">Batch</a><a href="#today">Today</a><a href="#river-s">River</a><a href="#disputes">Disputes</a><a href="#refunds">Refunds</a><a href="#dispatch">Dispatch proof</a><a href="#approvals">Approvals</a><a href="#receipts">Receipts</a><a href="#settings">Settings</a>
   </div>
 </nav>
 
 <main>
+  <section id="batch" class="wrap batch" aria-labelledby="h-batch">
+    <p class="eyebrow">Control Room, batch ledger</p>
+    <h1 id="h-batch">10 real sandbox disputes. 4 settled at INQUIRY with no fee.</h1>
+    <p class="tags" aria-label="Tags used on this page"><span class="tag">Real PayPal sandbox run</span><span class="tag amber">Planted failure</span><span class="tag ink">Verified in your browser</span></p>
+    <p class="lede">The batch of 11 Nov 2026 ran against <code>api-m.sandbox.paypal.com</code>. The counts and the rows below are computed in your browser from <a href="data/batch-sandbox-20261111-132948.json">data/batch-sandbox-20261111-132948.json</a>.</p>
+    <dl class="tally" id="tally">
+      <div><dd class="tnum" id="t-settled">4</dd><dt>Settled at INQUIRY, no fee</dt></div>
+      <div><dd class="tnum" id="t-review">3</dd><dt>Answered with proof, under PayPal review</dt></div>
+      <div><dd class="tnum" id="t-owner">2</dd><dt>Awaiting the merchant owner</dt></div>
+      <div><dd class="tnum" id="t-mandate">1</dd><dt>Refused by the mandate</dt></div>
+    </dl>
+    <ol class="batch-list" id="batch-list" aria-label="The ten disputes of the batch"></ol>
+    <p class="note" id="batch-hash">SHA-256 of the batch file is computed in your browser when this page loads.</p>
+    <noscript><p class="note">The rows need JavaScript. The same rows are in <a href="data/batch-sandbox-20261111-132948.json">data/batch-sandbox-20261111-132948.json</a>.</p></noscript>
+  </section>
+
   <section id="today" class="hero wrap" aria-labelledby="h-today">
-    <p class="eyebrow">Control Room</p>
-    <p class="strip">Real PayPal sandbox disputes. Every mark is a signed receipt that verifies in your browser.</p>
-    <h1 id="h-today" class="sr">Control Room</h1>
+    <p class="eyebrow">Fee on the earlier recorded runs</p>
+    <p class="strip">Real PayPal sandbox disputes. Each receipt log has a Verify button in Receipts that runs Ed25519 and SHA-256 in your browser.</p>
+    <h2 id="h-today" class="sr">Fee avoided on the recorded runs</h2>
     <div class="hero-grid">
       <div class="fee">
         <p class="fee-label" id="fee-label">Fee if this case had escalated to a claim</p>
@@ -48,7 +64,7 @@
         <button type="button" class="toggle" id="hv" aria-pressed="false"><kbd>H</kbd> High volume what-if</button>
       </div>
       <dl class="today">
-        <div><dt>Settled before escalation</dt><dd class="tnum">1</dd><dd class="sub">Dispute PP-R-OBG-10196144, settled by offer on 3 Nov 2026, RESOLVED at INQUIRY. Source: docs/RESULTS.md.</dd></div>
+        <div><dt>Settled before escalation, run of 3 Nov</dt><dd class="tnum">1</dd><dd class="sub">Dispute PP-R-OBG-10196144, settled by offer on 3 Nov 2026, RESOLVED at INQUIRY. Source: docs/RESULTS.md.</dd></div>
         <div><dt>Network</dt><dd class="word">Online, holding 0</dd><dd class="sub">At the end of the recorded run. The network cut and resume of 31 Oct 2026 is in the river.</dd></div>
         <div><dt>Approvals waiting</dt><dd class="tnum amber-t">0</dd><dd class="sub">The refund above the approval line on 31 Oct 2026 needed one and got it. See Approvals.</dd></div>
         <div><dt>Deadlines</dt><dd class="word">None recorded</dd><dd class="sub">The recorded sandbox disputes were answered before a deadline was saved. A row that carries one counts down live in the ledger.</dd></div>
@@ -200,13 +216,13 @@
 
   <section id="receipts" class="wrap sec" aria-labelledby="h-receipts">
     <p class="eyebrow">Receipts</p>
-    <h2 id="h-receipts">Four signed logs, checked in your browser</h2>
-    <p class="lede">Every line is signed and chained to the line before it. Download a log and check it offline, or read how in the <a href="/developers#verify-receipts-offline">Developers guide to verifying receipts offline</a>. The verifier runs in your browser with WebCrypto and sends nothing.</p>
+    <h2 id="h-receipts">Four signed logs. Verify each in your browser.</h2>
+    <p class="lede">Every line is signed and chained to the line before it. Press Verify and your browser fetches the log, then checks every Ed25519 signature and SHA-256 hash link with WebCrypto. Nothing is sent. To check offline, read the <a href="/developers#verify-receipts-offline">Developers guide to verifying receipts offline</a>.</p>
     <ul class="logs">
-      <li><h3>Dispatch proof, PP-R-UKF-10195772</h3><p>Counted by SAM 3, sent as evidence on a real sandbox dispute. Recorded 3 Nov 2026. 9 lines.</p><p class="id wrap-any">key c0d2cba770398baf2861429583e5b558e06b988c64d8a0b8ede7603f7f8f7f6c</p><a class="btn" href="/receipts/case-o-dispatch.ndjson">Open the raw log</a></li>
-      <li><h3>Settled by offer, PP-R-OBG-10196144</h3><p>Real sandbox dispute, offer sent alone, PayPal reads RESOLVED. Recorded 3 Nov 2026. 5 lines.</p><p class="id wrap-any">key 93980b0de422af30f7bfaaab14c16c06209e71b296119e84d6b02c4c8517e6f9</p><a class="btn" href="/receipts/case-n-settle.ndjson">Open the raw log</a></li>
-      <li><h3>Network cut, three refunds</h3><p>Refunds through the gateway. Recorded 31 Oct 2026. 12 lines.</p><p class="id wrap-any">key 5fec32e4b3ff4300cfda35105e2924f935adc501a9dc486aa26b295e861bb769</p><a class="btn" href="/receipts/case-m-merchant.ndjson">Open the raw log</a></li>
-      <li><h3>Egress gateway</h3><p>Every request that reached for the outside, including the one refused with 403. Recorded 31 Oct 2026. 34 lines.</p><p class="id wrap-any">key 6cf664b01eadc58ffac85fde3304ebc3bc1fe480c110f95d10818d4c6db512ed</p><a class="btn" href="/receipts/egress-gateway.ndjson">Open the raw log</a></li>
+      <li><h3>Dispatch proof, PP-R-UKF-10195772</h3><p>Counted by SAM 3, sent as evidence on a real sandbox dispute. Recorded 3 Nov 2026. 9 lines.</p><p class="id wrap-any">key c0d2cba770398baf2861429583e5b558e06b988c64d8a0b8ede7603f7f8f7f6c</p><span class="acts"><button type="button" class="btn primary verify" data-log="/receipts/case-o-dispatch.ndjson" data-key="c0d2cba770398baf2861429583e5b558e06b988c64d8a0b8ede7603f7f8f7f6c">Verify in your browser</button><a class="btn" href="/receipts/case-o-dispatch.ndjson">Open the raw log</a></span><p class="verify-out" aria-live="polite"></p></li>
+      <li><h3>Settled by offer, PP-R-OBG-10196144</h3><p>Real sandbox dispute, offer sent alone, PayPal reads RESOLVED. Recorded 3 Nov 2026. 5 lines.</p><p class="id wrap-any">key 93980b0de422af30f7bfaaab14c16c06209e71b296119e84d6b02c4c8517e6f9</p><span class="acts"><button type="button" class="btn primary verify" data-log="/receipts/case-n-settle.ndjson" data-key="93980b0de422af30f7bfaaab14c16c06209e71b296119e84d6b02c4c8517e6f9">Verify in your browser</button><a class="btn" href="/receipts/case-n-settle.ndjson">Open the raw log</a></span><p class="verify-out" aria-live="polite"></p></li>
+      <li><h3>Network cut, three refunds</h3><p>Refunds through the gateway. Recorded 31 Oct 2026. 12 lines.</p><p class="id wrap-any">key 5fec32e4b3ff4300cfda35105e2924f935adc501a9dc486aa26b295e861bb769</p><span class="acts"><button type="button" class="btn primary verify" data-log="/receipts/case-m-merchant.ndjson" data-key="5fec32e4b3ff4300cfda35105e2924f935adc501a9dc486aa26b295e861bb769">Verify in your browser</button><a class="btn" href="/receipts/case-m-merchant.ndjson">Open the raw log</a></span><p class="verify-out" aria-live="polite"></p></li>
+      <li><h3>Egress gateway</h3><p>Every request that reached for the outside, including the one refused with 403. Recorded 31 Oct 2026. 34 lines.</p><p class="id wrap-any">key 6cf664b01eadc58ffac85fde3304ebc3bc1fe480c110f95d10818d4c6db512ed</p><span class="acts"><button type="button" class="btn primary verify" data-log="/receipts/egress-gateway.ndjson" data-key="6cf664b01eadc58ffac85fde3304ebc3bc1fe480c110f95d10818d4c6db512ed">Verify in your browser</button><a class="btn" href="/receipts/egress-gateway.ndjson">Open the raw log</a></span><p class="verify-out" aria-live="polite"></p></li>
     </ul>
     <p class="note">Source: <code>receipts/manifest.json</code>. Each log verified in Python before it was published.</p>
   </section>

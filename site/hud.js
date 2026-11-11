@@ -94,42 +94,102 @@
   var wave = $('wave'), core = $('core'), ring = doc.querySelector('.ring-wrap');
   var IDS = ['rr-buyer', 'rr-merch', 'b1', 'b2', 'b3', 'b4', 't1', 't2', 't3', 'm1', 'm2', 'm3', 'm4', 'chip3', 'chip5'];
 
-  /* ---------- the three characters: original vector figures, drawn here, no outside assets ---------- */
+  /* ---------- the three characters: original semi realistic bust portraits, drawn here in SVG, no outside assets ---------- */
   function figure(kind) {
+    var p = kind + '-', u = function (id) { return 'url(#' + p + id + ')'; };
+    var F = 'M80 27C103 27 113 46 112.5 68C112 92 101 112 80 117C59 112 48 92 47.5 68C47 46 57 27 80 27Z';
+    var T = 'M6 180C8 152 30 140 62 135L98 135C130 140 152 152 154 180Z';
+    var core = {
+      owner: '<g class="core"><circle class="cglow" cx="42" cy="158" r="8" filter="' + u('bg') + '"/><circle class="cring" cx="42" cy="158" r="5.6"/><circle class="cdia" cx="42" cy="158" r="2.6"/></g>',
+      buyer: '<g class="core"><circle class="cglow" cx="80" cy="162" r="8" filter="' + u('bg') + '"/><path class="cring" d="M80 156.5l5.5 5.5-5.5 5.5-5.5-5.5z"/><circle class="cdia" cx="80" cy="162" r="2.4"/></g>',
+      merch: '<g class="core"><circle class="cglow" cx="118" cy="160" r="8" filter="' + u('bg') + '"/><circle class="cring" cx="118" cy="160" r="5.6"/><circle class="cdia" cx="118" cy="160" r="2.6"/></g>'
+    }[kind];
     var K = {
       owner: {
         back: '',
-        torso: '<path class="cos" d="M12 140C12 108 34 98 60 98s48 10 48 42z"/><path class="cos2" d="M44 100L60 130 38 140 26 112z"/><path class="cos2" d="M76 100L60 130 82 140 94 112z"/><path class="shirt" d="M50 99L60 126 70 99z"/><path class="tie" d="M57 104h6l2 5-5 17-5-17z"/><path class="lap" d="M44 100L56 118 52 99zM76 100L64 118 68 99z"/><g class="core"><path class="cglow" d="M80 119l6 6-6 6-6-6z"/><path class="cdia" d="M80 121.5l3.5 3.5-3.5 3.5-3.5-3.5z"/></g>',
-        hair: '<path class="hair" d="M38 56C34 30 50 20 62 20c14 0 22 12 20 36-2-8-5-14-9-16-8 4-22 5-30 2-3 3-4 9-5 14z"/><path class="grey" d="M38.5 56c0-5 1-9 3-12l2 2c-2 4-3 8-3 12zM81.5 56c0-5-1-9-3-12l-2 2c2 4 3 8 3 12z"/>',
-        brow: 'M45 48q5-3 10-1M65 47q5-2 10 1', extra: ''
+        torso: '<path class="shirt" d="M62 134L80 168L98 134L92 131L80 142L68 131Z"/><path class="lap" d="M60 135L80 170L50 180L26 162C36 148 48 139 60 135Z"/><path class="lap" d="M100 135L80 170L110 180L134 162C124 148 112 139 100 135Z"/><path class="lt" d="M60 135L80 170M100 135L80 170"/><path class="fold" d="M20 172Q30 160 34 180M140 172Q132 162 128 180M70 152Q64 166 62 180M104 160Q108 170 106 180"/><path class="fhi" d="M16 168Q22 152 38 146M118 150Q132 152 142 164"/>',
+        shade: '<path d="M50 84C52 106 64 116 80 117C96 116 108 106 110 84C104 96 96 100 80 100C64 100 56 96 50 84Z" fill="' + u('hr') + '" opacity=".2" filter="' + u('bl') + '"/>',
+        age: '<path class="wr" d="M62 38Q72 35 82 37M66 43Q76 41 90 42M60 82Q56 92 61 100M100 82Q104 92 99 100"/>',
+        facial: '',
+        hair: '<path d="M47 68C43 40 58 22 82 22C103 22 117 38 113 68C111 55 107 47 100 43C88 47 68 45 56 41C50 47 48 57 47 68Z" fill="' + u('hr') + '"/><path class="grey" d="M47 68C46 57 47 51 50 46L54 48C52 55 51 61 51 70ZM113 68C114 57 113 51 110 46L106 48C108 55 109 61 109 70Z"/><path class="strand" d="M58 38Q72 29 90 31M54 44Q70 34 96 38M64 36Q76 31 98 36M52 52Q55 44 62 40"/><path class="hrim" d="M100 28C111 36 114 52 113 68" filter="' + u('bg') + '"/>',
+        brow: 2.6, bw: 'M53 58Q62 52 73 56M87 56Q98 52 107 58'
       },
       buyer: {
-        back: '<path class="hair" d="M36 52C28 88 30 104 44 104h32c14 0 16-16 8-52z"/>',
-        torso: '<path class="cos" d="M12 140C12 108 34 98 60 98s48 10 48 42z"/><path class="cos2" d="M46 99L60 112 74 99 70 88H50z"/><path class="plate" d="M40 114L60 124 80 114 80 132 60 140 40 132z"/><path class="edge" d="M60 112v28M40 114L60 124 80 114"/><ellipse class="plate" cx="19" cy="110" rx="12" ry="9" transform="rotate(-25 19 110)"/><ellipse class="plate" cx="101" cy="110" rx="12" ry="9" transform="rotate(25 101 110)"/><path class="lt" d="M10 112q8-10 17-6M110 112q-8-10-17-6"/><path class="lt" d="M46 120h10M64 120h10"/>',
-        hair: '<path class="hair" d="M37 58C32 30 52 18 64 21c14 3 20 16 18 38-2-10-8-18-18-20-10 0-20 6-27 19z"/><circle class="sig sg" cx="39" cy="61" r="2.6"/>',
-        brow: 'M45 49q5-3 10-1M65 48q5-2 10 1', extra: ''
+        back: '<path d="M44 62C32 100 36 150 28 176L132 176C124 150 128 100 116 62C112 32 98 20 80 20C62 20 48 32 44 62Z" fill="' + u('hr') + '"/><path class="strand" d="M40 100C38 130 36 154 34 172M50 90C46 124 44 150 42 172M120 100C122 130 124 154 126 172M110 90C114 124 116 150 118 172"/>',
+        torso: '<path class="plate" d="M10 180C10 156 26 143 50 138L55 152C42 156 32 164 30 180Z"/><path class="plate" d="M150 180C150 156 134 143 110 138L105 152C118 156 128 164 130 180Z"/><path class="cos2" d="M60 136L80 152L100 136L108 180H52Z"/><path class="lt" d="M10 180C10 156 26 143 50 138M150 180C150 156 134 143 110 138M80 152V180M60 136L80 152L100 136M64 170H74M86 170H96"/><path class="cos2" d="M62 132L60 114L68 120L70 134ZM98 132L100 114L92 120L90 134Z"/><path class="lt" d="M60 114L62 132M100 114L98 132"/><path class="fhi" d="M16 166Q22 152 40 146M144 166Q138 152 120 146"/>',
+        shade: '',
+        age: '',
+        facial: '',
+        hair: '<path d="M46 76C41 44 56 22 82 22C107 22 119 44 114 76C112 58 106 46 95 39C84 47 63 49 53 59C49 63 47 69 46 76Z" fill="' + u('hr') + '"/><path class="strand" d="M56 40Q70 30 92 30M52 50Q66 38 96 38M60 34Q80 26 100 34M50 62Q52 52 60 46"/><path class="hrim" d="M102 28C113 38 116 58 114 76" filter="' + u('bg') + '"/><circle class="sig" cx="49.5" cy="72" r="2"/>',
+        brow: 2, bw: 'M54 58Q62 53 73 56M87 56Q98 53 106 58'
       },
       merch: {
-        back: '<circle class="hair" cx="60" cy="14" r="9"/>',
-        torso: '<path class="cos" d="M12 140C12 108 34 98 60 98s48 10 48 42z"/><path class="cos2" d="M44 100L56 138H38L30 112zM76 100l12 38H64z"/><path class="coll" d="M46 97L50 82h20l4 15-14 10z"/><path class="lt" d="M60 107l0 33"/><circle class="btn" cx="68" cy="116" r="1.8"/><circle class="btn" cx="68" cy="126" r="1.8"/><g class="core"><circle class="cglow" cx="46" cy="122" r="7"/><circle class="cdia" cx="46" cy="122" r="4.2"/></g>',
-        hair: '<path class="hair" d="M38 56C34 30 50 18 62 19c14 0 22 12 20 37-3-9-6-14-10-16-9 4-23 5-31 2-3 4-3 9-3 14z"/><circle class="sig sg" cx="81" cy="62" r="2.6"/>',
-        brow: 'M45 48q5-2 10 0M65 48q5-2 10 0', extra: ''
+        back: '',
+        torso: '<path class="cos2" d="M56 136L50 180H26C26 160 36 146 56 136ZM104 136L110 180H134C134 160 124 146 104 136Z"/><path class="coll" d="M56 134L60 108L72 124L72 140Z"/><path class="coll" d="M104 134L100 108L88 124L88 140Z"/><path class="lt" d="M80 142V180M60 108L56 134M100 108L104 134"/><circle class="btn" cx="84" cy="156" r="1.8"/><circle class="btn" cx="84" cy="168" r="1.8"/><path class="fold" d="M22 170Q32 160 34 180M138 172Q130 162 128 180"/><path class="fhi" d="M14 168Q22 152 38 146M120 148Q134 152 146 166"/>',
+        shade: '',
+        age: '<path class="wr" d="M60 36Q72 33 84 35M64 41Q76 39 92 40M56 66Q54 70 56 74M104 66Q106 70 104 74M62 84Q58 94 63 100M98 84Q102 94 97 100"/>',
+        facial: '<path d="M49 80C50 106 62 118 80 119C98 118 110 106 111 80C107 92 100 97 92 98.5C86 96 74 96 68 98.5C60 97 53 92 49 80Z" fill="' + u('bd') + '"/><path class="strand2" d="M56 96C60 108 68 114 80 115M104 96C100 108 92 114 80 115M70 106Q80 111 90 106"/><path d="M68 98.5Q74 94 80 96.5Q86 94 92 98.5Q86 97 80 98.4Q74 97 68 98.5Z" fill="' + u('bd') + '"/>',
+        hair: '<path d="M48 66C45 40 60 25 80 25C100 25 115 40 112 66C110 52 104 44 96 41C84 38 72 39 64 42C56 46 50 55 48 66Z" fill="' + u('hr') + '"/><path class="strand2" d="M58 38Q72 30 92 32M54 46Q70 36 98 40M62 34Q80 28 100 36"/><path class="hrim" d="M100 30C110 38 113 52 112 66" filter="' + u('bg') + '"/>',
+        brow: 3.2, bw: 'M53 59Q62 54 73 57M87 57Q98 54 107 59'
       }
     }[kind];
-    return '<svg viewBox="0 0 120 132" focusable="false" aria-hidden="true">' + K.back +
-      '<g class="body"><path class="neck" d="M52 78h16v26H52z"/>' + K.torso +
-      '<path class="slv" d="M20 106L24 138"/><path class="slv" d="M100 106L96 138"/>' +
-      '<g class="card"><rect x="42" y="102" width="36" height="28" rx="3"/><path d="M48 111h24M48 117h16M48 123h20"/></g>' +
-      '<g class="fa fa-l"><path class="slv" d="M24 138L45 152.7"/><circle class="hand" cx="45" cy="152.7" r="5.5"/></g>' +
-      '<g class="fa fa-r"><path class="slv" d="M96 138L75 152.7"/><circle class="hand" cx="75" cy="152.7" r="5.5"/></g></g>' +
-      '<g class="headg"><g class="head"><ellipse class="skin" cx="40" cy="60" rx="3.5" ry="5.5"/><ellipse class="skin" cx="80" cy="60" rx="3.5" ry="5.5"/><ellipse class="skin" cx="60" cy="58" rx="20" ry="25"/>' +
-      '<g class="feat"><g class="eyes"><ellipse class="sclera" cx="51" cy="57" rx="5" ry="3.6"/><ellipse class="sclera" cx="69" cy="57" rx="5" ry="3.6"/><g class="pup"><circle class="iris" cx="51" cy="57" r="2.4"/><circle class="iris" cx="69" cy="57" r="2.4"/></g></g>' +
-      '<path class="brow" d="' + K.brow + '"/><path class="nose" d="M60 59q-3 8 0 9h2"/>' +
-      '<path class="m-rest" d="M53 73q7 4 14 0"/><path class="m-glad" d="M52 72q8 8 16 0"/><ellipse class="m-open" cx="60" cy="73" rx="5" ry="3.2"/></g>' + K.hair + '</g>' +
-      '<g class="vl"><path d="M88 52q6 6 0 12M93 48q9 10 0 20M98 44q12 14 0 28"/></g></g></svg>';
+    function eye(cx, s) {
+      var x = function (d) { return (cx + s * d).toFixed(1); };
+      var al = 'M' + (cx - 9) + ' 67Q' + cx + ' 59.5 ' + (cx + 9) + ' 67Q' + cx + ' 73 ' + (cx - 9) + ' 67Z';
+      return '<g class="eyes"><g clip-path="url(#' + p + 'c' + cx + ')"><path d="' + al + '" fill="#eceff4"/><g class="pup"><circle cx="' + cx + '" cy="66.8" r="4.7" fill="' + u('ir') + '"/><circle cx="' + cx + '" cy="66.8" r="1.9" fill="#0b0b10"/><circle cx="' + (cx - 1.7) + '" cy="65.2" r="1.15" fill="#fff"/><circle cx="' + (cx + 1.5) + '" cy="68.2" r=".5" fill="#fff" opacity=".6"/></g>' +
+        '<path d="M' + (cx - 9) + ' 67Q' + cx + ' 59.5 ' + (cx + 9) + ' 67L' + (cx + 9) + ' 61L' + (cx - 9) + ' 61Z" class="lidsh"/></g>' +
+        '<path class="lid" d="M' + (cx - 9.6) + ' 67Q' + cx + ' 59 ' + (cx + 9.6) + ' 67"/><path class="lash" d="M' + x(9.4) + ' 66.6l' + (s * 2.6) + ' -1.6M' + x(8) + ' 64.8l' + (s * 2.2) + ' -2"/><path class="crease" d="M' + (cx - 7.5) + ' 63Q' + cx + ' 57 ' + (cx + 7.5) + ' 63"/><path class="crease" d="M' + (cx - 6) + ' 70.2Q' + cx + ' 73.6 ' + (cx + 6) + ' 70.2"/></g>';
+    }
+    var defs = '<defs>' +
+      '<linearGradient id="' + p + 'sk" x1="0" y1="0" x2="1" y2=".3"><stop offset="0" class="s-hi"/><stop offset=".5" class="s-bs"/><stop offset="1" class="s-sh"/></linearGradient>' +
+      '<linearGradient id="' + p + 'hr" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="h-hi"/><stop offset="1" class="h-lo"/></linearGradient>' +
+      '<linearGradient id="' + p + 'bd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="h-hi"/><stop offset="1" class="h-lo"/></linearGradient>' +
+      '<linearGradient id="' + p + 'co" x1="0" y1="0" x2="1" y2="1"><stop offset="0" class="c-hi"/><stop offset="1" class="c-lo"/></linearGradient>' +
+      '<radialGradient id="' + p + 'ir" cx=".5" cy=".5" r=".5"><stop offset="0" class="e-hi"/><stop offset=".7" class="e-hi"/><stop offset="1" class="e-lo"/></radialGradient>' +
+      '<linearGradient id="' + p + 'fd" x1="0" y1="0" x2="0" y2="1"><stop offset=".6" stop-color="#fff"/><stop offset="1" stop-color="#4a4a4a"/></linearGradient>' +
+      '<mask id="' + p + 'pm" maskUnits="userSpaceOnUse" x="0" y="0" width="160" height="180"><rect width="160" height="180" fill="' + u('fd') + '"/></mask>' +
+      '<filter id="' + p + 'bl" filterUnits="userSpaceOnUse" x="-20" y="-20" width="200" height="220"><feGaussianBlur stdDeviation="3"/></filter>' +
+      '<filter id="' + p + 'bs" filterUnits="userSpaceOnUse" x="-20" y="-20" width="200" height="220"><feGaussianBlur stdDeviation="1.1"/></filter>' +
+      '<filter id="' + p + 'bg" filterUnits="userSpaceOnUse" x="-20" y="-20" width="200" height="220"><feGaussianBlur stdDeviation="2.2"/></filter>' +
+      '<clipPath id="' + p + 'fc"><path d="' + F + '"/></clipPath><clipPath id="' + p + 'bc"><path d="' + T + '"/></clipPath>' +
+      '<clipPath id="' + p + 'c64"><path d="M55 67Q64 59.5 73 67Q64 73 55 67Z"/></clipPath><clipPath id="' + p + 'c96"><path d="M87 67Q96 59.5 105 67Q96 73 87 67Z"/></clipPath>' +
+      '<pattern id="' + p + 'sl" width="160" height="4" patternUnits="userSpaceOnUse"><rect width="160" height="1" class="scn"/></pattern></defs>';
+    var body = '<g class="body" mask="' + u('pm') + '"><path d="' + T + '" fill="' + u('co') + '"/>' +
+      '<path d="M66 100L66 128C66 138 94 138 94 128L94 100Z" fill="' + u('sk') + '"/><ellipse cx="80" cy="112" rx="16" ry="8" class="shd" opacity=".55" filter="' + u('bl') + '"/>' +
+      '<path class="tr" d="M70 116L70 126L74 130M90 116L90 126L86 130M80 118L80 132"/><circle class="trn" cx="74" cy="130" r="1.1"/><circle class="trn" cx="86" cy="130" r="1.1"/><circle class="trn" cx="80" cy="132" r="1.1"/>' +
+      K.torso + core + '<g clip-path="' + u('bc') + '"><rect class="scan" x="0" y="-8" width="160" height="200" fill="' + u('sl') + '"/></g>' +
+      '<path class="rim" d="M6 180C8 152 30 140 62 135" filter="' + u('bg') + '"/><path class="rim" d="M154 180C152 152 130 140 98 135" filter="' + u('bg') + '"/></g>';
+    var card = '<g class="card"><rect x="44" y="136" width="72" height="38" rx="4"/><path d="M52 146h40M52 154h28M52 162h34"/><circle class="cd" cx="104" cy="148" r="3"/>' +
+      '<g class="hands"><ellipse class="hand" cx="45" cy="172" rx="7.5" ry="6"/><ellipse class="hand" cx="48" cy="164" rx="3" ry="5.5"/><ellipse class="hand" cx="53" cy="163" rx="2.6" ry="5.2"/><ellipse class="hand" cx="115" cy="172" rx="7.5" ry="6"/><ellipse class="hand" cx="112" cy="164" rx="3" ry="5.5"/><ellipse class="hand" cx="107" cy="163" rx="2.6" ry="5.2"/></g></g>';
+    var head = '<g class="headg"><g class="head">' +
+      '<ellipse cx="47" cy="73" rx="5" ry="9" fill="' + u('sk') + '"/><ellipse cx="113" cy="73" rx="5" ry="9" fill="' + u('sk') + '"/><ellipse cx="47.5" cy="74" rx="2.6" ry="5.6" class="wm" opacity=".6" filter="' + u('bs') + '"/><ellipse cx="112.5" cy="74" rx="2.6" ry="5.6" class="wm" opacity=".6" filter="' + u('bs') + '"/>' +
+      '<path d="' + F + '" fill="' + u('sk') + '"/>' +
+      '<g clip-path="' + u('fc') + '"><ellipse cx="113" cy="82" rx="14" ry="38" class="shd" opacity=".4" filter="' + u('bl') + '"/><ellipse cx="80" cy="122" rx="32" ry="10" class="shd" opacity=".5" filter="' + u('bl') + '"/>' +
+      '<ellipse cx="58" cy="90" rx="9" ry="7" class="wm" opacity=".42" filter="' + u('bl') + '"/><ellipse cx="102" cy="90" rx="9" ry="7" class="wm" opacity=".36" filter="' + u('bl') + '"/><ellipse cx="51" cy="72" rx="5" ry="11" class="wm" opacity=".4" filter="' + u('bl') + '"/>' +
+      '<ellipse cx="71" cy="40" rx="12" ry="4.6" fill="#fff" opacity=".3" filter="' + u('bs') + '"/><ellipse cx="63" cy="80" rx="6" ry="3" fill="#fff" opacity=".16" filter="' + u('bs') + '"/>' +
+      K.shade + K.age + '<path class="tr" d="M53 58L53 66L49 71L49 84L53 89M107 58L107 66L111 71L111 84L107 89"/><circle class="trn" cx="53" cy="89" r="1.1"/><circle class="trn" cx="107" cy="89" r="1.1"/><circle class="trn" cx="53" cy="58" r="1.1"/><circle class="trn" cx="107" cy="58" r="1.1"/>' +
+      '<rect class="scan" x="0" y="-8" width="160" height="200" fill="' + u('sl') + '"/></g>' +
+      '<g class="feat">' + eye(64, -1) + eye(96, 1) +
+      '<path class="brow" stroke-width="' + K.brow + '" d="' + K.bw + '"/>' +
+      '<path class="nshade" d="M83 66Q86 78 86.5 85M75 86Q73 90 77 90.5M85 86Q87 90 83 90.5"/><path class="nhi" d="M79 68L78 83" filter="' + u('bs') + '"/><ellipse cx="80" cy="86.5" rx="2.4" ry="1.6" fill="#fff" opacity=".35" filter="' + u('bs') + '"/><ellipse cx="77" cy="89" rx="1.6" ry=".9" class="nostril"/><ellipse cx="83" cy="89" rx="1.6" ry=".9" class="nostril"/><ellipse cx="80" cy="92" rx="5" ry="1.5" class="shd" opacity=".4" filter="' + u('bs') + '"/>' +
+      K.facial +
+      '<path class="lipu" d="M68 100.4Q74 96.8 80 98.8Q86 96.8 92 100.4Q80 103 68 100.4Z"/><path class="lipl" d="M69 100.8Q80 103.4 91 100.8Q88 108.6 80 109Q72 108.6 69 100.8Z"/><ellipse cx="80" cy="105.4" rx="5" ry="1.3" fill="#fff" opacity=".32" filter="' + u('bs') + '"/>' +
+      '<path class="m-rest" d="M69.5 100.8Q80 103.4 90.5 100.8"/><path class="m-glad" d="M67.5 99.6Q80 106.8 92.5 99.6"/><ellipse class="m-open" cx="80" cy="102.6" rx="6" ry="3.4"/></g>' +
+      K.hair + '<path class="rim" d="' + F + '" filter="' + u('bg') + '"/>' +
+      '<g class="vl"><path d="M122 60q7 8 0 16M128 53q11 14 0 30M134 46q15 20 0 44"/></g></g></g>';
+    return '<svg viewBox="0 0 160 180" focusable="false" aria-hidden="true">' + defs +
+      '<g class="headg"><g class="head">' + K.back + '</g></g>' + body + card + head + '</svg>';
   }
   var FIG = {};
-  ['owner', 'buyer', 'merch'].forEach(function (n) { var h = $('fg-' + n); if (h) { h.innerHTML = figure(n); FIG[n] = h; } });
+  /* portraits: three frames per person (idle, blink, talk), layered; CSS drives breathing, blink and the talking swap */
+  var PORTRAIT = { owner: 'owner', buyer: 'buyer', merch: 'merchant' };
+  function portrait(kind) {
+    var base = 'img/characters/' + PORTRAIT[kind] + '-';
+    return ['idle', 'blink', 'talk'].map(function (f) {
+      return '<img class="fi fi-' + f + '" src="' + base + f + '.webp" width="560" height="700" alt="" decoding="async">';
+    }).join('');
+  }
+  ['owner', 'buyer', 'merch'].forEach(function (n) { var h = $('fg-' + n); if (h) { h.innerHTML = portrait(n); FIG[n] = h; } });
   /* who looks where: the speaker faces front, the others turn toward the speaker */
   function lookAt(sp, glad) {
     ['owner', 'buyer', 'merch'].forEach(function (n) {

@@ -34,9 +34,13 @@ Tagline: When an agent's order goes missing, agents fix it.
 ## 3. About the project (Markdown, paste as is)
 
 ```markdown
-When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.
+**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps), **0 double refunds**, 0 evidence sent. 3 stopped and handed to a person. 4 moved by PayPal to the CHARGEBACK stage.
+**When an agent's order goes missing, agents fix it.**
+
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps), **0 double refunds**, 0 evidence sent. 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
 
 It is for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.
 
@@ -90,13 +94,15 @@ Models only propose. They cannot approve, send, change a limit or mark a refund 
 
 ## Sponsor tools, how each is used
 
-* **PayPal APIs**: Orders v2, Payments v2, Disputes v1 (send message, make offer, provide evidence) and Add Tracking, through one allowlisted sandbox adapter Result: The 10 case batch: 4 settled at INQUIRY with no fee, 4 refunds confirmed by PayPal's record (**Real PayPal sandbox run**).
-* **PayPal Agent Toolkit and PayPal MCP**: `@paypal/agent-toolkit` 1.11.0 and `@paypal/mcp` 1.8.1 read from source, 47 tools listed in [docs/PAYPAL_MCP_TOOLS.md](https://github.com/Sriharsan/clearwake/blob/main/docs/PAYPAL_MCP_TOOLS.md). The MCP guard proxy ([docs/MCP_GUARD.md](https://github.com/Sriharsan/clearwake/blob/main/docs/MCP_GUARD.md)) and the 3 line toolkit guard ([docs/TOOLKIT_GUARD.md](https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md)) put the signed policy in front of the money tools Result: An agent on the toolkit overpaid USD 2,633.25 over 200 episodes; with the guard, USD 0.00 (**Planted failure**).
-* **AG Grid Community**: The dispute ledger: stage filter, deadline countdown, the model's proposal next to the policy decision, PayPal's raw record in the row detail, CSV export Result: On the console, on Render and on the site's Control Room (**Verified in your browser**).
-* **Render**: The live console at https://clearwake-console.onrender.com/console, on the free plan Result: Rate limited per address, with a Reset button (**Verified in your browser**).
-* **APIMatic**: OpenAPI 3.1 spec of the console API. CLI validation went from 382 findings to 104 ([docs/APIMATIC.md](https://github.com/Sriharsan/clearwake/blob/main/docs/APIMATIC.md)). Python SDK `clearwake-console-api` 0.6.1 and a static portal generated. An SDK call ran against the console and returned case n VERIFIED Result: Portal hosting: [APIMATIC_PORTAL_URL]. Result: [APIMATIC_RESULT]. In Sri's words: [APIMATIC_EXPERIENCE] (Local run).
-* **Postman**: A collection of 29 requests: 11 local attack suite requests and 18 PayPal sandbox requests. Newman run recorded in [docs/postman-run-2026-11-11.json](https://github.com/Sriharsan/clearwake/blob/main/docs/postman-run-2026-11-11.json) ([docs/POSTMAN.md](https://github.com/Sriharsan/clearwake/blob/main/docs/POSTMAN.md)) Result: Sri's result: [POSTMAN_RUN] (Local run and **Real PayPal sandbox run**).
-* **Channel3**: a price reference check is wired into the buyer's mandate step and ran on all 10 batch cases with 0 live calls, because the call cap is set to 0: 10 flags, 0 calls, no Channel3 data in any result (`docs/CHANNEL3.md`). Its terms allow the box to be ticked only after a live check is part of the recorded video, so it is not ticked.
+| Tool | Best use here | Tag | Result |
+| --- | --- | --- | --- |
+| **PayPal APIs** | Orders v2, Payments v2, Disputes v1 (send message, make offer, provide evidence) and Add Tracking, through one allowlisted sandbox adapter | **Real PayPal sandbox run** | The 10 case batch: 4 settled at INQUIRY with no fee, 4 refunds confirmed by PayPal's record |
+| **PayPal Agent Toolkit and PayPal MCP** | `@paypal/agent-toolkit` 1.11.0 and `@paypal/mcp` 1.8.1 read from source, 47 tools listed ([docs/PAYPAL_MCP_TOOLS.md](https://github.com/Sriharsan/clearwake/blob/main/docs/PAYPAL_MCP_TOOLS.md)). The MCP guard proxy ([docs/MCP_GUARD.md](https://github.com/Sriharsan/clearwake/blob/main/docs/MCP_GUARD.md)) and the 3 line toolkit guard ([docs/TOOLKIT_GUARD.md](https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md)) put the signed policy in front of the money tools | **Planted failure** | Baseline USD 2,633.25 overpaid against USD 0.00 over 200 episodes with the guard |
+| **AG Grid Community** | The dispute ledger: stage filter, deadline countdown, the model's proposal next to the policy decision, PayPal's raw record in the row detail, CSV export | **Verified in your browser** | On the console, on Render and on the site's Control Room |
+| **Render** | The live console at https://clearwake-console.onrender.com/console, live on the free plan | **Verified in your browser** | Rate limited per address, with a Reset button |
+| **APIMatic** | OpenAPI 3.1 spec of the console API. CLI validation went from 382 findings to 104 ([docs/APIMATIC.md](https://github.com/Sriharsan/clearwake/blob/main/docs/APIMATIC.md)). Python SDK `clearwake-console-api` 0.6.1, a static portal, and an SDK call against the console that returned case n VERIFIED. The Context Plugin was not run and no result of it is claimed | **Local run** | Portal: [APIMATIC_PORTAL_URL]. Result: The APIMatic Context Plugin for PayPal 0.4.1 was installed and its Python skills were read against every PayPal call in clearwake/paypal.py. They confirmed the OAuth client credentials flow, the sandbox host, GET retries, writes sent once and reconciled, and the split between a request that never left and one that may have landed; they do not cover disputes, tracking or evidence, so no code change was made and three small differences were recorded.. In Sri's words: [APIMATIC_EXPERIENCE] |
+| **Postman** | A collection of 29 requests: 11 local attack suite requests and 18 PayPal sandbox requests. Newman run recorded in [postman-run-2026-11-11.json](https://github.com/Sriharsan/clearwake/blob/main/docs/postman-run-2026-11-11.json) ([docs/POSTMAN.md](https://github.com/Sriharsan/clearwake/blob/main/docs/POSTMAN.md)) | **Local run** and **Real PayPal sandbox run** | Sri's result: [POSTMAN_RUN] |
+| **Channel3** | Exactly what ran: a price reference check in the buyer's mandate step on all 10 batch cases, with the call cap at 0 ([docs/CHANNEL3.md](https://github.com/Sriharsan/clearwake/blob/main/docs/CHANNEL3.md)) | **Real PayPal sandbox run** | 10 price reference flags, 0 live calls, no Channel3 data in any result |
 
 ## Inspiration
 
@@ -150,8 +156,17 @@ The same loop for the other dispute reasons, each with its own signed rules. Dis
 
 **4 of 10** disputes settled by the two agents at INQUIRY with no fee. **USD 0.00** overpaid in 200 episodes against USD 2,633.25. **0** double refunds against 61. **24 to 62 minutes** from filing to RESOLVED in PayPal's timestamps.
 
-Site https://clearwake-mu.vercel.app, Break it page https://clearwake-mu.vercel.app/break, Render console https://clearwake-console.onrender.com/console, repo https://github.com/Sriharsan/clearwake, video [VIDEO_URL]. APIMatic: [APIMATIC_RESULT]. Postman: [POSTMAN_RUN].
+Site https://clearwake-mu.vercel.app, Break it page https://clearwake-mu.vercel.app/break, Render console https://clearwake-console.onrender.com/console, repo https://github.com/Sriharsan/clearwake, video [VIDEO_URL]. APIMatic: The APIMatic Context Plugin for PayPal 0.4.1 was installed and its Python skills were read against every PayPal call in clearwake/paypal.py. They confirmed the OAuth client credentials flow, the sandbox host, GET retries, writes sent once and reconciled, and the split between a request that never left and one that may have landed; they do not cover disputes, tracking or evidence, so no code change was made and three small differences were recorded.. Postman: [POSTMAN_RUN].
 ```
+
+## Presentation, six slides
+
+1. The line and the proof sentence, on one slide.
+2. The bad outcome, then the same action stopped: USD 2,633.25 overpaid over 200 episodes on the Agent Toolkit alone, USD 0.00 with Clearwake (**Planted failure**).
+3. The anatomy: one dispute, six layers (rules, buyer agent, merchant agent, policy gate, signed receipts, PayPal's record), case 3 `PP-R-ISN-10198775`, USD 5.00.
+4. The ten case batch counted aloud (**Real PayPal sandbox run**): 4 settled at INQUIRY with no fee, 3 answered with proof under PayPal review, 2 awaiting the merchant owner, 1 refused by the mandate. 4 moved by PayPal to CHARGEBACK once tracking was on the order. Settle times 24 to 62 minutes from filing to RESOLVED.
+5. **Verified in your browser:** a signed receipt, a one character change, the chain breaks.
+6. Built during the hackathon, sponsor tools at their best use, links, and the run command.
 
 ## 4. Built with (up to 25 tags; Devpost takes them comma separated)
 
@@ -165,7 +180,7 @@ That is 21 tags with the model tag filled in. Four spare.
 * Public site, recorded sandbox run and in browser receipt verifier: https://clearwake-mu.vercel.app
 * Code: https://github.com/Sriharsan/clearwake
 * OpenAPI 3.1 spec: https://github.com/Sriharsan/clearwake/blob/main/openapi/clearwake-console.openapi.yaml
-* API portal (APIMatic, static portal generated from the spec): `[APIMATIC_PORTAL_URL]`
+* API portal (APIMatic, static portal generated from the spec): `https://clearwake-api.vercel.app`
 * Python SDK `clearwake-console-api` 0.6.1 and the validation record: https://github.com/Sriharsan/clearwake/blob/main/docs/APIMATIC.md
 * Postman collection (29 requests) and the newman run record: https://github.com/Sriharsan/clearwake/blob/main/postman/clearwake-paypal.postman_collection.json
 
@@ -249,9 +264,9 @@ AI tools used to write the code: Claude Code helped write code and documents; ev
 * **PayPal Agent Toolkit and PayPal MCP**: `@paypal/agent-toolkit` 1.11.0 and `@paypal/mcp` 1.8.1 read from source, 47 tools listed in `docs/PAYPAL_MCP_TOOLS.md`. An agent on the toolkit overpaid USD 2,633.25 over 200 episodes against USD 0.00 with the guard (`docs/BASELINE.md`). The MCP guard proxy (`docs/MCP_GUARD.md`) and the 3 line toolkit guard (`docs/TOOLKIT_GUARD.md`) put the signed policy in front of the money tools.
 * **AG Grid** (Community 35.3.1, MIT): the dispute ledger on the local console, on Render and on the public Control Room.
 * **Render**: hosts the live console at https://clearwake-console.onrender.com/console on the free plan.
-* **APIMatic**: OpenAPI 3.1 spec of the console API. CLI validation went from 382 findings to 104, a Python SDK `clearwake-console-api` 0.6.1 and a static portal were generated, and an SDK call ran against the console and returned case n VERIFIED (`docs/APIMATIC.md`). Portal hosting and Sri's words stay `[APIMATIC_PORTAL_URL]` and `[APIMATIC_EXPERIENCE]`. The Context Plugin has not been run and no result of it is claimed.
+* **APIMatic**: OpenAPI 3.1 spec of the console API. CLI validation went from 382 findings to 104, a Python SDK `clearwake-console-api` 0.6.1 and a static portal were generated, and an SDK call ran against the console and returned case n VERIFIED (`docs/APIMATIC.md`). The portal is hosted at https://clearwake-api.vercel.app. Sri's words stay `[APIMATIC_EXPERIENCE]`. The Context Plugin for PayPal 0.4.1 was installed on 11 November 2026 and its Python skills were used to review every PayPal call Clearwake makes; the run record is in docs/APIMATIC.md.
 * **Postman**: a collection of 29 requests (11 local attack suite requests, 18 PayPal sandbox requests) and an environment template with no secrets. The newman run is recorded in `docs/postman-run-2026-11-11.json` (`docs/POSTMAN.md`): 75 assertions on the attack suite and 20 on read only PayPal requests, 0 failed. Sri's result stays `[POSTMAN_RUN]`. (Postman is listed as a partner with no prize; tick it if the form has a box.)
-* **Channel3**: not selected. Its catalog returns real retailers' products, and the buyer agent's order is a PayPal sandbox order at one sandbox merchant, so a Channel3 result could not be bought and would change no outcome (`docs/CHANNEL3.md`).
+* **Channel3**: exactly what ran: 10 price reference flags, 0 live calls on the 10 batch cases, because the call cap is set to 0, and no Channel3 data in any result (`docs/CHANNEL3.md`). Not ticked on the form, because its terms ask for a live check inside the recorded video.
 * **Bryntum, Elastic, KERNEL, Zapier, Astropods**: not selected, with reasons in `docs/DESIGN_DECISIONS.md`.
 
 ## 14a. Which sponsor prize to choose (the lead decides)
@@ -320,7 +335,7 @@ What happened, from the repository:
 
 `[APIMATIC_EXPERIENCE]`
 
-Facts already recorded in `docs/APIMATIC.md`: the CLI validation went from 382 findings to 104, a Python SDK `clearwake-console-api` 0.6.1 and a static portal were generated, and an SDK call ran against the console and returned case n VERIFIED. The Context Plugin for PayPal has not been run, so no result of it appears anywhere.
+Facts already recorded in `docs/APIMATIC.md`: the CLI validation went from 382 findings to 104, a Python SDK `clearwake-console-api` 0.6.1 and a static portal were generated, and an SDK call ran against the console and returned case n VERIFIED. The Context Plugin for PayPal 0.4.1 was installed on 11 November 2026 and its Python skills were used to review every PayPal call Clearwake makes; the run record is in docs/APIMATIC.md.
 
 Write in your own words: which findings you fixed, what the SDK call looked like, where the portal is hosted, what was easy and what was not.
 
