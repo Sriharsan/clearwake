@@ -57,7 +57,8 @@ CONSOLE_ASSETS.update({f"/fonts/{name}.woff2": (f"fonts/{name}.woff2", "font/wof
 
 # The voice page (mobile first). Plain files under the base policy: script-src 'self', style-src 'self'.
 VOICE_ASSETS = {"/voice": ("voice.html", "text/html"), "/voice/": ("voice.html", "text/html"),
-                "/voice.css": ("voice.css", "text/css"), "/voice.js": ("voice.js", "text/javascript")}
+                "/voice.css": ("voice.css", "text/css"), "/voice.js": ("voice.js", "text/javascript"),
+                "/voice_hosted.js": ("voice_hosted.js", "text/javascript")}
 VOICE_TRANSCRIBE = "/console/api/voice/transcribe"
 
 
