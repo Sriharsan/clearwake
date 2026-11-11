@@ -529,7 +529,7 @@ class MerchantSwarm:
                       else "Sent, but PayPal's record does not show the dispatch proof yet. Not counted as verified.", proposal=shown)
 
     def settlement(self, dispute_id, shown=None):
-        """Checker for settling in conversation. "Settled, no fee" only when PayPal shows RESOLVED while still an INQUIRY."""
+        """Checker for settling in conversation. "Settled at INQUIRY" only when PayPal shows RESOLVED while still an INQUIRY."""
         try:
             record = self.gateway.dispute(dispute_id)
         except Offline:
@@ -539,14 +539,14 @@ class MerchantSwarm:
         status, stage = record.get("status"), record.get("dispute_life_cycle_stage")
         outcome = (record.get("dispute_outcome") or {}).get("outcome_code", "")
         if status == "RESOLVED" and stage == "INQUIRY":
-            state, detail = VERIFIED, f"Settled, no fee: PayPal shows RESOLVED ({outcome or 'no outcome code'}) at the INQUIRY stage, never a claim."
+            state, detail = VERIFIED, f"Settled at INQUIRY: PayPal shows RESOLVED ({outcome or 'no outcome code'}) at the INQUIRY stage, never a claim."
         elif stage == "INQUIRY":
             paid = [m for m in record.get("fund_movements", []) or [] if m.get("party") == "BUYER" and m.get("reason") == "DISPUTE_SETTLEMENT"]
             if paid:  # PayPal already paid the settlement; the case itself has not closed. Never counted as settled until it reads RESOLVED.
                 amount = paid[0].get("amount", {})
                 refund = ((record.get("refund_details") or {}).get("transactions") or [{}])[0].get("id", "")
                 state, detail = PENDING, (f"PayPal paid the settlement to the buyer (USD {amount.get('value')}, refund {refund}) and still shows {status} at the "
-                                          "INQUIRY stage, never a claim. Not counted as settled, no fee, until PayPal reads RESOLVED.")
+                                          "INQUIRY stage, never a claim. Not counted as settled until PayPal reads RESOLVED.")
             else:
                 state, detail = PENDING, f"Offer sent. PayPal shows {status}; waiting for the buyer."
         else:

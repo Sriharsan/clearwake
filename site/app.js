@@ -1,4 +1,4 @@
-// Home page behaviour. Static site, no inline styles: shapes move through SVG attributes, states through class names.
+// Proof page behaviour (the 1.5% line, the network cut, the wake, the receipt checks) and the Home page's one verify button. Static site, no inline styles: shapes move through SVG attributes, states through class names.
 // verify.js is verdock-core's browser verifier, copied unchanged. Receipts are fetched from this site;
 // a visitor's own file is read in the browser and never sent anywhere.
 import { verifyLog } from './verify.js';
@@ -11,6 +11,7 @@ const svgEl = (tag, attrs = {}) => { const n = document.createElementNS(NS, tag)
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 /* ---- the 1.5% line: the rule and fees from clearwake/fees.py ---- */
+if ($('g-form')) {
 const RATE_LINE = 0.015, SALES_LINE = 100, STANDARD_FEE = 15, HIGH_VOLUME_FEE = 30;
 const TOP = 30, BOTTOM = 350, SPAN = BOTTOM - TOP;
 
@@ -75,6 +76,7 @@ $('g-form').addEventListener('submit', e => e.preventDefault());
   });
 })();
 gauge();
+}
 
 /* ---- pull the cable: case m, recorded real sandbox. Refund ids and amounts come from data/ledger.json, request ids from the signed receipts. ---- */
 (function cable() {
@@ -234,13 +236,16 @@ const sha = async s => hex(await crypto.subtle.digest('SHA-256', new TextEncoder
 async function loadReceipts() {
   const manifest = await (await fetch('receipts/manifest.json')).json();
   const get = async file => ({ log: manifest.logs.find(l => l.file === file), text: await (await fetch(file)).text() });
-  const o = await get('receipts/case-o-dispatch.ndjson');
-  $('proof-check').addEventListener('click', async () => {
-    const report = await verifyLog(o.text.split('\n')[0] + '\n', o.log.public_key);
-    const box = $('proof-result');
-    box.classList.toggle('ok', report.ok); box.classList.toggle('bad', !report.ok);
-    box.textContent = report.ok ? 'Pass: the signature on the dispatch receipt verifies against the published key.' : `Fail: ${report.failures[0].reason}`;
-  });
+  if ($('proof-check')) {
+    const o = await get('receipts/case-o-dispatch.ndjson');
+    $('proof-check').addEventListener('click', async () => {
+      const report = await verifyLog(o.text.split('\n')[0] + '\n', o.log.public_key);
+      const box = $('proof-result');
+      box.classList.toggle('ok', report.ok); box.classList.toggle('bad', !report.ok);
+      box.textContent = report.ok ? 'Pass: the signature on the dispatch receipt verifies against the published key.' : `Fail: ${report.failures[0].reason}`;
+    });
+  }
+  if (!$('wake-scene')) return;
   const hud = await (await fetch('data/hud-case.json')).json();
   await wake(await get(hud.merchant.file), await get(hud.buyer.file), hud);
 }
@@ -324,7 +329,7 @@ async function wake(merchant, buyer, hud) {
   await run();
 }
 
-$('own').addEventListener('submit', async event => {
+if ($('own')) $('own').addEventListener('submit', async event => {
   event.preventDefault();
   const result = $('own-result'), file = $('own-file').files[0], key = $('own-key').value.trim();
   result.classList.remove('ok', 'bad');
@@ -341,4 +346,30 @@ $('own').addEventListener('submit', async event => {
   }
 });
 
-loadReceipts().catch(() => { $('chain-msg').textContent = 'The recorded receipts could not be loaded.'; });
+if ($('wake-scene') || $('proof-check')) loadReceipts().catch(() => { if ($('chain-msg')) $('chain-msg').textContent = 'The recorded receipts could not be loaded.'; });
+
+/* ---- Home: one button checks every signed log named in the manifest, in this browser ---- */
+(function verifyAll() {
+  const btn = $('verify-all'), out = $('verify-result');
+  if (!btn || !out) return;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; out.classList.remove('ok', 'bad'); out.textContent = 'Checking every signed log in your browser.';
+    try {
+      const manifest = await (await fetch('receipts/manifest.json')).json();
+      let pass = 0, lines = 0; const failed = [];
+      for (const log of manifest.logs) {
+        const text = await (await fetch(log.file)).text();
+        const report = await verifyLog(text, log.public_key);
+        lines += report.count;
+        if (report.ok) pass += 1; else failed.push(`${log.file} line ${report.failures[0].line}, ${report.failures[0].reason}`);
+      }
+      const all = failed.length === 0;
+      out.classList.toggle('ok', all); out.classList.toggle('bad', !all);
+      out.textContent = all
+        ? `Pass: ${pass} of ${manifest.logs.length} signed logs verify in your browser, ${lines} receipt lines, every signature valid and every hash linked to the one before. Nothing was uploaded.`
+        : `Fail: ${pass} of ${manifest.logs.length} signed logs verify. First problem: ${failed[0]}`;
+    } catch (error) {
+      out.classList.add('bad'); out.textContent = `Could not verify: ${error.message}`;
+    } finally { btn.disabled = false; }
+  });
+})();

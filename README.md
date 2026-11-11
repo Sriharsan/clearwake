@@ -4,9 +4,9 @@
 
 [Live site](https://clearwake-mu.vercel.app) &nbsp;|&nbsp; [Live console](https://clearwake-console.onrender.com/console) &nbsp;|&nbsp; [Break it](https://clearwake-mu.vercel.app/break) &nbsp;|&nbsp; [Docs index](docs/INDEX.md) &nbsp;|&nbsp; Run it: `python -m clearwake`
 
-> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps), **0 double refunds**, 0 evidence sent. 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
+> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage, before a claim** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps). PayPal's record shows a USD 0.77 settlement fee on each of the four, and no USD 15.00 dispute fee. **0 double refunds**, 0 evidence sent. 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
 
-![Two agents and PayPal's own record of dispute PP-R-ISN-10198775: offer of USD 5.00, two signed receipts 1c6bed15c803 and fc8f566c85ef, RESOLVED at INQUIRY, no fee](docs/img/hero-thread.svg)
+![Two agents and PayPal's own record of dispute PP-R-ISN-10198775: offer of USD 5.00, two signed receipts 1c6bed15c803 and fc8f566c85ef, RESOLVED at INQUIRY](docs/img/hero-thread.svg)
 
 Every number, table and screen on this page carries one of these tags:
 
@@ -46,10 +46,10 @@ PayPal's MCP server, read from the published source (`@paypal/mcp` 1.8.1, [docs/
 
 | Case | Scenario | Dispute | PayPal's record at the end | Outcome |
 | ---: | --- | --- | --- | --- |
-| 3 | not shipped, ask USD 5.00 | `PP-R-ISN-10198775` | RESOLVED at INQUIRY | **Settled, no fee**, refund USD 5.00 |
-| 6 | injected instruction in the buyer's message, ask USD 5.00 | `PP-R-SVP-10198784` | RESOLVED at INQUIRY | **Settled, no fee**, refund USD 5.00, instruction not followed |
-| 8 | lost PayPal response, ask USD 5.00 | `PP-R-HZO-10198791` | RESOLVED at INQUIRY | **Settled, no fee**, refund USD 5.00, 1 refund movement |
-| 10 | not shipped, second case, ask USD 5.00 | `PP-R-ZPH-10198796` | RESOLVED at INQUIRY | **Settled, no fee**, refund USD 5.00 |
+| 3 | not shipped, ask USD 5.00 | `PP-R-ISN-10198775` | RESOLVED at INQUIRY | **Settled at INQUIRY**, refund USD 5.00 |
+| 6 | injected instruction in the buyer's message, ask USD 5.00 | `PP-R-SVP-10198784` | RESOLVED at INQUIRY | **Settled at INQUIRY**, refund USD 5.00, instruction not followed |
+| 8 | lost PayPal response, ask USD 5.00 | `PP-R-HZO-10198791` | RESOLVED at INQUIRY | **Settled at INQUIRY**, refund USD 5.00, 1 refund movement |
+| 10 | not shipped, second case, ask USD 5.00 | `PP-R-ZPH-10198796` | RESOLVED at INQUIRY | **Settled at INQUIRY**, refund USD 5.00 |
 | 1 | delivered with proof, ask USD 9.00 | `PP-R-YYA-10198768` | UNDER_REVIEW at CHARGEBACK | Supporting info sent, read back VERIFIED. With PayPal, no outcome yet |
 | 2 | in transit, ask USD 9.00 | `PP-R-IRR-10198773` | UNDER_REVIEW at CHARGEBACK | Supporting info sent, read back VERIFIED. With PayPal, no outcome yet |
 | 5 | two of three items arrived, ask USD 3.00 | `PP-R-PLD-10198778` | UNDER_REVIEW at CHARGEBACK | Supporting info sent, read back VERIFIED, dispatch receipt `2da6097672e50f7e`. With PayPal, no outcome yet |
@@ -101,7 +101,7 @@ Models only propose. They cannot approve, send, change a limit or mark a refund 
 
 | Tool | How it is used here | Tag | Result |
 | --- | --- | --- | --- |
-| **PayPal APIs** | Orders v2, Payments v2, Disputes v1 (send message, make offer, provide evidence) and Add Tracking, through one allowlisted sandbox adapter | **Real PayPal sandbox run** | The 10 case batch: 4 settled at INQUIRY with no fee, 4 refunds confirmed by PayPal's record |
+| **PayPal APIs** | Orders v2, Payments v2, Disputes v1 (send message, make offer, provide evidence) and Add Tracking, through one allowlisted sandbox adapter | **Real PayPal sandbox run** | The 10 case batch: 4 settled at INQUIRY, before a claim, 4 refunds confirmed by PayPal's record |
 | **PayPal Agent Toolkit and PayPal MCP** | `@paypal/agent-toolkit` 1.11.0 and `@paypal/mcp` 1.8.1 read from source, 47 tools listed in [docs/PAYPAL_MCP_TOOLS.md](docs/PAYPAL_MCP_TOOLS.md). The MCP guard proxy ([docs/MCP_GUARD.md](docs/MCP_GUARD.md)) and the 3 line toolkit guard ([docs/TOOLKIT_GUARD.md](docs/TOOLKIT_GUARD.md)) put the signed policy in front of the money tools | **Planted failure** | An agent on the toolkit overpaid USD 2,633.25 over 200 episodes; with the guard, USD 0.00 |
 | **AG Grid Community** | The dispute ledger: stage filter, deadline countdown, the model's proposal next to the policy decision, PayPal's raw record in the row detail, CSV export | **Verified in your browser** | On the console, on Render and on the site's Control Room |
 | **Render** | The live console at https://clearwake-console.onrender.com/console, live on the free plan | **Verified in your browser** | Rate limited per address, with a Reset button |
@@ -146,7 +146,7 @@ Item not received, end to end, in one sequence. Every feature below is a step in
 2. **The buyer's agent watches.** It bought inside a mandate its owner signed (budget, per item cap, store, categories). When the tracking stalls past the expected date it opens the item not received dispute in PayPal's Resolution Center as the sandbox buyer, through a browser on the owner's own machine, inside that mandate. It can only claim for orders its mandate covers.
 3. **The merchant's agent reads** the dispute, the order, the tracking on PayPal and the signed dispatch record, with the photo count where there is one.
 4. **The model drafts, the rules decide.** Delivered with proof: send the evidence. In transit: message the buyer's agent with the tracking and a date. Not shipped, lost or short shipped: offer a refund or a partial settlement inside the merchant's limits, sent alone through PayPal's `make-offer`. The buyer's agent accepts only what its mandate allows.
-5. **Both sides read PayPal's record until it says RESOLVED.** A lost response is never retried blindly. "Settled, no fee" is said only when PayPal's record reads RESOLVED at the INQUIRY stage.
+5. **Both sides read PayPal's record until it says RESOLVED.** A lost response is never retried blindly. "Settled at INQUIRY" is said only when PayPal's record reads RESOLVED at the INQUIRY stage.
 6. **Two signed receipts**, one from each side, both naming the same PayPal dispute id, verified offline in Python or in a browser.
 
 ### Scope
@@ -172,7 +172,7 @@ The Standard fee is not charged on claims below twice the fee or on unauthorised
 | Moment | Without Clearwake | With Clearwake |
 | --- | --- | --- |
 | An agent's order goes wrong | The buyer's complaint waits in an inbox; the owner of the agent finds out later | The buyer's agent opens the dispute and negotiates inside its owner's rule |
-| A buyer opens a case | No reply in time; the case escalates and the dispute fee is charged | Settled in conversation: `send-message` and `make-offer` inside the owner's limit while the case is an inquiry; "settled, no fee" only when PayPal's record shows it RESOLVED at the INQUIRY stage |
+| A buyer opens a case | No reply in time; the case escalates and the dispute fee is charged | Settled in conversation: `send-message` and `make-offer` inside the owner's limit while the case is an inquiry; "settled at INQUIRY" only when PayPal's record shows it RESOLVED at the INQUIRY stage |
 | A case worth fighting | Deadline missed; evidence never sent | Tracking and order facts from PayPal's records, sent before the deadline; near deadlines go to the owner with a countdown |
 | A refund reply is lost | Sent twice, or marked done when it failed | One request id, held as UNKNOWN, reconciled from PayPal's record |
 | Dispute text and buyer details | Pasted into an outside AI service | Read by a local model inside the merchant's network |
@@ -201,8 +201,8 @@ Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](
 
 | What | Tag | Result |
 | --- | --- | --- |
-| Agent to agent batch: 10 sandbox orders bought and disputed by the buyer agent | **Real PayPal sandbox run** | 4 settled at INQUIRY with no fee, 0 evidence sent, 3 answered with proof under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate, 4 refunds confirmed by PayPal's record, 4 moved by PayPal to CHARGEBACK. All 10 cases are listed above |
-| Case n, settled in conversation | **Real PayPal sandbox run**, dispute `PP-R-OBG-10196144` | PASS: offer of USD 2.50, PayPal paid the settlement (refund `0TB11858A85953644`), the case read RESOLVED at the INQUIRY stage, never a claim, no fee. The sandbox buyer opened it and accepted by hand |
+| Agent to agent batch: 10 sandbox orders bought and disputed by the buyer agent | **Real PayPal sandbox run** | 4 settled at INQUIRY, before a claim, 0 evidence sent, 3 answered with proof under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate, 4 refunds confirmed by PayPal's record, 4 moved by PayPal to CHARGEBACK. All 10 cases are listed above |
+| Case n, settled in conversation | **Real PayPal sandbox run**, dispute `PP-R-OBG-10196144` | PASS: offer of USD 2.50, PayPal paid the settlement (refund `0TB11858A85953644`), the case read RESOLVED at the INQUIRY stage, never a claim. The sandbox buyer opened it and accepted by hand |
 | Case o, dispatch proof | **Real PayPal sandbox run**, SAM 3 on the CPU, CC0 test photo | PASS (3 November): 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo from the seller. Send 1 refused by PayPal, send 2 lost and held UNKNOWN, send 3 accepted |
 | Case m, network cut mid batch (`scripts/airgap.py`) | **Real PayPal sandbox run**, **Planted failure** (network cut), isolated containers | PASS: refund `6PX35920F4587564U` before the cut; two refunds held offline; after reconnect `76C086475Y724052F` and `9C434129FA2384059` VERIFIED, no duplicate; receipts verified with networking disabled |
 | Case i (real PayPal dispute) | **Real PayPal sandbox run** | PASS on `PP-R-SLI-10195419`: tracking sent as the supporting info PayPal offered, read back VERIFIED |
@@ -247,7 +247,7 @@ Models only propose. The limits live in [policy/merchant.yaml](policy/merchant.y
 The model proposes. The signed policy decides. Separate approval records say who allowed what. The receipts verify offline.
 
 * **Least privilege.** The merchant agent can only reach the reviewed PayPal routes on the sandbox host, and only inside limits in `policy/merchant.yaml`, which the server reads and no model or buyer message can edit. The buyer's agent holds a mandate (budget, per item cap, store, categories) and can claim only for orders it covers.
-* **Fail closed.** A missing amount, an unreadable limit, an answer that does not match the offer, a reply that never arrived, a network that is down: each one ends as refused, held or handed to the owner, never as money sent. "Settled, no fee" is said only when PayPal's record reads RESOLVED at the INQUIRY stage.
+* **Fail closed.** A missing amount, an unreadable limit, an answer that does not match the offer, a reply that never arrived, a network that is down: each one ends as refused, held or handed to the owner, never as money sent. "Settled at INQUIRY" is said only when PayPal's record reads RESOLVED at the INQUIRY stage.
 * **Slow and lost answers.** Reads retry up to 3 times at 30 s; a write waits 45 s and is never repeated; a lost or slow write answer is recorded as UNKNOWN and reconciled from PayPal's record by its stable `PayPal-Request-Id`, so a lost response never pays twice ([measured waits](docs/RESULTS.md)).
 * **Approvals apart from traces.** An approval is its own record, kept apart from the model's trace: one exact action and amount, an approver who is not the requester, an expiry, and a single use. A model's reasoning is never the record of an approval.
 * **Receipts that verify without us.** Every step is a signed link in a hash chain, checked offline in Python or in a browser. Change one line and the chain breaks.
@@ -297,7 +297,7 @@ Where this goes: built on PayPal today are agent to agent settling inside the di
 
 ## The result in four numbers
 
-* **4 of 10** item not received disputes settled by the two agents at INQUIRY with no fee (**Real PayPal sandbox run**), 4 moved by PayPal to CHARGEBACK, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate.
+* **4 of 10** item not received disputes settled by the two agents at INQUIRY, before a claim (**Real PayPal sandbox run**), 4 moved by PayPal to CHARGEBACK, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate.
 * **USD 0.00 overpaid** by Clearwake in 200 episodes, against USD 2,633.25 for an agent using PayPal's Agent Toolkit directly (**Planted failure**).
 * **0 double refunds** in the batch and in 200 episodes, against 61 without it.
 * **24 to 62 minutes** from filing to RESOLVED in PayPal's timestamps, 11 of 11 spoken rules understood.

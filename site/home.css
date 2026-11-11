@@ -169,7 +169,7 @@ input[type=range]{width:100%;min-height:2.75rem;accent-color:var(--amber);margin
 .cb-list li{display:grid;grid-template-columns:1.75rem minmax(0,1fr);gap:.1rem .6rem;padding:.8rem 0 .8rem .8rem;border-bottom:1px solid var(--border);border-left:3px solid var(--border);margin:0}
 .cb-list li>b{grid-row:1 / span 3;font:700 1.1rem/1.3 var(--font-sans)}
 .cb-list .mono,.cb-list .cb-rid{overflow-wrap:anywhere}
-.cb-list .cb-rid{font:.8125rem/1.35 var(--font-code);color:var(--mist)}
+.cb-list .cb-rid{font:.875rem/1.35 var(--font-code);color:var(--mist)}
 .cb-list .cb-st{font:600 1rem/1.35 var(--font-sans);color:var(--mist)}
 .cb-list li.held{border-left-color:var(--amber)}.cb-list li.held .cb-st{color:var(--amber)}
 .cb-list li.paid{border-left-color:var(--teal)}.cb-list li.paid .cb-st{color:var(--teal)}
@@ -321,3 +321,74 @@ main p,main li,main dd{overflow-wrap:anywhere}
 @media (min-width:64rem){.hero h1.line{font-size:clamp(1.5rem,2.35vw,2.2rem);max-width:none;margin-bottom:.75rem}.hero{padding-block:1.5rem 4.5rem}.proof-strip{margin-top:.8rem}.cta{margin-top:1.1rem}.hero-numbers{margin:0;padding:1rem 1.1rem;background:color-mix(in oklab,var(--background) 82%,transparent);border-radius:var(--radius)}}
 .hero-numbers{position:relative}
 @media (max-width:63.99rem){.hero{padding-block:1rem 3.5rem;min-height:0}.hero .eyebrow{display:none}.hero h1.line{font-size:clamp(1.2rem,4.6vw,1.9rem);line-height:1.18;margin-bottom:.6rem}.tagline{margin-bottom:.9rem;font-size:1.05rem}.proof-strip{margin-top:0;font-size:.875rem;line-height:1.4}.cta{margin-top:.9rem;gap:.5rem}.cta .btn{min-height:2.5rem;padding:.45rem .9rem}.hero-numbers{margin-top:1.1rem}.hero-numbers dt{font-size:.875rem;line-height:1.3}.hero-numbers .num{font-size:clamp(1.55rem,7vw,2.4rem)}.hero-numbers .vs{font-size:1rem}.hero-numbers .tag{font-size:.875rem}.cue{display:none}}
+
+/* ===== Home and Proof, one job per section ===== */
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+[hidden]{display:none!important}
+/* the hero is the line, the tagline and two buttons; the result starts on the first screen */
+.hero.hero-home{min-height:0;padding-block:clamp(1.75rem,5vw,4rem) clamp(1.5rem,4vw,3rem)}
+.hero-home .hero-in.wrap{display:block}
+.hero-home h1.line{max-width:26ch;font-size:clamp(1.6rem,3.7vw,3rem);line-height:1.12;margin-bottom:1rem}
+.hero-home .tagline{font-size:clamp(1.2rem,2.2vw,1.65rem);margin-bottom:0}
+.hero-home .cta{margin-top:1.5rem}
+.hero-home .btn{min-height:3.25rem;padding-inline:1.6rem;font-size:1.0625rem}
+@media (max-width:63.99rem){.hero.hero-home{padding-block:1.25rem 1.5rem}.hero-home h1.line{font-size:clamp(1.35rem,5.4vw,1.9rem);max-width:none}.hero-home .tagline{font-size:1.15rem}}
+/* the result: the real run beside the local run */
+.outcome{padding-block:0 clamp(2.5rem,6vw,4.5rem)}
+.res-grid{display:grid;gap:1.25rem}
+@media (min-width:52rem){.res-grid{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:1.5rem}}
+.res{display:grid;align-content:start;gap:.85rem;min-width:0;padding:clamp(1.1rem,3vw,1.75rem);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+.res-real{border-top:3px solid var(--teal)}.res-local{border-top:3px solid var(--amber)}
+.res-tag{margin:0;justify-self:start;padding:.15rem .7rem;border-radius:999px;background:var(--teal);color:var(--on-teal);font:600 .875rem/1.5 var(--font-sans)}
+.res-tag-local{background:var(--amber)}
+.res-big{margin:0;font:700 clamp(1.3rem,2.6vw,2.05rem)/1.22 var(--font-display);letter-spacing:-.02em}
+.res-big span{display:block}
+.res-big b{color:var(--amber);font-weight:700}
+.res-real .res-big span:first-child{color:var(--teal)}
+.res-src{margin:0;font-size:.875rem;color:var(--mist);overflow-wrap:anywhere}
+.outcome .hero-note{margin-top:1rem}
+/* two agents, one dispute: seven steps */
+.duo h2{max-width:24ch}
+.duo-tag{margin:0;font-size:.95rem;color:var(--mist)}
+.steps7{list-style:none;counter-reset:s;margin:1.5rem 0 0;padding:0;max-width:56rem}
+.steps7>li{counter-increment:s;display:grid;grid-template-columns:11rem minmax(0,1fr);gap:.4rem 1.25rem;align-items:start;margin:0;padding:.95rem 0;border-top:1px solid var(--border)}
+.steps7>li:last-child{border-bottom:1px solid var(--border)}
+.steps7 p{margin:0;min-width:0;overflow-wrap:anywhere}
+.who{justify-self:start;padding:.15rem .7rem;border-radius:999px;border:1px solid var(--border);font:700 .875rem/1.5 var(--font-sans);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.who::before{content:counter(s) ". "}
+.w-buyer{background:var(--teal);border-color:var(--teal);color:var(--on-teal)}
+.w-merch{background:var(--amber);border-color:var(--amber);color:var(--on-teal)}
+.w-gate{border-color:var(--teal);color:var(--teal)}
+.w-paypal{border-color:var(--amber);color:var(--amber)}
+.w-owner{color:var(--mist)}
+@media (max-width:40rem){.steps7>li{grid-template-columns:1fr}}
+.steps7 .story-x{color:var(--mist)}
+/* the merchant's proof */
+.mproof h2{max-width:26ch}
+.mp-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:1.5rem 2rem;margin:1.5rem 0}
+.mp-nums>div{display:grid;gap:.3rem;padding-top:.9rem;border-top:2px solid var(--teal)}
+.mp-nums>div:nth-child(3){border-top-color:var(--amber)}
+.mp-nums dd{margin:0}
+.mp-nums .num{font:700 clamp(2.6rem,6vw,4.2rem)/1 var(--font-display);letter-spacing:-.04em;color:var(--teal)}
+.mp-nums>div:nth-child(3) .num{color:var(--amber)}
+.mp-nums dt{text-transform:none;letter-spacing:0;font:500 1.125rem/1.35 var(--font-sans);color:var(--foreground)}
+.mproof .res-tag{margin-top:1.25rem}
+/* voice and the phone code */
+.voice .vqr{display:grid;gap:1rem;justify-items:start;align-content:start}
+.vqr-url{margin:0;overflow-wrap:anywhere}.vqr-note{margin:0;max-width:30rem}
+/* verify */
+.verify h2{max-width:24ch}
+#verify-result{font-size:1.0625rem;max-width:46rem}
+.more-line{max-width:46rem;margin:0 0 1rem}
+.more-line a{font-weight:600}
+/* footer */
+.foot-in{display:grid;gap:.25rem}.foot-in p{margin:0}
+.foot-links{display:flex;flex-wrap:wrap;gap:0 1.5rem}
+.foot-links a{display:inline-flex;align-items:center;min-height:2.75rem;color:var(--mist);font-size:1rem}
+.foot-links a:hover{color:var(--foreground)}
+/* nav: five links and the theme button fit at 390px */
+@media (max-width:40rem){.bar .brand{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.bar .wrap{justify-content:center}.bar .wrap nav a{padding:.5rem .3rem}.bar .wrap .theme{margin-left:0}}
+.note .mono,.vqr-note .mono,.small .mono{font-size:.9375rem}
+.mono{font-size:max(.875rem,.92em)}
+
+.res-fee{margin:.6rem 0 0;font-size:1rem;line-height:1.5;color:var(--mist)}

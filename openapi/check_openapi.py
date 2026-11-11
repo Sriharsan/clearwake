@@ -75,12 +75,18 @@ for name, schema in spec["components"]["schemas"].items():
 
 # Routes against the server source
 server = (ROOT / "clearwake" / "server.py").read_text(encoding="utf-8")
-posts = set(re.findall(r'action == "([a-z]+)"', server))
-gets = set(re.findall(r'path == "/console/api/([a-z]+)"', server))
-documented_posts = {p.rsplit("/", 1)[1] for (m, p) in operations if m == "POST"}
-documented_gets = {p.rsplit("/", 1)[1] for (m, p) in operations if m == "GET"}
+voice_source = (ROOT / "clearwake" / "voice.py").read_text(encoding="utf-8")
+posts = set(re.findall(r'action == "([a-z/]+)"', server + voice_source))
+posts |= {m.removeprefix("/console/api/") for m in re.findall(r'VOICE_TRANSCRIBE = "(/console/api/[a-z/]+)"', server)}
+gets = set(re.findall(r'path == "/console/api/([a-z/]+)"', server + voice_source))
+documented_posts = {p.removeprefix("/console/api/") for (m, p) in operations if m == "POST"}
+documented_gets = {p.removeprefix("/console/api/") for (m, p) in operations if m == "GET" and p.startswith("/console/api/")}
 need(posts == documented_posts, f"POST routes differ: server {sorted(posts)} spec {sorted(documented_posts)}")
 need(gets == documented_gets, f"GET routes differ: server {sorted(gets)} spec {sorted(documented_gets)}")
+need(('path == "/healthz"' in server) == (("GET", "/healthz") in operations), "/healthz differs between clearwake/server.py and the spec")
+need(all(op.get("externalDocs", {}).get("url", "").startswith("https://clearwake-console.onrender.com/console") for op in operations.values()),
+     "every operation needs externalDocs that links back to the console")
+need(all(op.get("operationId") and op.get("description") for op in operations.values()), "every operation needs an operationId and a description")
 need("429" not in server or any("429" in op["responses"] for op in operations.values()),
      "server.py now returns 429: add the rate limit response to the spec (agent C added rate limits)")
 
@@ -148,6 +154,26 @@ def live():
         status, reset, _ = call("POST", "/console/api/reset", {}, auth)
         need(status == 200, f"live reset returned {status}")
         validate("ResetResult", reset, "reset")
+        status, health, _ = call("GET", "/healthz")
+        need(status == 200, f"live healthz returned {status}")
+        validate("Health", health, "healthz")
+        status, voice_status, _ = call("GET", "/console/api/voice/status")
+        validate("VoiceStatus", voice_status, "voice/status")
+        status, proposal, _ = call("POST", "/console/api/rules/propose", {"text": "Refund up to 5 dollars when the parcel is lost", "role": "merchant"}, auth)
+        need(status == 200, f"live rules/propose returned {status}")
+        validate("RulesProposal", proposal, "rules/propose")
+        status, stale, _ = call("POST", "/console/api/rules/confirm", {"role": "merchant", "rules_hash": "0" * 64}, auth)
+        need(status == 409, f"live rules/confirm with a wrong hash returned {status}, spec says 409")
+        validate("Error", stale, "rules/confirm 409 body")
+        status, reply, _ = call("POST", "/console/api/voice/turn", {"text": "what happened with my disputes"}, auth)
+        need(status == 200, f"live voice/turn returned {status}")
+        validate("VoiceReply", reply, "voice/turn")
+        status, reply, _ = call("POST", "/console/api/voice/answer", {"token": "none", "answer": "yes"}, auth)
+        need(status == 200, f"live voice/answer returned {status}")
+        validate("VoiceReply", reply, "voice/answer")
+        status, error, _ = call("POST", "/console/api/voice/transcribe", None, auth)
+        need(status == 400, f"live voice/transcribe without audio returned {status}, spec says 400")
+        validate("Error", error, "voice/transcribe 400 body")
         return True
     finally:
         process.terminate()

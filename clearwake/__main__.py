@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from .console import Console
-from .controller import RefundCase, RefundController
+from .controller import RefundCase, RefundController, archive_legacy_database
 from .paypal import LocalGateway, SandboxGateway
 from .server import ClearwakeServer
 
@@ -59,6 +59,8 @@ def main():
         elif args.enable_local_ai:
             from .local_ai import LocalWorker
             worker = LocalWorker.from_environment()
+        for kept in archive_legacy_database(args.database):
+            print("Kept the earlier local database aside as", kept)
         controller = RefundController(args.database, case=case, gateway=gateway, worker=worker)
         console = Console(args.database.resolve().parent / "console", args.console_model)
     except (ValueError, OSError) as error:

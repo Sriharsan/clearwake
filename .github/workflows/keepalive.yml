@@ -1,0 +1,34 @@
+name: Keep the console warm
+# Render's free plan sleeps a service after 15 minutes without traffic. This pings /healthz every 10 minutes and /console once an hour.
+# GitHub may start a scheduled run late; docs/KEEPALIVE.md adds a second pinger. Nothing here logs in, spends money or changes data.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Stop after 31 Dec 2026
+        id: window
+        run: |
+          if [ "$(date -u +%Y%m%d)" -gt 20261231 ]; then
+            echo "After 31 Dec 2026: keep-alive is finished."
+            echo "active=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "active=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Ping /healthz
+        if: steps.window.outputs.active == 'true'
+        run: |
+          curl -sS -o /dev/null -m 60 --retry 2 --retry-delay 5 -w 'healthz %{http_code} in %{time_total}s\n' https://clearwake-console.onrender.com/healthz || echo 'healthz did not answer; the next run pings again'
+      - name: Ping /console (first 10 minutes of each hour)
+        if: steps.window.outputs.active == 'true'
+        run: |
+          if [ "$((10#$(date -u +%M)))" -lt 10 ]; then
+            curl -sS -o /dev/null -m 60 --retry 2 --retry-delay 5 -w 'console %{http_code} in %{time_total}s\n' https://clearwake-console.onrender.com/console || echo 'console did not answer; the next run pings again'
+          else
+            echo 'Not the first 10 minutes of the hour: /console skipped.'
+          fi

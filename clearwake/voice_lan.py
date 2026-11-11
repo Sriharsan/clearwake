@@ -142,12 +142,14 @@ def main(argv=None):
     if not 1024 <= args.port <= 65535:
         raise SystemExit("port must be between 1024 and 65535")
     from .console import Console
-    from .controller import RefundController
+    from .controller import RefundController, archive_legacy_database
     from .paypal import LocalGateway
     ip = lan_address(args.lan_ip)
     cert, key, fingerprint = make_certificate(ip)
     database = args.database.resolve()
     database.parent.mkdir(parents=True, exist_ok=True)
+    for kept in archive_legacy_database(database):
+        print("Kept the earlier local database aside as", kept)
     controller = RefundController(database, gateway=LocalGateway(database.with_name("local-provider.sqlite3"), "completed"))
     console = Console(database.parent / "console", args.console_model)
     server = build_server(controller, console, ip, args.port, cert, key)

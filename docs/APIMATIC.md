@@ -190,7 +190,7 @@ Output seen:
 ```
 label: local run data
 buy allowed: True - Inside the mandate.
-case n: VERIFIED - Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.
+case n: VERIFIED - Settled at INQUIRY: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.
 ```
 
 Earlier record, superseded by the run record at the end of this file. At that point the Context Plugin for PayPal (Step A) was not run: `apimatic plugin` generates context plugins for our own SDK, which is a different thing and was not run either.
@@ -212,3 +212,22 @@ Earlier record, superseded by the run record at the end of this file. At that po
 * Not covered by the skills: `PayPal-Request-Id`, `Prefer`, the dispute routes (list, get, send message, make offer, provide evidence, provide supporting info, accept claim, adjudicate), the tracking body and the evidence multipart layout. For these the log says so and no correction is claimed.
 * Differences found, none changed (`clearwake/paypal.py` was not edited): the cached token is not dropped on a 401, so a revoked token would keep failing until it expires; id and secret are not percent-encoded before base64 (line 136); a 429 is not retried and `Retry-After` is not read (lines 96 to 103).
 * Result: no code change and no correction to the Postman collection came from this review. This record replaces the earlier statements in this file that the Context Plugin was not run.
+
+## Run of 12 Nov: spec grown to 18 operations, SDK and portal regenerated, portal redeployed
+
+* Spec: `openapi/clearwake-console.openapi.yaml` now has 18 operations and 32 schemas (it had 11 and 22). Added: `getHealth` (`GET /healthz`), `proposeRules` and `confirmRules` (`/console/api/rules/propose`, `/console/api/rules/confirm`), `getVoiceStatus`, `voiceTurn`, `answerVoice` and `transcribeVoice` (`/console/api/voice/...`). Every operation has an operationId, a description and an `externalDocs` link to https://clearwake-console.onrender.com/console; the file also has a top level `externalDocs` and a line in the introduction with the same link. Examples on the new calls are real responses of a local console on port 8846 (stopped afterwards): the rules read back, the confirmed rules, the voice status, a question answered from the records, a stale tap, the 409 for a wrong rules hash and the 400 for an empty recording. `transcribeVoice` has no 200 example because it needs a recording; its shape comes from `clearwake/voice.py`.
+* Checker: `openapi/check_openapi.py` now compares every route in `clearwake/server.py` and `clearwake/voice.py` (rules and voice routes included, not only the single word routes), `/healthz`, the console link on every operation and the operationId and description of each. `--live` also validates the real responses of `/healthz`, `voice/status`, `rules/propose`, `rules/confirm` (409), `voice/turn`, `voice/answer` and `voice/transcribe` (400). `python openapi/check_openapi.py --live` prints: OK, 18 operations, 32 schemas, routes match `clearwake/server.py`, real responses validated.
+* APIMatic validation (`apimatic api validate`, CLI 2.2.0 through the stored login, no new sign in): no errors, 191 findings, all warnings or information (156 example or default missing, 11 inline complex schema, 9 inline enum, 8 media type example missing, 4 example does not conform, 1 file name, 1 schema key and property name conflict, 1 environment information). The 4 non conforming examples and the `Error` name conflict are the ones recorded on 11 Nov.
+* SDK: `apimatic sdk generate -l python -i ./project -d ./sdk` in `build/apimatic` (the 11 Nov output moved to `sdk-old11nov` and `portal-old11nov`). Portal: `apimatic portal generate -i ./project -d ./portal` succeeded on the first run. `build/` stays out of git (it is in `.gitignore`).
+* Scan of the portal before deploy: no key, token, local path or personal data; none of the words the project does not use in any page (the only hits are syntax highlighter grammars in `assets/`, vendor code). The generated SDK page had a dash used as punctuation in three files (`sdks/python.md`, `llms-full.txt`, `api/search.json`); it was replaced by a comma in the deployed copy only.
+* Deployed: `vercel deploy --prod --yes --scope sriharsans-projects` from the portal-deploy copy to the existing project `clearwake-api`. https://clearwake-api.vercel.app lists the 18 operations in 9 groups (session, ledger and receipts, buyer agent, merchant agent, run, health, rules, voice); the new operation pages answer 200, an unknown path answers 404, and each operation page links to the console.
+* Counts changed because the checker now reports 18 and 32: `site/developers.html` line 38 and `docs/deck/index.html` line 324 ("11 operations, 22 schemas" to "18 operations, 32 schemas"). Older dated records in this file and the old `data/runs/final-check-*.json` files keep the number of their day.
+* Keep alive and warm check (same day): `.github/workflows/keepalive.yml`, `docs/KEEPALIVE.md`, `scripts/check_warm.py` (first run saved `data/runs/warm-2026-11-12.json`).
+* `clearwake/paypal.py` changes from the Context Plugin review are listed in the next section.
+
+### paypal.py: the three differences from the plugin review are now closed (12 Nov)
+
+* A 401 drops the cached token, takes a new one and sends the call once more. For a write it is sent once more with the same `PayPal-Request-Id`, because PayPal answers a 401 before it processes anything. A write without a request id is never repeated.
+* A 429 waits and sends again: the `Retry-After` seconds when PayPal gives them, otherwise 1, 2 and 4 seconds; at most 3 repeats and 30 seconds of waiting in total. Reads and writes with a stable request id only.
+* Client id and secret are percent encoded (`urllib.parse.quote`, `safe=''`) before base64.
+* Tests: `tests/test_paypal_retry.py`, local transport only.

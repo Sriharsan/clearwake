@@ -4,13 +4,13 @@
 
 **When an agent's order goes missing, agents fix it.**
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
 
 Every document in `docs/`, grouped by what a reader needs it for. Back to the [README](../README.md).
 
 ## Start here
 
-**Real PayPal sandbox run, 11 November 2026:** 10 orders bought by a buyer agent, 10 item not received disputes. 4 settled at INQUIRY with no fee (24 to 62 minutes from filing to RESOLVED in PayPal's timestamps, `data/runs/settle-times-20261111.json`), 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 0 double refunds. PayPal moved 4 cases to CHARGEBACK once tracking was on the order. The run file is `data/runs/batch-sandbox-20261111-132948.json`.
+**Real PayPal sandbox run, 11 November 2026:** 10 orders bought by a buyer agent, 10 item not received disputes. 4 settled at INQUIRY, before a claim (24 to 62 minutes from filing to RESOLVED in PayPal's timestamps, `data/runs/settle-times-20261111.json`), 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 0 double refunds. PayPal moved 4 cases to CHARGEBACK once tracking was on the order. The run file is `data/runs/batch-sandbox-20261111-132948.json`.
 
 **Planted failure, 200 episodes:** USD 2,633.25 overpaid by an agent using PayPal's Agent Toolkit directly, USD 0.00 with Clearwake.
 

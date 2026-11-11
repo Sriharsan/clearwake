@@ -4,17 +4,45 @@ One line of labelling: every number on this page is from the recorded run on the
 
 `clearwake/toolkit_guard.py` sits between an agent's tool calls and PayPal's Agent Toolkit tools. It is Clearwake's own code and it is not a PayPal product.
 
-## Three lines
+## One line drop in
+
+```
+pip install git+https://github.com/Sriharsan/clearwake
+```
+
+```python
+from clearwake import guard
+tools = guard(paypal_toolkit_tools, policy="policy.yaml")
+```
+
+Clearwake adds what the toolkit leaves to you: limits, one request id per money move, a read of PayPal's record before any retry, and a signed receipt.
+
+- `paypal_toolkit_tools`: the tool list a toolkit hands to an agent (tool objects with a `name`, or a dict of name to callable). `guard()` returns a list of the same length and order (`GuardedTools`, a list).
+- Of the 47 tools recorded in `docs/paypal_mcp_tools.json`, 8 move money and come back wrapped; the other 39 are the same objects, untouched, with no receipt.
+- `accept_dispute_claim` and `create_refund`: PayPal's record is read first and the amount comes from it. Above the policy limit the call is held for a person and nothing is sent. Above the approval line a person approves that exact move. One request id per move. After a lost reply the next call reads PayPal's record and never repeats a move that applied.
+- `pay_order`, `send_invoice`, `send_invoice_reminder`, `record_payment_for_invoice`, `record_refund_for_invoice`, `activate_recurring_series`: held for a person unless the policy names the tool as an operation (add `send_invoice:` with a `level` and no `max_amount_minor` to allow it). Each gets a request id and a signed receipt. The guard cannot read their amount from one record, so a policy line with `max_amount_minor` for them holds the call. `strict=False` forwards a tool the policy does not name, with a receipt.
+- `policy`: a path or a loaded policy. `python -m clearwake.guard_api policy > policy.yaml` writes the default merchant policy to edit. `receipts=` and `data_dir=` say where the signed log, ledger and approvals live (default `.clearwake-toolkit-guard`).
+- `tools.verify()` checks the receipt log offline. `tools.pending()` lists open approvals, `tools.approve(approval_id, by="name")` approves one.
+- What the agent sees when a call is stopped: JSON text `{"clearwake_guard": {"state", "detail", "sent", "request_id"}}`. A call that went through returns PayPal's own reply unchanged. A call that lost its reply raises the original error, as without the guard.
+
+`from clearwake import guard` gives the module `clearwake/guard.py` (the text checks), which is callable: calling it is `clearwake.guard_api.guard`. The install bundles the two engines it runs on (`verdock_core` from `vendor/verdock-core`, `relayloom` from `vendor/relayloom`) as top level packages in the wheel, so a pip install needs no git submodule and no vendor folder at runtime. Building it needs the submodules checked out; pip's git install fetches them at the pinned commits. It needs Python 3.10 or newer.
+
+Tested against the 47 tool list of `docs/paypal_mcp_tools.json` with no network: `tests/test_guard_api.py`. Every snippet on this page, on the Developers page and on Break it is run by `tests/test_dev_snippets.py`.
+
+### A single toolkit object
+
+An object with `accept_dispute_claim`, a `PayPalAPI` style object with `run(name, params)`, or a callable `(name, params)` goes to `clearwake/toolkit_guard.py`:
 
 ```python
 from clearwake.toolkit_guard import guard
+
 api = guard(paypal_tools, reader=paypal_reader)
 api.accept_dispute_claim(dispute_id, note)
 ```
 
-- `paypal_tools`: the object the agent already calls. An object with `accept_dispute_claim`, a `PayPalAPI` style object with `run(name, params)`, or a callable `(name, params)`.
+- `paypal_tools`: the object the agent already calls.
 - `paypal_reader`: reads PayPal's dispute record. A function `dispute_id -> record`, or an object with `.dispute()` and optionally `.capture()`. Without one, the guard calls the toolkit's own `get_dispute` through `run`.
-- Optional: `policy=` (default `policy/merchant.yaml`), `receipts=` (a path or a `ReceiptLog`), `data_dir=` (where the ledger, approvals and signed receipts live).
+- Optional: `policy=` (default `policy/merchant.yaml`), `receipts=` (a path or a `ReceiptLog`), `data_dir=`.
 
 Every other tool passes through unchanged. A call that the guard stops returns an `Outcome` with `state`, `detail`, `sent` and the receipt line.
 

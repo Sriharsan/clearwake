@@ -464,7 +464,7 @@ def compose_answer(console, scope="today"):
     if claims:
         second = f"{count_word(claims, True)} reached the claim stage."
     else:
-        second = "None reached the claim stage, so no dispute fee applies on these records."
+        second = "None reached the claim stage on these records."
     if avoided > 0:
         second = second[:-1] + f", and settling early avoided {avoided:.2f} dollars in fees by PayPal's rule."
     cases = []

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="t d">
-  <title id="t">Two agents settle one PayPal dispute: USD 5.00 offer, RESOLVED at INQUIRY, no fee</title>
-  <desc id="d">Buyer agent and merchant agent share dispute PP-R-ISN-10198775. Two signed receipts, 1c6bed15c803 and fc8f566c85ef, sit in the middle. The timeline reads opened, offer sent, RESOLVED at INQUIRY, no fee.</desc>
+  <title id="t">Two agents settle one PayPal dispute: USD 5.00 offer, RESOLVED at INQUIRY</title>
+  <desc id="d">Buyer agent and merchant agent share dispute PP-R-ISN-10198775. Two signed receipts, 1c6bed15c803 and fc8f566c85ef, sit in the middle. The timeline reads opened, offer sent, RESOLVED at INQUIRY.</desc>
   <style>
     :root { --bg:#f6f4ee; --card:#ffffff; --line:#d9d4c6; --ink:#14181f; --mute:#566070; --blue:#0b5fd6; --green:#117a4a; --chipbg:#e3f4ea; --ring:#0b5fd6; }
     @media (prefers-color-scheme: dark) { :root { --bg:#10151c; --card:#1a212b; --line:#2e3846; --ink:#eef1f5; --mute:#9aa6b6; --blue:#6aa7ff; --green:#5fd49a; --chipbg:#16382a; --ring:#6aa7ff; } }
@@ -50,6 +50,6 @@
   <text x="400" y="456" text-anchor="middle" class="f ink" font-size="17" font-weight="700">Offer sent: USD 5.00</text>
   <text x="740" y="456" text-anchor="middle" class="f green" font-size="17" font-weight="700">RESOLVED at INQUIRY</text>
   <rect class="chip" x="968" y="436" width="142" height="32" rx="16"/>
-  <text x="1039" y="458" text-anchor="middle" class="f green" font-size="16" font-weight="700">No fee</text>
+  <text x="1039" y="458" text-anchor="middle" class="f green" font-size="16" font-weight="700">Before a claim</text>
   <text x="1160" y="486" text-anchor="end" class="f mute" font-size="12">Verify offline: python scripts/verify_pair.py, or the receipt verifier on the site</text>
 </svg>

@@ -265,11 +265,11 @@ def run():
             if inquiries:
                 d = real.dispute(inquiries[0]["dispute_id"]); ns = product(MerchantSwarm(real, ROOT / "data" / "sandbox" / "settle", adapter), False)
                 r = ns.handle_dispute(d["dispute_id"], 2000, "sandbox-buyer")
-                record("n", "Settled in conversation, no fee: offer inside the limit, PayPal record checked (recorded case outside the product scope)", True if r.state == VERIFIED else None if r.state == "PENDING" else False,
+                record("n", "Settled in conversation, before a claim: offer inside the limit, PayPal record checked (recorded case outside the product scope)", True if r.state == VERIFIED else None if r.state == "PENDING" else False,
                        "real sandbox; the buyer accepts the offer as the sandbox buyer in PayPal's Resolution Center",
                        f"dispute {d['dispute_id']}: policy {r.proposal.get('decided', r.action)}, model proposed {r.proposal.get('proposed')}; {r.state}. {r.detail}")
             else:
-                record("n", "Settled in conversation, no fee: offer inside the limit, PayPal record checked (recorded case outside the product scope)", None, "real sandbox",
+                record("n", "Settled in conversation, before a claim: offer inside the limit, PayPal record checked (recorded case outside the product scope)", None, "real sandbox",
                        "No sandbox dispute at the INQUIRY stage. Open one as the sandbox buyer (item not received, paid from the PayPal balance).")
         else:
             ng = LocalGateway(work / "n.sqlite3"); ns = product(MerchantSwarm(ng, work / "n", adapter), False)
@@ -278,7 +278,7 @@ def run():
             ng.buyer_accepts_offer(nd)                       # local stand-in for the buyer accepting in the Resolution Center
             settled = ns.handle_dispute(nd, 1800, "buyer-n")
             g = gauge([{"amount": {"value": "18.00", "currency_code": "USD"}}], [ng.dispute(nd)])
-            record("n", "Settled in conversation, no fee: offer inside the limit, PayPal record checked (recorded case outside the product scope)",
+            record("n", "Settled in conversation, before a claim: offer inside the limit, PayPal record checked (recorded case outside the product scope)",
                    offered.state == "PENDING" and settled.state == VERIFIED, "local; buyer acceptance by the local provider",
                    f"policy {offered.proposal['decided']}, model proposed {offered.proposal['proposed']}; offer {offered.proposal['offer']} USD; "
                    f"{settled.detail} Gauge: {g.settled_before_escalation} settled before escalation, fee avoided {g.fee_avoided_minor / 100:.2f} USD "

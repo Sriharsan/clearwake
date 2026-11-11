@@ -4,7 +4,7 @@
 
 **When an agent's order goes missing, agents fix it.**
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
 
 Format: **SAY** is what Sri says, **[click]** is what to do on screen, **CAPTION** is the burned in caption, **TAG** is the small label top left of every shot. Record the browser and one terminal only. Upload publicly to YouTube, captions on, no music, no third party logos. Speak in your own words; the lines are 404 words over 2:55, which is 138 words a minute with one claim per sentence. Sri decides the final cut, the face or phone footage and every video choice; this file is a draft.
 
@@ -31,9 +31,9 @@ Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verif
 
 **TAG:** Real PayPal sandbox run, case 3
 
-**SAY:** "An AI agent bought something. It never arrived. Five dollars. PayPal's own record reads resolved, at the inquiry stage, no fee."
+**SAY:** "An AI agent bought something. It never arrived. Five dollars. PayPal's own record reads resolved, at the inquiry stage."
 
-**CAPTION:** PayPal's record: RESOLVED at INQUIRY, no fee
+**CAPTION:** PayPal's record: RESOLVED at INQUIRY
 
 ## 0:12 to 0:25 The claim, then the bad outcome
 
@@ -112,7 +112,7 @@ Hold each layer long enough to read it muted; one thing moves at a time except t
 
 **TAG:** Real PayPal sandbox run, batch of 10, read back from PayPal
 
-**SAY:** "Ten cases on the real sandbox. Four settled at inquiry with no fee, in twenty four to sixty two minutes in PayPal's timestamps. Three answered with proof and are under PayPal review. Two are waiting for the merchant owner. One was refused by the buyer's mandate: twenty dollars claimed on a nine dollar order. PayPal moved four cases to chargeback once tracking was on the order. Zero double refunds."
+**SAY:** "Ten cases on the real sandbox. Four settled at inquiry, before a claim, in twenty four to sixty two minutes in PayPal's timestamps. Three answered with proof and are under PayPal review. Two are waiting for the merchant owner. One was refused by the buyer's mandate: twenty dollars claimed on a nine dollar order. PayPal moved four cases to chargeback once tracking was on the order. Zero double refunds."
 
 **CAPTION:** 4 settled, 3 under PayPal review, 2 awaiting the owner, 1 refused by the mandate
 
@@ -132,7 +132,7 @@ Overlay table:
 
 **TAG:** Verified in your browser
 
-**SAY:** "Four of ten settled with no fee. Zero dollars overpaid against twenty six hundred. Zero double refunds against sixty one. One command runs it, or open the live console on Render. MIT, sandbox only, no real money."
+**SAY:** "Four of ten settled before a claim. Zero dollars overpaid against twenty six hundred. Zero double refunds against sixty one. One command runs it, or open the live console on Render. MIT, sandbox only, no real money."
 
 **CAPTION:** 4 of 10 settled. USD 0.00 against USD 2,633.25. 0 against 61 double refunds. clearwake-console.onrender.com  github.com/Sriharsan/clearwake
 

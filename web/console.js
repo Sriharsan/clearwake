@@ -404,14 +404,14 @@ const DISPUTE_COLUMNS = [
   { field: 'model', headerName: 'Proposed by', minWidth: 170 },
   { field: 'paypal_status', headerName: 'PayPal record', minWidth: 150 },
   { field: 'state', headerName: 'Checked', minWidth: 140, cellClassRules: { 'cell-ok': p => p.value === 'VERIFIED', 'cell-wait': p => p.value === 'UNKNOWN' || p.value === 'PENDING' } },
-  { field: 'settled', headerName: 'Settled before escalation', minWidth: 190, cellClassRules: { 'cw-yes': p => p.value === 'yes, no fee' } },
+  { field: 'settled', headerName: 'Settled before escalation', minWidth: 190, cellClassRules: { 'cw-yes': p => p.value === 'yes, before a claim' } },
   { field: 'fee_avoided', headerName: 'Fee avoided USD', minWidth: 140, cellClass: 'cell-mono' },
   { field: 'dispatch', headerName: 'Dispatch proof', minWidth: 300, tooltipField: 'dispatch', cellClassRules: { 'cw-yes': p => /counted, sealed/.test(p.value || ''), 'cw-late': p => /^weak/.test(p.value || '') } }
 ];
 
 function allDisputeRows() {
   return data.disputes.map(r => ({ ...r, countdown: L.deadlineOf(r, Date.now()), proposal_text: L.proposalOf(r), model: r.model || L.DASH,
-    settled: r.settled_before_escalation ? 'yes, no fee' : 'no' }));
+    settled: r.settled_before_escalation ? 'yes, before a claim' : 'no' }));
 }
 function disputeRows() { return allDisputeRows().filter(r => L.stagePasses(r, stageFilter)); }
 

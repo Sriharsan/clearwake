@@ -14,6 +14,8 @@ info:
     Source of truth: `clearwake/server.py` (routes) and `clearwake/console.py` (bodies and shapes). The data in a local run is
     local run data (`label`); the PayPal sandbox calls that sit behind the merchant agent are listed in the Postman collection
     `postman/clearwake-paypal.postman_collection.json`.
+
+    Try it live: the console at https://clearwake-console.onrender.com/console calls every operation below. The hosted service runs on a free plan and may need a few seconds to wake after a quiet hour; `GET /healthz` answers when it is awake.
   license:
     name: MIT
     identifier: MIT
@@ -40,6 +42,12 @@ tags:
   description: What happened and the proof of it.
 - name: Run
   description: Start over.
+- name: Rules
+  description: 'Plain words rules: turn a sentence into rules, read them back, confirm them.'
+- name: Voice
+  description: 'The voice and typed assistant: speech to text, one answer per turn, a Yes or No tap.'
+- name: Health
+  description: Is the service awake. No data, no session.
 paths:
   /console/api/session:
     get:
@@ -68,6 +76,9 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/state:
     get:
       tags:
@@ -93,9 +104,9 @@ paths:
                   owner: Local run shopper
                   budget: '102.00'
                   per_item_cap: '102.00'
-                  merchants: &id004
+                  merchants: &id005
                   - clearwake-sandbox-store
-                  categories: &id005
+                  categories: &id006
                   - home
                   - stationery
                   currency: USD
@@ -228,7 +239,7 @@ paths:
                   label: local run data
                   state: VERIFIED
                   action: settle_by_offer
-                  detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                  detail: 'Settled at INQUIRY: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
                   refund_id: null
                   approval_id: null
                   proposed: settle_by_offer
@@ -248,7 +259,7 @@ paths:
                   - at: '2026-11-11T07:17:29Z'
                     state: VERIFIED
                     action: settle_by_offer
-                    detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                    detail: 'Settled at INQUIRY: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
                     note: The buyer accepted the offer (the local provider records it; in the sandbox the buyer accepts in PayPal's Resolution Center).
                   dispute_id: PP-D-REH-94816C42B4
                   reason: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
@@ -309,7 +320,7 @@ paths:
                   due: '2026-11-21T07:17:29.805243Z'
                   dispatch: none
                   message: The colour is wrong.
-                  policy_reason: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                  policy_reason: 'Settled at INQUIRY: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
                   record:
                     dispute_id: PP-D-REH-94816C42B4
                     status: RESOLVED
@@ -383,6 +394,9 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/receipts:
     get:
       tags:
@@ -417,6 +431,9 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/buy:
     post:
       tags:
@@ -471,6 +488,9 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/case:
     post:
       tags:
@@ -514,7 +534,7 @@ paths:
                   label: local run data
                   state: VERIFIED
                   action: settle_by_offer
-                  detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                  detail: 'Settled at INQUIRY: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
                   refund_id: null
                   approval_id: null
                   proposed: settle_by_offer
@@ -525,7 +545,7 @@ paths:
                   claim: null
                   gateway: completed
                   adapter: console
-                  history: &id003
+                  history: &id004
                   - at: '2026-11-11T07:17:29Z'
                     state: PENDING
                     action: settle_by_offer
@@ -534,7 +554,7 @@ paths:
                   - at: '2026-11-11T07:17:29Z'
                     state: VERIFIED
                     action: settle_by_offer
-                    detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                    detail: 'Settled at INQUIRY: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
                     note: The buyer accepted the offer (the local provider records it; in the sandbox the buyer accepts in PayPal's Resolution Center).
                   dispute_id: PP-D-REH-94816C42B4
                   reason: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
@@ -547,7 +567,7 @@ paths:
                   message: The colour is wrong.
                   use_trackers: false
                   receipt_digest: null
-                  deadline: &id002
+                  deadline: &id003
                     seconds_left: 863999
                     state: ok
                   sources: []
@@ -557,6 +577,9 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/approve:
     post:
       tags:
@@ -595,6 +618,9 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/reconcile:
     post:
       tags:
@@ -630,6 +656,9 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/reset:
     post:
       tags:
@@ -666,6 +695,9 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/negotiation:
     get:
       tags:
@@ -709,6 +741,9 @@ paths:
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/totals:
     get:
       tags:
@@ -728,12 +763,15 @@ paths:
                 description: The list of measured numbers.
               example:
               - value: 5 of 10
-                label: disputes settled at INQUIRY, no fee
+                label: disputes settled at INQUIRY, before a claim
                 source: data/runs/batch-local-20261110-223520.json
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
   /console/api/negotiate:
     post:
       tags:
@@ -783,6 +821,342 @@ paths:
           $ref: '#/components/responses/Conflict'
         '429':
           $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
+  /healthz:
+    get:
+      tags:
+      - Health
+      operationId: getHealth
+      summary: Check that the service is awake
+      description: 'Returns `{"ok": true}`. No session, no origin check, never rate limited. Render uses it as its health check and a keep-warm monitor pings it every few minutes.'
+      responses:
+        '200':
+          description: The service is running.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+              example:
+                ok: true
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
+  /console/api/rules/propose:
+    post:
+      tags:
+      - Rules
+      operationId: proposeRules
+      summary: Turn a sentence into rules and read them back
+      description: Parses a plain sentence into the refund rules and returns them in words with a before and after table. Nothing changes until `confirmRules` is called with the returned `rules_hash`. The hard ceiling of $100.00 per refund cannot be raised by any sentence.
+      security: &id002
+      - consoleSession: []
+        csrfToken: []
+      requestBody:
+        required: true
+        description: The sentence and whose rules they are.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RulesProposeRequest'
+            example:
+              text: Refund up to 5 dollars when the parcel is lost
+              role: merchant
+      responses:
+        '200':
+          description: The rules in words, ready to confirm.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RulesProposal'
+              example:
+                role: merchant
+                status: rule_parser
+                label: rule parser, not AI
+                question: ''
+                changes:
+                - 'no day count in the sentence: kept 10 days'
+                rejected: []
+                latency_ms: -1
+                attempts: 0
+                sentence_sha256: ee3f044b33e961e086bbd54e5f2a17ff052f0a7e705ce5f917d5d09608c3d53c
+                model: rule parser
+                backend: rule_parser
+                ok: true
+                readback:
+                - Refunds up to $5.00 are made without asking you.
+                - 'Anything above $5.00 is not refunded by the agent: it comes to you with the evidence ready.'
+                - An order counts as not arrived after 10 days without delivery.
+                - The same order is never refunded twice. This is always on in code.
+                - 'Disputes fought with evidence: item not received. Every other kind comes to you.'
+                - 'US dollars only. Hard ceiling in code: $100.00 per refund. No sentence can raise it.'
+                diff:
+                - field: Most the agent may refund
+                  before: $5.00
+                  after: $5.00
+                  changed: false
+                - field: Approval needed above
+                  before: $2.00
+                  after: $5.00
+                  changed: true
+                - field: Days until not arrived
+                  before: '10'
+                  after: '10'
+                  changed: false
+                - field: Fought with evidence
+                  before: item not received
+                  after: item not received
+                  changed: false
+                rules_hash: 60904ab97652ddc3692a557879844ae9cd949010d18372baa83ec7bcda755d7d
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
+  /console/api/rules/confirm:
+    post:
+      tags:
+      - Rules
+      operationId: confirmRules
+      summary: Confirm the rules that were read back
+      description: Signs and applies the rules last returned by `proposeRules` for the role. The hash must match the pending proposal; otherwise the call is refused with 409 and nothing changes.
+      security: *id002
+      requestBody:
+        required: true
+        description: The role and the `rules_hash` from the read back.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RulesConfirmRequest'
+            example:
+              role: merchant
+              rules_hash: 60904ab97652ddc3692a557879844ae9cd949010d18372baa83ec7bcda755d7d
+      responses:
+        '200':
+          description: The rules are signed and in force.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RulesConfirmed'
+              example:
+                role: merchant
+                rules_hash: 60904ab97652ddc3692a557879844ae9cd949010d18372baa83ec7bcda755d7d
+                policy_hash: 7889498f53fe2a84409a9030733cb326fb9f8b662e9c243f9bf6b0c3489581ec
+                previous_kept: true
+                source: typed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: The rules on screen are not the ones waiting for confirmation. Propose them again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: The rules on screen are not the ones waiting for confirmation. Turn the sentence into rules again.
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
+  /console/api/voice/status:
+    get:
+      tags:
+      - Voice
+      operationId: getVoiceStatus
+      summary: Is speech to text available on this server
+      description: Reports whether the local speech model and ffmpeg are present, the recording limits and the intents the assistant understands. Typing always works.
+      responses:
+        '200':
+          description: Voice status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceStatus'
+              example:
+                stt: true
+                model: small.en
+                ffmpeg: true
+                model_present: true
+                max_seconds: 30
+                max_bytes: 5242880
+                label: 'speech to text: Whisper small.en on this machine (int8, CPU), no cloud service'
+                tts: the browser's own speech synthesis on your device
+                typing: true
+                intents:
+                - set_rules
+                - ask
+                - approve
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
+  /console/api/voice/turn:
+    post:
+      tags:
+      - Voice
+      operationId: voiceTurn
+      summary: Send one typed or spoken sentence, get one answer
+      description: Send either `text` or the `transcript_id` returned by `transcribeVoice`. The assistant answers a question from the records, proposes rules (then `needs_confirm` is true and a `token` is returned for `answerVoice`), or says it did not understand. The text shown is the text spoken.
+      security: *id002
+      requestBody:
+        required: true
+        description: Typed text, or the id of a transcript held on the server.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceTurnRequest'
+            example:
+              text: what happened with my disputes
+      responses:
+        '200':
+          description: One answer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceReply'
+              example:
+                intent: ask
+                source: typed
+                transcript: what happened with my disputes
+                transcript_sha256: d3e83ba34c310d83d205eed5e026bee14d33364c31f1082d8a6536f819dac8f0
+                text: There are no disputes today on the records.
+                speak: There are no disputes today on the records.
+                needs_confirm: false
+                token: null
+                how: matcher
+                facts:
+                  disputes: 0
+                  closed: 0
+                  with_owner: 0
+                  scope: today
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
+  /console/api/voice/answer:
+    post:
+      tags:
+      - Voice
+      operationId: answerVoice
+      summary: Tap Yes or No on the question waiting
+      description: Has the same effect as saying yes or no to the one question on screen. The `token` comes from the `voiceTurn` answer that asked. A stale token gets a reply with `stale` true and changes nothing.
+      security: *id002
+      requestBody:
+        required: true
+        description: The token of the open question and the answer.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoiceAnswerRequest'
+            example:
+              token: 1dd2bbc8054b9b8aed09fedc
+              answer: 'yes'
+      responses:
+        '200':
+          description: The effect of the answer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VoiceReply'
+              example:
+                intent: 'yes'
+                source: tap
+                transcript: ''
+                transcript_sha256: 93c625dd555bff5f0d1f8894e90674f4ee390d4bf53f437858c1208755a03fd2
+                text: Nothing is waiting for a yes or a no. Say a rule, a question, or an approval.
+                speak: Nothing is waiting for a yes or a no. Say a rule, a question, or an approval.
+                needs_confirm: false
+                token: null
+                stale: true
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
+  /console/api/voice/transcribe:
+    post:
+      tags:
+      - Voice
+      operationId: transcribeVoice
+      summary: Turn a recording into text on this machine
+      description: The body is the recording itself (audio, or webm or mp4 video, at most 5 MB and 30 seconds), not JSON. A local Whisper model reads it; the audio is deleted when the call ends and only its SHA-256 is kept. The returned `transcript_id` goes to `voiceTurn`.
+      security: *id002
+      requestBody:
+        required: true
+        description: The recording as it came from the browser.
+        content:
+          audio/webm:
+            schema:
+              type: string
+              format: binary
+              description: The recorded audio bytes.
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+              description: The recorded audio bytes.
+      responses:
+        '200':
+          description: The transcript and its hashes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transcription'
+        '400':
+          description: No audio arrived, or it was cut off.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: No audio arrived.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          description: The recording is over 5 MB.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '415':
+          description: The body is not audio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '503':
+          description: Speech to text is not installed on this server. Type instead.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      externalDocs:
+        description: See this call in the Clearwake console
+        url: https://clearwake-console.onrender.com/console
 components:
   securitySchemes:
     consoleSession:
@@ -1244,7 +1618,7 @@ components:
         detail:
           type: string
           description: A plain sentence saying what happened.
-          example: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+          example: 'Settled at INQUIRY: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
         refund_id:
           type:
           - string
@@ -1291,7 +1665,7 @@ components:
           example: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
         deadline:
           description: The seller response deadline and its state.
-          example: *id002
+          example: *id003
         policy:
           $ref: '#/components/schemas/PolicyView'
         history:
@@ -1299,7 +1673,7 @@ components:
           items:
             $ref: '#/components/schemas/HistoryStep'
           description: The steps of the case in the order they happened.
-          example: *id003
+          example: *id004
       additionalProperties: true
     PolicyView:
       type: object
@@ -1586,14 +1960,14 @@ components:
                 type: string
                 description: One item of the list.
               description: The stores the mandate allows.
-              example: *id004
+              example: *id005
             categories:
               type: array
               items:
                 type: string
                 description: One item of the list.
               description: The product categories the mandate allows.
-              example: *id005
+              example: *id006
             currency:
               type: string
               description: The currency code. Only USD is used.
@@ -1784,3 +2158,329 @@ components:
           type: string
           description: The refusal as shown in the console.
       description: 'The body of every refusal: one line of plain text.'
+    Health:
+      type: object
+      required:
+      - ok
+      additionalProperties: false
+      description: The health answer.
+      properties:
+        ok:
+          type: boolean
+          description: True while the service runs.
+          example: true
+    RulesProposeRequest:
+      type: object
+      required:
+      - text
+      additionalProperties: false
+      description: A sentence that states refund rules.
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: The rules in plain words.
+          example: Refund up to 5 dollars when the parcel is lost
+        role:
+          type: string
+          enum:
+          - merchant
+          - buyer
+          default: merchant
+          description: Whose rules these are.
+    RulesProposal:
+      type: object
+      required:
+      - role
+      - ok
+      - readback
+      - rules_hash
+      additionalProperties: true
+      description: The rules in words, with what changes, waiting for confirmation.
+      properties:
+        role:
+          type: string
+          enum:
+          - merchant
+          - buyer
+          description: Whose rules these are.
+        ok:
+          type: boolean
+          description: True when the sentence became valid rules.
+        status:
+          type: string
+          description: How the sentence was read.
+          example: rule_parser
+        label:
+          type: string
+          description: What read the sentence.
+          example: rule parser, not AI
+        question:
+          type: string
+          description: A question back to the owner when the sentence was not clear; empty otherwise.
+        changes:
+          type: array
+          items:
+            type: string
+            description: One default that was filled in.
+          description: Defaults that were filled in.
+        rejected:
+          type: array
+          items:
+            type: string
+            description: One part of the sentence that was refused.
+          description: Parts of the sentence that were refused.
+        readback:
+          type: array
+          items:
+            type: string
+            description: One rule in words.
+          description: The rules, one sentence each.
+        diff:
+          type: array
+          description: Each rule before and after.
+          items:
+            type: object
+            required:
+            - field
+            - before
+            - after
+            - changed
+            description: One rule before and after.
+            properties:
+              field:
+                type: string
+                description: Rule name.
+              before:
+                type: string
+                description: Value in force now.
+              after:
+                type: string
+                description: Value if confirmed.
+              changed:
+                type: boolean
+                description: True when the value differs.
+        sentence_sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          description: SHA-256 of the sentence.
+        rules_hash:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          description: Hash of the rules. Send it to confirmRules.
+        model:
+          type: string
+          description: Reader that produced the rules.
+        backend:
+          type: string
+          description: Backend name.
+        latency_ms:
+          type: integer
+          description: Milliseconds taken, or -1 for the rule parser.
+        attempts:
+          type: integer
+          description: Attempts made.
+    RulesConfirmRequest:
+      type: object
+      required:
+      - rules_hash
+      additionalProperties: false
+      description: The rules to confirm.
+      properties:
+        role:
+          type: string
+          enum:
+          - merchant
+          - buyer
+          default: merchant
+          description: Whose rules.
+        rules_hash:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+          description: The hash returned by proposeRules.
+    RulesConfirmed:
+      type: object
+      required:
+      - role
+      - rules_hash
+      - source
+      additionalProperties: true
+      description: The rules are signed and in force.
+      properties:
+        role:
+          type: string
+          description: Whose rules.
+        rules_hash:
+          type: string
+          description: Hash of the confirmed rules.
+        policy_hash:
+          type: string
+          description: Hash of the policy file now in force (merchant).
+        previous_kept:
+          type: boolean
+          description: True when the earlier rules were kept on record.
+        source:
+          type: string
+          description: typed or voice.
+    VoiceStatus:
+      type: object
+      required:
+      - stt
+      - typing
+      additionalProperties: true
+      description: What voice input this server offers.
+      properties:
+        stt:
+          type: boolean
+          description: True when speech to text is available.
+        model:
+          type: string
+          description: Speech model name.
+        ffmpeg:
+          type: boolean
+          description: True when ffmpeg is present.
+        model_present:
+          type: boolean
+          description: True when the model files are installed.
+        max_seconds:
+          type: integer
+          description: Longest recording.
+        max_bytes:
+          type: integer
+          description: Largest recording.
+        label:
+          type: string
+          description: Plain statement of where speech is read.
+        tts:
+          type: string
+          description: Where spoken answers come from.
+        typing:
+          type: boolean
+          description: 'True: typing always works.'
+        intents:
+          type: array
+          items:
+            type: string
+            description: One intent name.
+          description: Intents the assistant understands.
+    VoiceTurnRequest:
+      type: object
+      additionalProperties: false
+      description: Send text or a transcript id.
+      properties:
+        text:
+          type: string
+          maxLength: 500
+          description: Typed text.
+        transcript_id:
+          type: string
+          description: Id returned by transcribeVoice.
+    VoiceAnswerRequest:
+      type: object
+      required:
+      - answer
+      additionalProperties: false
+      description: A Yes or No tap.
+      properties:
+        token:
+          type: string
+          description: Token of the open question.
+        answer:
+          type: string
+          enum:
+          - 'yes'
+          - 'no'
+          description: The answer.
+    VoiceReply:
+      type: object
+      required:
+      - intent
+      - text
+      - speak
+      - needs_confirm
+      additionalProperties: true
+      description: One answer from the assistant. The text shown is the text spoken.
+      properties:
+        intent:
+          type: string
+          description: 'What was understood: set_rules, ask, approve, yes, no or unclear.'
+        source:
+          type: string
+          description: typed, voice or tap.
+        transcript:
+          type: string
+          description: The words that were understood.
+        transcript_sha256:
+          type: string
+          description: SHA-256 of those words.
+        text:
+          type: string
+          description: The answer as shown.
+        speak:
+          type: string
+          description: The answer as spoken; identical to text.
+        needs_confirm:
+          type: boolean
+          description: True when a Yes or No is waited for.
+        token:
+          type:
+          - string
+          - 'null'
+          description: Token to send to answerVoice when needs_confirm is true.
+        how:
+          type: string
+          description: How the sentence was matched.
+        stale:
+          type: boolean
+          description: True when the tapped question was no longer open.
+        facts:
+          type: object
+          additionalProperties: true
+          description: Numbers behind the answer.
+        kind:
+          type: string
+          description: What the open question is about, for example rules.
+        lines:
+          type: array
+          items:
+            type: string
+            description: One rule in words.
+          description: The rules read back, when kind is rules.
+        proposal:
+          $ref: '#/components/schemas/RulesProposal'
+    Transcription:
+      type: object
+      required:
+      - transcript
+      - transcript_id
+      additionalProperties: true
+      description: The text of a recording.
+      properties:
+        transcript:
+          type: string
+          description: The words heard.
+        transcript_id:
+          type: string
+          description: Pass to voiceTurn.
+        transcript_sha256:
+          type: string
+          description: SHA-256 of the transcript.
+        audio_sha256:
+          type: string
+          description: SHA-256 of the audio, which is not kept.
+        audio_seconds:
+          type: number
+          description: Length of the recording.
+        ms:
+          type: integer
+          description: Milliseconds taken.
+        model:
+          type: string
+          description: Model folder name.
+        label:
+          type: string
+          description: Plain statement of where speech was read.
+externalDocs:
+  description: Open the Clearwake console, the page that calls this API.
+  url: https://clearwake-console.onrender.com/console

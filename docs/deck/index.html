@@ -177,12 +177,12 @@ a { color: var(--accent); }
     <div>
       <p class="lead">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</p>
       <p class="slogan">When an agent's order goes missing, agents fix it.</p>
-      <p class="proof"><b>Real PayPal sandbox run, 11 November 2026.</b> 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.</p>
+      <p class="proof"><b>Real PayPal sandbox run, 11 November 2026.</b> 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.</p>
     </div>
     <div class="stat">
       <span class="tag">Real PayPal sandbox run</span>
       <p class="num">4 of 10</p>
-      <p class="cap">disputes settled by the two agents at INQUIRY with no fee. USD 20.00 refunded.</p>
+      <p class="cap">disputes settled by the two agents at INQUIRY, before a claim. USD 20.00 refunded.</p>
     </div>
   </div>
 </section>
@@ -244,7 +244,7 @@ a { color: var(--accent); }
     <div>
       <h2>The ten case batch, counted aloud</h2>
       <ul class="counts">
-        <li><b>4</b><span>settled at INQUIRY with no fee, in 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps</span></li>
+        <li><b>4</b><span>settled at INQUIRY, before a claim, in 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps</span></li>
         <li><b>3</b><span>answered with proof, under PayPal review</span></li>
         <li><b>2</b><span>awaiting the merchant owner, an offer above the approval line</span></li>
         <li><b>1</b><span>refused by the buyer's mandate: USD 20.00 claimed on a USD 9.00 order</span></li>
@@ -321,7 +321,7 @@ a { color: var(--accent); }
     <div>
       <h2>APIMatic</h2>
       <ul class="facts">
-        <li><b>OpenAPI 3.1 spec</b> of the console API: 11 operations, 22 schemas, checked against the running server.</li>
+        <li><b>OpenAPI 3.1 spec</b> of the console API: 18 operations, 32 schemas, checked against the running server.</li>
         <li><b>CLI validation:</b> 382 findings before, 104 after, no errors in any run.</li>
         <li><b>Python SDK</b> <code>clearwake-console-api</code> 0.6.1 and a static portal at <a href="https://clearwake-api.vercel.app">clearwake-api.vercel.app</a>.</li>
         <li><b>Context Plugin for PayPal 0.4.1</b> was run as a review of every PayPal call.</li>

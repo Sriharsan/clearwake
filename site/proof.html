@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clearwake Proof</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="Everything behind the front page: the numbers table, the sourced reasons it matters now, the six layer anatomy, the wake of one dispute, dispatch proof, the network cut, egress and the 1.5% line.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="hud.css">
+<link rel="stylesheet" href="anatomy.css">
+<link rel="stylesheet" href="proof.css">
+<script src="theme.js"></script>
+<script src="app.js" type="module"></script>
+<script src="totals.js" defer></script>
+<script src="hud.js" defer></script>
+<script src="anatomy.js" defer></script>
+<script src="proof.js" defer></script>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="/">Clearwake</a>
+    <nav aria-label="Pages">
+      <a href="/">Home</a>
+      <a href="/control-room">Control Room</a>
+      <a href="/break">Break it</a>
+      <a href="/proof" aria-current="page">Proof</a>
+      <a href="/developers">Developers</a>
+      <button class="theme" type="button" aria-label="Switch to the light theme"><svg class="ico sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg><svg class="ico moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.2A8.5 8.5 0 0 1 9.8 4a8.5 8.5 0 1 0 10.2 10.2z"/></svg></button>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="proof-head wrap" aria-labelledby="ph-h">
+    <p class="eyebrow">Proof</p>
+    <h1 id="ph-h">Everything behind the front page.</h1>
+    <p class="lede">Each part below runs on this page against the recorded files. Change a value in a signed receipt and the check fails. Pull the plug and the money waits.</p>
+    <nav class="jump" aria-label="On this page">
+      <a href="#numbers">Numbers</a>
+      <a href="#why-now" id="jump-why" hidden>Why now</a>
+      <a href="#anatomy">Anatomy</a>
+      <a href="#conversation">The scene</a>
+      <a href="#wake">The wake</a>
+      <a href="#dispatch">Dispatch proof</a>
+      <a href="#cable">Network cut</a>
+      <a href="#boundary">Egress</a>
+      <a href="#gauge">The 1.5% line</a>
+    </nav>
+  </section>
+
+  <section class="band wrap measured" id="numbers" aria-labelledby="m-h">
+    <p class="eyebrow">Measured</p>
+    <h2 id="m-h">Numbers from the recorded runs.</h2>
+    <dl class="lead-numbers" id="lead-numbers" aria-label="Measured numbers from the recorded runs" hidden></dl>
+    <p class="hero-note">Real PayPal sandbox, test money. Every figure comes from a recorded run; a figure from a local run on the local provider says so.</p>
+  </section>
+
+  <section class="band wrap why" id="why-now" aria-labelledby="why-h" hidden>
+    <p class="eyebrow">Why now</p>
+    <h2 id="why-h">Sourced facts, each one linked.</h2>
+    <ol class="why-list" id="why-list"></ol>
+  </section>
+
+  <section class="band wrap anat" id="anatomy" aria-labelledby="anat-h" data-step="0" data-open="0" data-view="all">
+    <p class="eyebrow">How it works</p>
+    <h2 id="anat-h">One dispute. Six layers. Every layer checked.</h2>
+    <p class="lede">Batch case 3 ran on the real PayPal sandbox. The assembled unit stands in the middle. Take it apart layer by layer: each part shows what it does and the one real value it carried.</p>
+    <span class="anat-tag">Real PayPal sandbox run, case 3</span>
+
+    <svg class="anat-defs" width="0" height="0" focusable="false" aria-hidden="true">
+      <defs>
+        <g id="slab"><path class="sf-top" d="M180 -44 L300 0 L180 44 L60 0Z"/><path class="sf-l" d="M60 0 L180 44 L180 60 L60 16Z"/><path class="sf-r" d="M180 44 L300 0 L300 16 L180 60Z"/></g>
+        <symbol id="g1" viewBox="0 0 60 40"><path class="gl" d="M6 18v4M13 12v16M20 6v28M27 14v12M34 9v22M41 15v10M48 11v18M54 17v6"/></symbol>
+        <symbol id="g2" viewBox="0 0 60 40"><circle class="gl" cx="20" cy="11" r="7"/><path class="gl" d="M6 37q0-13 14-13t14 13"/><rect class="gl" x="38" y="16" width="16" height="20" rx="2"/><path class="gl" d="M42 22h8M42 27h8M42 32h5"/></symbol>
+        <symbol id="g3" viewBox="0 0 60 40"><circle class="gl" cx="20" cy="11" r="7"/><path class="gl" d="M6 37q0-13 14-13t14 13"/><rect class="gl" x="38" y="18" width="16" height="16" rx="2"/><path class="gl" d="M42 26l4 4 7-8"/></symbol>
+        <symbol id="g4" viewBox="0 0 60 40"><path class="gl" d="M8 38V4M52 38V4M8 4H52M8 20H52"/><path class="gl" d="M24 31l5 5 10-12"/></symbol>
+        <symbol id="g5" viewBox="0 0 60 40"><rect class="gl" x="1" y="12" width="12" height="16" rx="2"/><rect class="gl" x="16" y="12" width="12" height="16" rx="2"/><rect class="gl" x="31" y="12" width="12" height="16" rx="2"/><rect class="gl" x="46" y="12" width="12" height="16" rx="2"/><path class="gl" d="M13 20h3M28 20h3M43 20h3"/></symbol>
+        <symbol id="g6" viewBox="0 0 60 40"><path class="gl" d="M30 37C8 24 12 6 23 8c5 1 7 6 7 6s2-5 7-6c11-2 15 16-7 29Z"/></symbol>
+      </defs>
+    </svg>
+
+    <div class="anat-board">
+      <div class="anat-col anat-left" role="list" aria-label="Layers 1 to 3">
+        <article class="anat-part k-skel" id="part-1" data-layer="1" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g1"/></svg><span class="anat-num">1</span><span class="anat-meta">Rules</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="1">Owner's spoken rules</button></h3>
+          <p class="anat-one">The owner speaks the limits once, and every agent stays inside them.</p>
+          <p class="anat-val"><span>Limit alone</span> <b data-v="limit">USD 5.00</b> <span>Ceiling</span> <b data-v="ceiling">USD 9.00</b></p>
+          <p class="anat-more">What holds everything up. The agents act only inside what the owner said.</p>
+        </article>
+        <article class="anat-part k-musc" id="part-2" data-layer="2" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g2"/></svg><span class="anat-num">2</span><span class="anat-meta">Agent</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="2">Buyer agent</button></h3>
+          <p class="anat-one">It files the claim for an order it placed and cannot pay itself.</p>
+          <p class="anat-val"><span>Claim</span> <b data-v="ask">USD 5.00</b> <span>Order</span> <b class="anat-id" data-v="order">0HW636872W597254K</b></p>
+          <p class="anat-more">The buyer agent does the work. No agent moves money on its own word.</p>
+        </article>
+        <article class="anat-part k-musc" id="part-3" data-layer="3" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g3"/></svg><span class="anat-num">3</span><span class="anat-meta">Agent</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="3">Merchant agent</button></h3>
+          <p class="anat-one">It reads the dispute and offers inside its owner's limit.</p>
+          <p class="anat-val"><span>Offer</span> <b data-v="offer">USD 5.00</b> <span>Model draft</span> <b data-v="draft">14.6 s</b></p>
+          <p class="anat-more">The merchant agent does the work, with proof, inside its owner's limits.</p>
+        </article>
+      </div>
+
+      <div class="anat-center">
+        <svg class="anat-fig" viewBox="0 0 360 540" role="group" aria-label="The assembled Clearwake unit: six stacked layers, one case, USD 5.00 paid once">
+          <line class="anat-thread" x1="180" y1="6" x2="180" y2="534"/>
+          <circle class="anat-pin" cx="180" cy="6" r="4"/><circle class="anat-pin" cx="180" cy="534" r="4"/>
+          <g class="slab s1 k-skel" data-layer="1" tabindex="0" role="button" aria-label="Layer 1, Owner's spoken rules"><g transform="translate(0 60)"><use href="#slab"/><g class="glyph"><use href="#g1" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="1"><circle cx="60" cy="8" r="13"/><text x="60" y="8">1</text></g></g></g>
+          <g class="slab s2 k-musc" data-layer="2" tabindex="0" role="button" aria-label="Layer 2, Buyer agent"><g transform="translate(0 138)"><use href="#slab"/><g class="glyph"><use href="#g2" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="2"><circle cx="60" cy="8" r="13"/><text x="60" y="8">2</text></g></g></g>
+          <g class="slab s3 k-musc" data-layer="3" tabindex="0" role="button" aria-label="Layer 3, Merchant agent"><g transform="translate(0 216)"><use href="#slab"/><g class="glyph"><use href="#g3" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="3"><circle cx="60" cy="8" r="13"/><text x="60" y="8">3</text></g></g></g>
+          <g class="slab s4 k-skel" data-layer="4" tabindex="0" role="button" aria-label="Layer 4, Policy gate"><g transform="translate(0 294)"><use href="#slab"/><g class="glyph"><use href="#g4" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="4"><circle cx="300" cy="8" r="13"/><text x="300" y="8">4</text></g></g></g>
+          <g class="slab s5 k-skin" data-layer="5" tabindex="0" role="button" aria-label="Layer 5, Signed receipts chain"><g transform="translate(0 372)"><use href="#slab"/><g class="glyph"><use href="#g5" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="5"><circle cx="300" cy="8" r="13"/><text x="300" y="8">5</text></g></g></g>
+          <g class="slab s6 k-heart" data-layer="6" tabindex="0" role="button" aria-label="Layer 6, PayPal's record"><g transform="translate(0 450)"><use href="#slab"/><g class="glyph"><use href="#g6" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="6"><circle cx="300" cy="8" r="13"/><text x="300" y="8">6</text></g></g></g>
+          <g class="anat-bead st0"><rect x="108" y="-13" width="144" height="26" rx="13"/><text x="180" y="0">Case 3 &middot; USD 5.00</text></g>
+        </svg>
+
+        <div class="anat-switch" role="group" aria-label="Layer switch">
+          <button type="button" class="anat-view" data-view="all" aria-pressed="true">All layers</button>
+          <button type="button" class="anat-view" data-view="rules" aria-pressed="false">Rules only</button>
+          <button type="button" class="anat-view" data-view="agents" aria-pressed="false">Agents only</button>
+          <button type="button" class="anat-view" data-view="receipts" aria-pressed="false">Receipts only</button>
+          <button type="button" class="anat-view" data-view="paypal" aria-pressed="false">PayPal only</button>
+        </div>
+        <p class="anat-cap" aria-live="polite"></p>
+        <div class="anat-ctl"><button class="btn anat-replay" type="button">Replay the dispute</button><button class="btn anat-open" type="button" aria-pressed="false">Explode</button><a class="btn" href="receipts/manifest.json">Open the signed receipts</a></div>
+      </div>
+
+      <div class="anat-col anat-right" role="list" aria-label="Layers 4 to 6">
+        <article class="anat-part k-skel" id="part-4" data-layer="4" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g4"/></svg><span class="anat-num">4</span><span class="anat-meta">Gate</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="4">Policy gate</button></h3>
+          <p class="anat-one">It checks every action before money moves, so nothing goes outside the rules.</p>
+          <p class="anat-val"><span>Proposed</span> <b data-v="proposed">settle_by_offer</b> <span>Decided</span> <b data-v="decided">settle_by_offer</b> <span>Overridden</span> <b data-v="overridden">no</b></p>
+          <p class="anat-more">Nothing moves outside it. A wrong action stops here, before money moves.</p>
+        </article>
+        <article class="anat-part k-skin" id="part-5" data-layer="5" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g5"/></svg><span class="anat-num">5</span><span class="anat-meta">Seal</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="5">Signed receipts chain</button></h3>
+          <p class="anat-one">Each step is signed, and each receipt checks the one before it.</p>
+          <p class="anat-val"><span>Policy hash</span> <b class="anat-id" data-v="hash">4ff70bb8a4df</b> <span>Offer receipt</span> <b data-v="line">line 28</b></p>
+          <p class="anat-more">A chain of signed receipts anyone can verify offline against one dispute id.</p>
+        </article>
+        <article class="anat-part k-heart" id="part-6" data-layer="6" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g6"/></svg><span class="anat-num">6</span><span class="anat-meta">Judge</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="6">PayPal's record</button></h3>
+          <p class="anat-one">PayPal's record is the judge, and nothing counts until the receipts match it.</p>
+          <p class="anat-val"><b data-v="status">RESOLVED at INQUIRY</b> <span>Refund</span> <b data-v="refund">USD 5.00</b> <span>Fee</span> <b data-v="fee">USD 0.00</b></p>
+          <p class="anat-more">PayPal's record is the judge, and the money is what is counted.</p>
+        </article>
+      </div>
+      <svg class="anat-leaders" aria-hidden="true" focusable="false"></svg>
+    </div>
+  </section>
+
+  <section class="conv" id="conversation" aria-labelledby="conv-h">
+    <div class="wrap conv-head">
+      <p class="eyebrow">Two agents, one dispute</p>
+      <h2 id="conv-h">You say your rules once. Two agents settle the case.</h2>
+    </div>
+    <div class="hud" id="hud">
+      <div class="hud-bar">
+        <p class="hud-title">THE CONVERSATION</p>
+        <p class="hud-tag">Recorded real sandbox batch, case 3, 11 Nov 2026. Characters: illustration.</p>
+        <div class="hud-ctl">
+          <button class="hud-btn" type="button" id="hud-play" aria-label="Play the scene"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pause" d="M7.5 5.5v13M16.5 5.5v13"/></svg><span id="hud-play-t">Play</span></button>
+          <button class="hud-btn" type="button" id="hud-replay" aria-label="Replay the scene from the start"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5M4.5 4.5v4h4"/></svg><span>Replay</span></button>
+        </div>
+      </div>
+      <div class="hud-stage" id="hud-stage" aria-hidden="true">
+        <div class="panels" id="panels">
+          <section class="pn pn-owner" id="pn-owner">
+            <div class="pn-h"><div class="fig fig-owner" id="fg-owner" aria-hidden="true"></div><span class="mk">OWNER</span><span class="st" id="owner-st">standing by</span></div>
+            <div class="voice" id="wave"></div>
+            <div class="rrow" id="rr-buyer">
+              <svg class="rr" viewBox="0 0 48 48" focusable="false"><circle class="rr-base" cx="24" cy="24" r="19"/><circle class="rr-spin" cx="24" cy="24" r="19" pathLength="100"/><path class="rr-tick" d="M15 24.5l6 6 12-13"/></svg>
+              <div><p class="rl">Buyer rule <span class="sig">signed</span></p><p class="say" id="say-buyer"></p></div>
+            </div>
+            <div class="rrow" id="rr-merch">
+              <svg class="rr" viewBox="0 0 48 48" focusable="false"><circle class="rr-base" cx="24" cy="24" r="19"/><circle class="rr-spin" cx="24" cy="24" r="19" pathLength="100"/><path class="rr-tick" d="M15 24.5l6 6 12-13"/></svg>
+              <div><p class="rl">Merchant rule <span class="sig">signed</span> <span class="hx">policy <span data-f="policy8"></span></span></p><p class="say" id="say-merch"></p></div>
+            </div>
+          </section>
+          <section class="pn pn-buyer" id="pn-buyer">
+            <div class="pn-h"><div class="fig fig-buyer" id="fg-buyer" aria-hidden="true"></div><span class="mk">BUYER AGENT</span><span class="st" id="buyer-st">watching</span></div>
+            <p class="it" id="b1"><span class="k">ORDER</span><b class="mono" data-f="order"></b><br>paid <b data-f="paid"></b>, no tracking on the order</p>
+            <p class="it" id="b2"><span class="k">OPENS DISPUTE</span><b class="mono" data-f="dispute"></b><br>asks <b data-f="ask"></b> back</p>
+            <p class="it" id="b3"><span class="k">CHECKS ITS OWN RULE</span>An order this agent placed, claim inside its amount. <b class="ok">Inside</b></p>
+            <p class="it" id="b4"><span class="k">READS PAYPAL</span><b data-f="status"></b> at <b data-f="stage"></b>, refund <b data-f="refund"></b></p>
+          </section>
+          <section class="pn pn-merch" id="pn-merch">
+            <div class="pn-h"><div class="fig fig-merch" id="fg-merch" aria-hidden="true"></div><span class="mk">MERCHANT AGENT</span><span class="st" id="merch-st">waiting</span></div>
+            <div class="tools">
+              <p class="it tool" id="t1"><span class="k">TOOL</span>model.call<i class="tk" aria-hidden="true"></i></p>
+              <p class="it tool" id="t2"><span class="k">TOOL</span>dispute.decision<i class="tk" aria-hidden="true"></i></p>
+              <p class="it tool" id="t3"><span class="k">TOOL</span>dispute.offer_sent<i class="tk" aria-hidden="true"></i></p>
+            </div>
+            <p class="it" id="m1"><span class="k">MODEL PROPOSES</span><b class="mono" data-f="proposed"></b> <span class="dim">(<span data-f="model"></span>)</span></p>
+            <div class="it pol" id="m2">
+              <p><span class="k">POLICY CHECK</span>Offer <b data-f="offer"></b> inside the <b data-f="limit"></b> it may settle alone</p>
+              <svg class="gbar" viewBox="0 0 300 16" focusable="false"><rect class="gb-track" x="0" y="5" width="300" height="6" rx="3"/><rect class="gb-fill" id="gb-fill" x="0" y="5" width="150" height="6" rx="3"/><path class="gb-mark" id="gb-mark" d="M150 0v16"/></svg>
+            </div>
+            <p class="it" id="m3"><span class="k">SENT</span>The offer, alone. <span class="hx">signed receipt</span></p>
+            <p class="it" id="m4"><span class="k">PAYPAL'S RECORD</span><b data-f="status"></b> at <b data-f="stage"></b>, fee <b data-f="fee"></b></p>
+          </section>
+        </div>
+        <div class="core" id="core">
+          <div class="ring-wrap"><svg class="reactor" viewBox="0 0 400 400" focusable="false">
+            <g class="rc-a"><circle class="rc-ticks" cx="200" cy="200" r="188" pathLength="360"/></g>
+            <g class="rc-b"><circle class="rc-arcs" cx="200" cy="200" r="168" pathLength="360"/></g>
+            <circle class="rc-pulse" cx="200" cy="200" r="132"/>
+            <circle class="rc-base" cx="200" cy="200" r="124"/>
+            <g class="rc-c"><circle class="rc-sign" cx="200" cy="200" r="124" pathLength="360"/></g>
+            <circle class="rc-disc" cx="200" cy="200" r="98"/>
+            <text class="rc-micro" x="200" y="158" text-anchor="middle">DISPUTE ID</text>
+            <text class="rc-id" id="rc-id1" x="200" y="196" text-anchor="middle"></text>
+            <text class="rc-id" id="rc-id2" x="200" y="224" text-anchor="middle"></text>
+            <text class="rc-state" id="rc-state" x="200" y="258" text-anchor="middle"></text>
+          </svg></div>
+          <div class="chips" id="chips">
+            <p class="chip chip-l" id="chip3"><span class="k">MERCHANT RECEIPT, OFFER SENT</span><span class="hx" data-f="h3"></span></p>
+            <p class="chip chip-r" id="chip5"><span class="k">BUYER RECEIPT, CASE SETTLED</span><span class="hx" data-f="h5"></span></p>
+          </div>
+        </div>
+      </div>
+      <p class="hud-cap" id="hud-cap">Press Play, or scroll and it starts.</p>
+    </div>
+    <div class="wrap">
+      <details class="story-wrap" id="story-wrap">
+        <summary>Read the scene as text</summary>
+        <ol class="story" id="story">
+          <li>The owner says the buyer's rule out loud: <q data-f="ruleBuyer"></q> It becomes a signed policy.</li>
+          <li>The owner says the merchant's rule out loud: <q data-f="ruleMerch"></q> It becomes a signed policy<span class="story-x"> with hash <span class="mono" data-f="policy8"></span></span>.</li>
+          <li>The buyer agent finds order <span class="mono" data-f="order"></span>, paid <span data-f="paid"></span>, with no tracking, and opens dispute <span class="mono" data-f="dispute"></span>, asking <span data-f="ask"></span> back. It writes: <q data-f="message"></q></li>
+          <li>The merchant agent asks its model, and the proposal is <span class="mono" data-f="proposed"></span> (<span data-f="model"></span>).</li>
+          <li>The policy check passes: offer <span data-f="offer"></span> is inside the <span data-f="limit"></span> it may settle alone.</li>
+          <li>The offer is sent alone. The merchant receipt is signed, hash <span class="mono" data-f="h3"></span>.</li>
+          <li>PayPal's record reads <span data-f="status"></span> at <span data-f="stage"></span>, refund <span data-f="refund"></span>, fee <span data-f="fee"></span>. The buyer agent reads the same record and signs its receipt, hash <span class="mono" data-f="h5"></span>. Both receipts name the same dispute id.</li>
+          <li>Done. You were not asked.</li>
+        </ol>
+      </details>
+    </div>
+  </section>
+
+  <section class="band wrap focus" id="focus" aria-labelledby="focus-h">
+    <p class="eyebrow">Built for two people</p>
+    <h2 id="focus-h">One problem. Solved end to end.</h2>
+    <p class="lede">Item not received is the whole job. Clearwake owns it from the day the parcel ships to the moment PayPal's record reads RESOLVED, for the person whose agent shops for them and the merchant who sells to agents. Anything outside your rules reaches you with the evidence ready.</p>
+    <ol class="chain" aria-label="The loop, start to finish">
+      <li><b>Shipped</b><span>Tracking added to PayPal</span></li>
+      <li><b>Watched</b><span>The buyer's agent sees it stall</span></li>
+      <li><b>Opened</b><span>Dispute inside the mandate</span></li>
+      <li><b>Read</b><span>Dispute, order, tracking</span></li>
+      <li><b>Offered</b><span>Inside the signed limit</span></li>
+      <li><b>Resolved</b><span>PayPal's record says so</span></li>
+      <li><b>Signed</b><span>Two receipts, one dispute id</span></li>
+    </ol>
+  </section>
+
+  <section class="band wrap loop" id="loop" aria-labelledby="loop-h">
+    <p class="eyebrow">One loop, every case</p>
+    <h2 id="loop-h">Item not received, from shipping to two receipts.</h2>
+    <p class="lede">Every part of Clearwake is a step in this one sequence. No step is a separate product.</p>
+    <ol class="seq">
+      <li class="seq-step zero"><span class="seq-n" aria-hidden="true">0</span><div><h3>Rules, set once, in plain words</h3><p>The merchant says the limits out loud. The buyer sets what their agent may claim. After that a model can propose anything, and it can never go past the signed rules.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">1</span><div><h3>Prevention</h3><p>When the merchant ships, Clearwake adds the tracking to PayPal through the Add Tracking API, so the order is ready to defend before any dispute exists.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">2</span><div><h3>The buyer's agent watches</h3><p>When the tracking stalls past the expected date, it opens the item not received dispute in PayPal, inside its mandate. It can only claim for orders its mandate covers.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">3</span><div><h3>The merchant's agent reads</h3><p>The dispute, the order, the tracking on PayPal, and the signed dispatch record, with the photo count where there is one.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">4</span><div><h3>The model drafts, the rules decide</h3><p>Delivered with proof: send the evidence. In transit: message the buyer's agent with the tracking and a date. Not shipped, lost or short shipped: offer a refund or a partial settlement inside the merchant's limits, sent alone. The buyer's agent accepts only what its mandate allows.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">5</span><div><h3>Both sides read PayPal's record</h3><p>Until it says RESOLVED. A lost response is never retried blindly, and nothing is ever paid twice.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">6</span><div><h3>Two signed receipts</h3><p>One from each side. Both name the same PayPal dispute id, and both verify offline.</p></div></li>
+    </ol>
+    <figure class="venn" id="venn">
+      <svg class="venn-h" viewBox="0 0 760 380" role="img" aria-labelledby="vh-t vh-d">
+        <title id="vh-t">Two receipts, one dispute id</title>
+        <desc id="vh-d">Two circles, the buyer on the left and the merchant on the right. Where they overlap is the same PayPal dispute id, PP-R-ISN-10198775. Two signed receipt hashes sit under the diagram.</desc>
+        <circle class="vc vc-a" cx="290" cy="190" r="165"/>
+        <circle class="vc vc-b" cx="470" cy="190" r="165"/>
+        <path class="vlens" d="M380 51.7 A165 165 0 0 0 380 328.3 A165 165 0 0 0 380 51.7Z"/>
+        <text class="vt vt-a" x="212" y="186">BUYER</text><text class="vs vs-a" x="212" y="212">its agent opens</text>
+        <text class="vt vt-b" x="548" y="186">MERCHANT</text><text class="vs vs-b" x="548" y="212">its agent answers</text>
+        <text class="vk" x="380" y="148">SAME DISPUTE ID</text>
+        <text class="vid" id="vid-h1" x="380" y="190"></text>
+        <text class="vid" id="vid-h2" x="380" y="220"></text>
+      </svg>
+      <svg class="venn-v" viewBox="0 0 400 420" role="img" aria-labelledby="vv-t vv-d">
+        <title id="vv-t">Two receipts, one dispute id</title>
+        <desc id="vv-d">Two circles, the buyer above and the merchant below. Where they overlap is the same PayPal dispute id, PP-R-ISN-10198775. Two signed receipt hashes sit under the diagram.</desc>
+        <circle class="vc vc-a" cx="200" cy="130" r="125"/>
+        <circle class="vc vc-b" cx="200" cy="280" r="125"/>
+        <path class="vlens" d="M100 205 A125 125 0 0 1 300 205 A125 125 0 0 1 100 205Z"/>
+        <text class="vt vt-a" x="200" y="82">BUYER</text><text class="vs vs-a" x="200" y="108">its agent opens</text>
+        <text class="vt vt-b" x="200" y="334">MERCHANT</text><text class="vs vs-b" x="200" y="360">its agent answers</text>
+        <text class="vk" x="200" y="184">SAME DISPUTE ID</text>
+        <text class="vid" id="vid-v1" x="200" y="214"></text>
+        <text class="vid" id="vid-v2" x="200" y="240"></text>
+      </svg>
+      <div class="vchips">
+        <p class="chip chip-l" id="vchip-a"><span class="k">MERCHANT RECEIPT, OFFER SENT</span><span class="hx" data-f="h3"></span></p>
+        <p class="chip chip-r" id="vchip-b"><span class="k">BUYER RECEIPT, CASE SETTLED</span><span class="hx" data-f="h5"></span></p>
+      </div>
+      <figcaption>Batch case 3, 11 Nov 2026. Both receipts name <span class="mono" data-f="dispute"></span> and verify offline.</figcaption>
+    </figure>
+  </section>
+
+  <section class="wrap lanes-sec" id="cases" aria-label="Recorded cases">
+    <p class="eyebrow">The recorded proof</p>
+    <p class="lanes-note">Real PayPal sandbox cases, each with its PayPal id.</p>
+    <div class="lanes" role="group" aria-label="Cases sorted into three lanes">
+      <div class="lane teal">
+        <h2 class="lane-title">Settled before escalation</h2>
+        <ul class="marks">
+          <li class="mark c1"><b>Settled in conversation</b><span class="mono">Batch case 3, USD 5.00 offer</span><span class="mono dim">PP-R-ISN-10198775, RESOLVED at INQUIRY</span></li>
+          <li class="mark c2"><b>Refund under the limit</b><span class="mono">Real sandbox run, USD 1.50</span><span class="mono dim">6SN41486G5579815G, VERIFIED</span></li>
+        </ul>
+      </div>
+      <div class="lane blue">
+        <h2 class="lane-title">Evidence sent</h2>
+        <ul class="marks">
+          <li class="mark c3"><b>Item not received</b><span class="mono">Real sandbox run, tracking sent</span><span class="mono dim">PP-R-SLI-10195419, read back VERIFIED</span></li>
+          <li class="mark c4"><b>Buyer says 2 of 3 arrived</b><span class="mono">Real sandbox run, dispatch proof</span><span class="mono dim">PP-R-UKF-10195772, 3 of 3 counted</span></li>
+        </ul>
+      </div>
+      <div class="lane amber">
+        <h2 class="lane-title">Needs you</h2>
+        <ul class="marks">
+          <li class="mark c5"><b>Refund above the approval line</b><span class="mono">Real sandbox run, USD 3.50</span><span class="mono dim">2NB27940EC188891M, after approval</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="band wake" id="wake" aria-labelledby="wake-h">
+    <div class="wrap">
+      <p class="eyebrow">Settled in conversation</p>
+      <h2 id="wake-h">The wake of one dispute. Each ring is a signed step.</h2>
+      <p class="lede">Real PayPal sandbox run, 11 Nov 2026, case 3 of a ten case batch. Scroll, and the rings follow five signed receipts of dispute PP-R-ISN-10198775, order 0HW636872W597254K. Pick any step and change one value in it: your browser checks every signature and hash of the whole 107 line merchant log and the 277 line buyer log with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
+    </div>
+    <div class="wake-scene wrap" id="wake-scene">
+      <div class="wake-sticky">
+        <svg id="wake-svg" viewBox="0 0 300 300" role="img" aria-labelledby="wk-t wk-d">
+          <title id="wk-t">Five rings around a dispute</title>
+          <desc id="wk-d">Each ring is one signed receipt of case 3. A ring turns red when its signature or hash link fails.</desc>
+          <circle class="w-core" cx="150" cy="150" r="9"/>
+        </svg>
+        <p class="result-box" id="chain-msg" aria-live="polite">Checking the receipts.</p>
+        <p class="mono dim wrap-any small" id="chain-key"></p>
+      </div>
+      <ol class="wake-steps" id="wake-steps">
+        <li class="step" data-i="-1">
+          <p class="eyebrow">Buyer agent</p>
+          <h3>A dispute opens.</h3>
+          <p>The buyer agent (qwen3.5:4b) wrote in PayPal's Resolution Center on dispute PP-R-ISN-10198775: "Order 0HW636872W597254K ($9.00) item not received. Request refund for the affected amount." The merchant's rule: settle an item that has not arrived on its own up to USD 5.00, ask the owner from USD 5.01 up to USD 9.00, never more.</p>
+        </li>
+        <li class="step" data-i="0">
+          <p class="eyebrow">Receipt 1, dispute.decision</p>
+          <h3>The model proposes, the policy decides.</h3>
+          <p>qwen3.5:4b proposed settle_by_offer. The policy accepted it: offer USD 5.00, inside the owner's limit of USD 5.00 alone, no approval needed.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="1">
+          <p class="eyebrow">Receipt 2, model.call</p>
+          <h3>The model call is signed too.</h3>
+          <p>qwen3.5:4b on ollama, 14.6 s, 211 prompt tokens, 17 completion tokens. Overridden: false. Fallback: false. Injection signals: none. The receipt holds the SHA-256 of the prompt and the policy hash.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="2">
+          <p class="eyebrow">Receipt 3, dispute.offer_sent</p>
+          <h3>One offer, sent alone.</h3>
+          <p>USD 5.00, sent as an offer alone, because PayPal refuses an offer after a seller message.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="3">
+          <p class="eyebrow">Receipt 4, dispute.settlement</p>
+          <h3>PayPal's record is the judge.</h3>
+          <p>PayPal reads UNDER_REVIEW at INQUIRY. Nothing is counted as settled until PayPal's own record says RESOLVED, so the receipt is signed as pending.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+        <li class="step" data-i="4">
+          <p class="eyebrow">Receipt 5, dispute.settlement</p>
+          <h3>Resolved, no claim, no fee.</h3>
+          <p>PayPal reads RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage. Refund USD 5.00, fee USD 0.00. The buyer agent signed its own closing receipt on its side.</p>
+          <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
+        </li>
+      </ol>
+    </div>
+    <div class="wrap wake-foot">
+      <button class="btn" type="button" id="chain-reset">Restore the original</button>
+      <a class="btn" href="receipts/batch-merchant.ndjson" download>Download the merchant log</a>
+      <a class="btn" href="receipts/batch-buyer.ndjson" download>Download the buyer log</a>
+    </div>
+  </section>
+
+  <section class="band wrap dispatch" id="dispatch" aria-labelledby="dispatch-h">
+    <p class="eyebrow">Dispatch proof</p>
+    <h2 id="dispatch-h">Counted on your own machine, before the parcel leaves.</h2>
+    <p class="lede">SAM 3 (open weights from Meta) counted the items in the packing photo on a laptop CPU with no network, and Clearwake signed the count. Real sandbox run, 3 Nov 2026.</p>
+    <div class="dispatch-stage">
+      <div class="proof" id="proof">
+        <dl>
+          <div><dt>Order</dt><dd class="mono">7RV99265V1496281G</dd></div>
+          <div><dt>Items</dt><dd class="mono">3 of 3 counted (notebook-a5)</dd></div>
+          <div><dt>Image sha256</dt><dd class="mono wrap-any">893632548b14c5d54c10c4e1b788cee466dfd06900edd21135dd3b35444311f8</dd></div>
+          <div><dt>Sealed at</dt><dd class="mono">2026-11-03 10:09:29 UTC</dd></div>
+          <div><dt>Signature</dt><dd class="mono wrap-any">ee8b207cfa776968d8c90d20&hellip;</dd></div>
+          <div><dt>Receipt id</dt><dd class="mono">8b92abb9e53a6244</dd></div>
+        </dl>
+        <button class="btn" type="button" id="proof-check">Check this signature in your browser</button>
+        <p class="result" id="proof-result" aria-live="polite"></p>
+      </div>
+    </div>
+    <p class="after">The buyer then wrote "Only 2 of 3 notebooks arrived." on dispute PP-R-UKF-10195772. The policy found strong proof and sent evidence. PayPal refused the first send (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES) and nothing was applied. The next reply was lost, so Clearwake held it as UNKNOWN and read the dispute. The third send, with the same request id, was accepted, and PayPal's record shows a PROOF_OF_FULFILLMENT from the seller.</p>
+  </section>
+
+  <section class="band wrap cable" id="cable" aria-labelledby="cable-h">
+    <p class="eyebrow">One proof case: the network cut</p>
+    <h2 id="cable-h">Drag the plug out. Money waits.</h2>
+    <p class="cb-tag">Real run in network isolated containers, 31 Oct 2026</p>
+    <p class="lede">Drag the plug left, or focus it and press the left arrow, then send refunds 2 and 3. Press the right arrow to plug it back in.</p>
+    <div class="cb-board">
+      <figure class="cb-fig">
+        <svg id="cable-svg" class="cb-svg" viewBox="0 0 600 360" role="group" aria-labelledby="cb-svg-t">
+          <title id="cb-svg-t">Network cut diagram: Agents, Egress gateway, PayPal sandbox</title>
+          <g class="cb-node cb-n1"><path class="cb-lead" d="M67 50V70"/><circle class="cb-dot" cx="67" cy="36" r="14"/><text class="cb-dotn" x="67" y="42">1</text>
+            <rect class="cb-slab" x="10" y="70" width="115" height="120" rx="8"/><text class="cb-name" x="67" y="100">Agents</text></g>
+          <g class="cb-node cb-n2"><path class="cb-lead" d="M299 50V70"/><circle class="cb-dot" cx="299" cy="36" r="14"/><text class="cb-dotn" x="299" y="42">2</text>
+            <rect class="cb-slab" x="242" y="70" width="115" height="120" rx="8"/><text class="cb-name" x="299" y="100">Egress</text><text class="cb-name" x="299" y="126">gateway</text></g>
+          <g class="cb-node cb-n3"><path class="cb-lead" d="M532 50V70"/><circle class="cb-dot" cx="532" cy="36" r="14"/><text class="cb-dotn" x="532" y="42">3</text>
+            <rect class="cb-slab" x="475" y="70" width="115" height="120" rx="8"/><text class="cb-name" x="532" y="100">PayPal</text><text class="cb-name" x="532" y="126">sandbox</text></g>
+          <path id="cable-path" class="cb-cable" d="M125 130Q159 130 192 130"/>
+          <rect class="cb-socket" x="238" y="116" width="8" height="28" rx="2"/>
+          <line id="cb-link" class="cb-link" x1="357" y1="130" x2="475" y2="130"/>
+          <g id="cb-cutmark" class="cb-cutmark"><path d="M205 112L225 148M225 112L205 148"/></g>
+          <text id="cb-hint" class="cb-hint" x="172" y="86">&#8592; Drag plug</text>
+          <g id="plug" class="plug" tabindex="0" role="slider" aria-label="Network plug" aria-valuemin="0" aria-valuemax="1" aria-valuenow="1" aria-valuetext="Connected">
+            <rect class="plug-hit" x="180" y="98" width="70" height="64" rx="8"/>
+            <rect class="plug-body" x="192" y="116" width="36" height="28" rx="5"/><rect class="plug-pin" x="228" y="121" width="14" height="5"/><rect class="plug-pin" x="228" y="134" width="14" height="5"/>
+          </g>
+          <g class="cb-queue"><rect class="cb-qbox" x="14" y="212" width="107" height="138" rx="8"/><text class="cb-qname" x="67" y="238">Held queue</text><text id="cb-heldn" class="cb-count cb-count-held" x="67" y="266">Held 0</text></g>
+          <g id="cb-recon" class="cb-recon"><rect class="cb-rbox" x="222" y="212" width="155" height="56" rx="8"/><text class="cb-rname" x="299" y="236">Reconciliation</text><text id="cb-rstate" class="cb-rstate" x="299" y="260">Clear</text></g>
+          <text id="cb-paidn" class="cb-count" x="532" y="224">Paid 1</text>
+                    <g id="cb-tokens"></g>
+        </svg>
+        <figcaption class="cb-legend">
+          <p><b>1</b><span>Agents. An isolated container with no route out except the gateway.</span></p>
+          <p><b>2</b><span>Egress gateway. The one gateway out, and only to the PayPal sandbox.</span></p>
+          <p><b>3</b><span>PayPal sandbox. Its record is read before any held refund is replayed.</span></p>
+        </figcaption>
+      </figure>
+      <div class="cb-side">
+        <div class="cb-top"><span class="pill" id="net-pill">Network up</span><span class="cb-score" id="cb-score">Paid 1, Held 0</span></div>
+        <ol class="cb-list" id="queue"></ol>
+        <div class="cb-btns"><button class="btn" type="button" id="cable-send">Send refunds 2 and 3</button><button class="btn" type="button" id="cable-reset" hidden>Start again</button></div>
+      </div>
+    </div>
+    <p class="result-box" id="cable-msg" aria-live="polite">Network up. Refund 1 is paid and verified against PayPal's record. Refunds 2 and 3 are ready.</p>
+    <p class="cb-final" id="cable-final" hidden>Refunds paid: 3 of 3, each once. Double refunds: 0.</p>
+  </section>
+
+  <section class="band wrap boundary" id="boundary" aria-labelledby="boundary-h">
+    <p class="eyebrow">Inside and outside</p>
+    <h2 id="boundary-h">One gateway out, and only to the PayPal sandbox.</h2>
+    <svg class="bsvg" viewBox="0 0 700 300" role="img" aria-labelledby="bt bd">
+      <title id="bt">Clearwake boundary</title>
+      <desc id="bd">Agents, policy and limits, the local model and the signed receipts are inside a dashed boundary with no route out. One egress gateway in the boundary reaches only api-m.sandbox.paypal.com. A request to example.com is refused with 403 and receipted.</desc>
+      <rect class="b-zone" x="6" y="6" width="420" height="288" rx="14"/>
+      <text class="b-h" x="28" y="42">Inside the network, no route out</text>
+      <text class="b-i" x="28" y="92">Agents</text><text class="b-i" x="28" y="132">Policy file, approvals, limits</text>
+      <text class="b-i" x="28" y="172">Local model (Ollama)</text><text class="b-i" x="28" y="212">Signed receipts</text>
+      <rect class="b-gate" x="372" y="120" width="108" height="56" rx="6"/>
+      <text class="b-g" x="426" y="154">Gateway</text>
+      <line class="b-ok" x1="480" y1="148" x2="540" y2="148"/><path class="b-ok" d="M532 141 L544 148 L532 155"/>
+      <text class="b-ok-t" x="550" y="144">api-m.sandbox</text><text class="b-ok-t" x="550" y="164">.paypal.com</text>
+      <line class="b-no" x1="470" y1="176" x2="540" y2="236"/>
+      <text class="b-no-t" x="550" y="238">example.com</text><text class="b-no-t" x="550" y="258">403, receipted</text>
+    </svg>
+    <div class="cols">
+      <div>
+        <h3>Inside</h3>
+        <ul>
+          <li>Dispute text, buyer messages and evidence drafts</li>
+          <li>The policy file, the approvals and the limits</li>
+          <li>The local model and the signed receipts</li>
+        </ul>
+        <p class="note">Agents have no route out. In case m their DNS lookups fail.</p>
+      </div>
+      <div>
+        <h3>Outside, through one gateway</h3>
+        <ul>
+          <li>Only <span class="mono">api-m.sandbox.paypal.com</span> is allowed (policy/merchant.yaml)</li>
+          <li>Only what the PayPal call needs: a message, an offer amount, tracking facts</li>
+          <li>Any other host is refused and receipted. In case m, example.com got a 403</li>
+        </ul>
+        <p class="note">The gateway's 34 receipts from that run are published with the others.</p>
+      </div>
+    </div>
+    <details class="own">
+      <summary>Check any receipt log yourself</summary>
+      <form id="own">
+        <label for="own-file">NDJSON file</label>
+        <input id="own-file" type="file" accept=".ndjson,.jsonl,.txt">
+        <label for="own-key">Trusted public key, 64 hex characters</label>
+        <input id="own-key" class="mono" maxlength="64" autocomplete="off" spellcheck="false">
+        <button class="btn primary" type="submit">Verify</button>
+        <p class="result" id="own-result" aria-live="polite"></p>
+      </form>
+      <p class="note">All recorded logs: <a href="receipts/case-m-merchant.ndjson">case m merchant</a>, <a href="receipts/egress-gateway.ndjson">egress gateway</a>, <a href="receipts/case-o-dispatch.ndjson">case o dispatch</a>, <a href="receipts/case-n-settle.ndjson">case n settle</a>, and <a href="receipts/manifest.json">the manifest with public keys</a>.</p>
+    </details>
+  </section>
+
+  <section class="band wrap gauge" id="gauge" aria-labelledby="gauge-h">
+    <div class="gauge-copy">
+      <p class="eyebrow">The 1.5% line</p>
+      <h2 id="gauge-h">Drag the mercury. Watch the fee double.</h2>
+      <p class="lede">A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays the High Volume Dispute Fee on every dispute: USD 30.00 instead of USD 15.00. PayPal Merchant Fees, US, updated 1 Oct 2026. The rule and both fees are the ones in <span class="mono">clearwake/fees.py</span>.</p>
+      <p class="note">The recorded sandbox has a handful of test orders, far under 100 sales, so the rule does not apply to it. The figures here are example values for you to change. They are not Clearwake results.</p>
+      <form class="inputs" id="g-form">
+        <label>Sales, 3 months<input id="g-sales" type="number" inputmode="numeric" min="0" value="500"></label>
+        <label>Net sales, USD<input id="g-net" type="number" inputmode="decimal" min="1" value="25000"></label>
+        <label>Counted disputes now<input id="g-count" type="number" inputmode="numeric" min="0" value="3"></label>
+        <label>Average disputed, USD<input id="g-avg" type="number" inputmode="decimal" min="0" value="40"></label>
+      </form>
+    </div>
+    <div class="gauge-scene">
+      <svg class="thermo" id="thermo" viewBox="0 0 200 380" role="img" aria-labelledby="gt gd">
+        <title id="gt">Dispute rate against the 1.5% line</title>
+        <desc id="gd">A vertical gauge from 0 to 3 percent. The fill is the dispute rate. A dashed amber line marks 1.5 percent. Drag the handle to change how many more disputes escalate.</desc>
+        <rect class="g-track" x="60" y="30" width="44" height="320" rx="22"/>
+        <rect id="g-fill" class="g-fill" x="60" y="350" width="44" height="0"/>
+        <line class="g-line" x1="30" y1="190" x2="190" y2="190"/>
+        <text class="g-label" x="112" y="182">1.5% PayPal line</text>
+        <text class="g-end" x="14" y="354">0%</text><text class="g-end" x="14" y="38">3%</text>
+        <g id="g-handle" class="g-handle" tabindex="0" role="slider" aria-label="More disputes that escalate" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
+          <circle cx="82" cy="350" r="22" class="g-hit"/><circle cx="82" cy="350" r="12" class="g-knob"/>
+        </g>
+      </svg>
+      <div class="gauge-read">
+        <p class="rate"><span id="g-rate" class="num tnum">0.48%</span></p>
+        <p><span id="g-state" class="pill">Under the line</span></p>
+        <label class="slider" for="g-n">What if <b id="g-n-out" class="tnum">0</b> more disputes escalate</label>
+        <input id="g-n" type="range" min="0" max="20" value="0">
+        <p class="result-box" id="g-msg" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band wrap runit" id="run-it" aria-labelledby="run-h">
+    <div>
+      <p class="eyebrow">How to run it</p>
+      <h2 id="run-h">Python 3.12 or newer. Nothing to install.</h2>
+      <p class="lede">It starts on local records and makes no network calls.</p>
+    </div>
+    <div>
+      <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
+cd clearwake
+python -m clearwake --port 8810</pre>
+      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. Speak to it from a phone with <span class="mono">python -m clearwake --phone</span>. The network isolated run needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <p>Clearwake. When an agent's order goes missing, agents fix it.</p>
+    <p class="foot-links"><a href="/">Home</a><a href="/control-room">Control Room</a><a href="/proof">Proof</a><a href="/developers">Developers</a><a href="/break">Break it</a><a href="https://clearwake-api.vercel.app">API</a><a href="https://github.com/Sriharsan/clearwake">Repo</a><a href="https://github.com/Sriharsan/clearwake/blob/main/LICENSE">MIT</a></p>
+  </div>
+</footer>
+</body>
+</html>

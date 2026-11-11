@@ -33,6 +33,7 @@ ROW (same keys as the local console's dispute ledger, so a console row can be dr
   mode               "real sandbox" (default) or another label; shown in the detail, not in a badge column
 """
 import json
+from decimal import Decimal
 from pathlib import Path
 import re
 
@@ -72,7 +73,7 @@ def from_batch(body, name):
             "amount": str(c.get("ask") or ""), "stage": c.get("paypal_stage") or "", "paypal_status": c.get("paypal_status") or "", "state": c.get("merchant_state") or "",
             "due": c.get("due") or "", "proposed": c.get("merchant_proposed") or c.get("model_proposal") or "", "model": c.get("merchant_proposed_by") or "",
             "decided": c.get("merchant_decision") or "",
-            "outcome": (str(c.get("outcome", "")).replace("_", " ") + (f", refund USD {refund} confirmed by PayPal" if refund != "0.00" else "")
+            "outcome": (RESULT_WORD.get(c.get("outcome"), str(c.get("outcome", "")).replace("_", " ")) + (f", refund USD {refund} confirmed by PayPal" if refund != "0.00" else "")
                         + (f". {steps[-1]}" if steps else "")).strip(),
             "fee_avoided": "0.00", "settled_before_escalation": result == "settled", "result": result, "refunded": refund != "0.00",
             "dispatch": "", "message": c.get("message") or "", "record": record, "mode": "real sandbox", "recorded": str(body.get("finished", ""))[:10]})
@@ -181,12 +182,12 @@ def totals(ledger_rows):
         path, sm = batch(ok)
         if sm:
             n = sm.get("cases", 0)
-            out[key].append({"value": f"{sm.get('settled_inquiry_no_fee', 0)} of {n}", "label": "disputes settled at INQUIRY, no fee", "source": f"data/runs/{path.name}"})
+            out[key].append({"value": f"{sm.get('settled_inquiry_no_fee', 0)} of {n}", "label": "disputes settled at INQUIRY, before a claim", "source": f"data/runs/{path.name}"})
             if sm.get("seconds_per_case") is not None:
                 out[key].append({"value": f"{sm['seconds_per_case']} s", "label": "per negotiated case, buyer agent and merchant agent", "source": f"data/runs/{path.name}"})
         else:
             disputes = [r for r in ledger_rows if r["kind"] == "dispute"]
-            out[key].append({"value": f"{sum(r['settled_before_escalation'] for r in disputes)} of {len(disputes)}", "label": "real sandbox disputes settled at INQUIRY, no fee", "source": "site/data/ledger.json"})
+            out[key].append({"value": f"{sum(r['settled_before_escalation'] for r in disputes)} of {len(disputes)}", "label": "real sandbox disputes settled at INQUIRY, before a claim", "source": "site/data/ledger.json"})
         path, ev = newest("ai-eval-*.json")
         if ev and ev.get("totals"):
             model, t = next(iter(ev["totals"].items()))
@@ -227,8 +228,20 @@ def public_numbers(found):
         inside = [r for r in rows if r.get("paypal_stage") == "INQUIRY" and r.get("outcome") not in ("escalated_to_merchant_owner", "handled_by_mandate")]
         done = [r for r in inside if r.get("outcome") == "settled_inquiry_no_fee"]
         out.append({"value": f"{len(done)} of {len(inside)}",
-                    "label": f"settled at INQUIRY with no fee: every dispute inside the owner's limit that stayed at INQUIRY, USD {sm.get('refunds_confirmed_total', '0.00')} refunded",
+                    "label": f"settled at INQUIRY, before a claim: every dispute inside the owner's limit that stayed at INQUIRY, USD {sm.get('refunds_confirmed_total', '0.00')} refunded",
                     "source": src, "mode": "real PayPal sandbox"})
+    rec_path, rec = newest("case-records-*.json")
+    if rec:
+        fees = []
+        for c in rec.get("cases", []):
+            if c.get("outcome") != "settled_inquiry_no_fee" or not c.get("paypal_record"):
+                continue
+            for m in c["paypal_record"].get("money_movements", []) or []:
+                if m.get("reason") == "DISPUTE_SETTLEMENT_FEE":
+                    fees.append(Decimal(m["amount"]["value"]))
+        if fees and len(set(fees)) == 1:
+            out.append({"value": f"USD {fees[0]:.2f}", "label": f"settlement fee PayPal's record shows on each of the {len(fees)} settled disputes (USD {sum(fees):.2f} in all); the record holds no USD 15.00 dispute fee",
+                        "source": f"data/runs/{rec_path.name}", "mode": "real PayPal sandbox"})
     path, ev = newest("ai-eval-*.json")
     if ev and ev.get("totals"):
         model, t = next(iter(ev["totals"].items()))
@@ -334,6 +347,253 @@ def hud_case():
     print("hud-case.json written from", path.name, "case", HUD_CASE, did)
 
 
+
+# ---------------------------------------------------------------------------------------------------------------- Control Room cases
+
+VOCAB = ("settled", "answered with proof", "waiting for owner", "refused")
+VERIFIED_MEANS = "VERIFIED means PayPal's record was read back and matches."
+BATCH_POLICY = ROOT / "data" / "buyer" / "manual-batch" / "merchant-batch-policy.yaml"
+
+
+def read_log(path):
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def policy_op(text, name):
+    """{max_amount_minor, approval_above_minor} of one operation in a policy file, as ints. Missing keys are left out."""
+    m = re.search(rf"^  {name}:\n((?:    .*\n|\s*#.*\n)*)", text, re.M)
+    out = {}
+    for key in ("max_amount_minor", "approval_above_minor"):
+        k = re.search(rf"{key}:\s*(\d+)", m.group(1)) if m else None
+        if k:
+            out[key] = int(k.group(1))
+    return out
+
+
+def usd(minor):
+    return f"{int(minor) / 100:.2f}"
+
+
+def median(values):
+    v = sorted(values)
+    n = len(v)
+    return None if not n else (v[n // 2] if n % 2 else (v[n // 2 - 1] + v[n // 2]) / 2)
+
+
+RESULT_WORD = {"settled_inquiry_no_fee": "settled", "pending": "answered with proof", "escalated_to_merchant_owner": "waiting for owner", "handled_by_mandate": "refused"}
+
+
+def describe(action, p):
+    """One plain line for a receipt line, built only from that line's own fields."""
+    a = action.split(".", 1)[1] if action.startswith("clearwake.") else action
+    if a == "merchant.tracking_added":
+        return (f"Tracking {p.get('tracking')} with {p.get('carrier')}. The carrier shows {p.get('carrier_status')}, PayPal's tracker shows {p.get('paypal_tracker_status')}. "
+                f"How it got onto the order: {p.get('how')}.")
+    if a == "dispute.supporting_info":
+        return f"Supporting info sent to dispute {p.get('dispute')}: {p.get('items')} item, read back from PayPal as {p.get('state')}."
+    if a == "dispatch.recorded":
+        item = next(iter(p.get("counted") or {"item": 0}))
+        return f"Parcel count on record: {(p.get('counted') or {}).get(item)} of {(p.get('ordered') or {}).get(item)} {item}, sealed. Counter: {p.get('counter')}."
+    if a == "dispute.decision":
+        offer = f" Offer USD {usd(p['offer_minor'])}." if p.get("offer_minor") else ""
+        return f"Stage {p.get('stage')}. The model proposed {p.get('proposed')}, the policy decided {p.get('decided')}.{offer}"
+    if a == "model.call":
+        return (f"{p.get('model')} through {p.get('backend')} on this machine, {p.get('latency_ms', 0) / 1000:.1f} s, {p.get('prompt_tokens')} prompt tokens, "
+                f"{p.get('completion_tokens')} reply tokens. Policy accepted the proposal: {'yes' if p.get('policy_accepted') else 'no'}.")
+    if a == "model.injection_attempt":
+        return f"Signals in the buyer's message: {', '.join(p.get('signals') or [])}. Effect: {p.get('effect')}."
+    if a == "batch.injection_ignored":
+        return f"The instruction in the buyer's message was not followed (followed: {str(p.get('followed')).lower()}). The amount stayed at the limit of USD {usd(p.get('limit_minor', 0))}."
+    if a == "dispute.offer_sent":
+        return f"Offer of {p.get('currency')} {usd(p.get('offer_minor', 0))} sent to the buyer."
+    if a == "batch.reconciled":
+        return f"The response was lost. PayPal's dispute record was read: offer on record {'yes' if p.get('offer_on_record') else 'no'}, sent again {'yes' if p.get('resent') else 'no'}."
+    if a == "dispute.settlement":
+        return f"PayPal's record read back: {p.get('status')} at {p.get('stage')}, {p.get('outcome')}. {p.get('state')}."
+    if a == "batch.case_closed":
+        return f"Case closed: {RESULT_WORD.get(p.get('outcome'), str(p.get('outcome', '')).replace('_', ' '))}. PayPal shows {p.get('paypal_status')} at {p.get('paypal_stage')}."
+    if a == "buyer.mandate":
+        return f"The buyer agent's mandate for order {p.get('order_id')}: item {p.get('item')}, price USD {usd(p.get('price_minor', 0))}."
+    if a == "buyer.claim_refused":
+        return f"{p.get('why')} Paid USD {usd(p.get('paid_minor', 0))}, asked USD {usd(p.get('asked_minor', 0))}."
+    if a == "buyer.handed_to_owner":
+        return f"Handed to the buyer's owner. Dispute opened on PayPal: {'yes' if p.get('dispute_opened') else 'no'}."
+    if a == "buyer.case_closed":
+        return f"Case closed: {RESULT_WORD.get(p.get('outcome'), str(p.get('outcome', '')).replace('_', ' '))}."
+    return action
+
+
+LABELS = {
+    "merchant.tracking_added": "Tracking on the order", "dispute.supporting_info": "Supporting info sent", "dispatch.recorded": "Parcel count",
+    "dispute.decision": "Policy decision", "model.call": "Model call", "model.injection_attempt": "Injected instruction found", "batch.injection_ignored": "Injected instruction ignored",
+    "dispute.offer_sent": "Offer sent", "batch.reconciled": "PayPal read after a lost response", "dispute.settlement": "PayPal record read back", "batch.case_closed": "Case closed",
+    "buyer.mandate": "Mandate", "buyer.claim_refused": "Claim refused", "buyer.handed_to_owner": "Handed to owner", "buyer.case_closed": "Case closed"}
+
+
+def case_steps(case, logs):
+    """Receipt steps of one case, from the line pointers of the case-records run file: the latest line of each kind, plus the first tracking line
+    when the Add Tracking API posted it. Every pointer is checked against the log line it names."""
+    steps, seen = [], {}
+    for side, key in (("merchant", "merchant_receipts"), ("buyer", "buyer_receipts")):
+        for ptr in case.get(key) or []:
+            row = logs[side][ptr["line"] - 1]
+            if row["action_id"] != ptr["action"]:
+                raise ValueError(f"case {case['n']}: {side} log line {ptr['line']} is {row['action_id']}, the run file says {ptr['action']}")
+            kind = ptr["action"].split(".", 1)[1]
+            if side == "buyer" and case.get("outcome") != "handled_by_mandate":
+                continue   # the buyer side of a dispute is not this card's story; only the refused claim is
+            if kind == "dispute.settlement" and row["params"].get("state") != "VERIFIED":
+                continue
+            if kind in LABELS:
+                seen.setdefault((side, kind), []).append((ptr["line"], row))
+    for (side, kind), lines in seen.items():
+        picks = [lines[-1]]
+        if kind == "merchant.tracking_added" and "Add Tracking API" in str(lines[0][1]["params"].get("how")) and lines[0][0] != lines[-1][0]:
+            picks.insert(0, lines[0])
+        for line, row in picks:
+            steps.append({"log": side, "file": f"batch-{side}.ndjson", "line": line, "action": row["action_id"], "step_id": row["step_id"], "label": LABELS[kind],
+                          "detail": describe(row["action_id"], row["params"]), "ok": bool(row["success"])})
+    return sorted(steps, key=lambda s: (s["log"] != "merchant", s["line"]))
+
+
+def money_text(v):
+    return f"USD {v['value']}" if isinstance(v, dict) and v.get("value") is not None else ""
+
+
+def paypal_facts(rec):
+    """What PayPal's record holds, as label and value pairs. Nothing is added to what the record says."""
+    if not rec:
+        return []
+    facts = [("Dispute", rec.get("dispute_id")), ("Status", rec.get("status")), ("Dispute state", rec.get("dispute_state")), ("Stage", rec.get("dispute_life_cycle_stage")),
+             ("Reason", rec.get("reason")), ("Amount asked", money_text(rec.get("dispute_amount")))]
+    if rec.get("seller_response_due_date"):
+        facts.append(("Seller response due", rec["seller_response_due_date"]))
+    sup = rec.get("supporting_info") or []
+    if sup:
+        facts.append(("Supporting info on the record", f"{len(sup)} entries, all {', '.join(sorted({s.get('source', '') for s in sup}))}; the latest provided {sup[-1].get('provided_time')}"))
+        facts.append(("Latest supporting info note", sup[-1].get("notes", "")))
+    seller = [e for e in rec.get("evidences") or [] if e.get("source") == "SUBMITTED_BY_SELLER"]
+    asked = [e for e in rec.get("evidences") or [] if e.get("source") == "REQUESTED_FROM_SELLER"]
+    for e in seller:
+        facts.append(("Seller entry", f"{e.get('evidence_type')}, {e.get('date')}: {e.get('notes', '')}".strip()))
+    for e in asked:
+        facts.append(("PayPal asked the seller for", f"{e.get('evidence_type')}, {e.get('date')}"))
+    if not sup and not seller:
+        facts.append(("Seller evidence on the record", "none"))
+    out = rec.get("dispute_outcome")
+    if out:
+        facts.append(("Outcome", f"{out.get('outcome_code')}, {out.get('outcome_reason')}, refunded {money_text(out.get('amount_refunded'))}"))
+    else:
+        facts.append(("Outcome", "none on the record yet"))
+    opts = rec.get("allowed_response_options") or {}
+    if opts:
+        facts.append(("Responses PayPal allows the seller", "; ".join(f"{k}: {', '.join(next(iter(v.values())))}" if isinstance(v, dict) and v else k for k, v in opts.items())))
+    return [[k, str(v)] for k, v in facts if v not in (None, "")]
+
+
+def model_costs(body, logs):
+    """Model calls and seconds per case from the batch file, and the median seconds per call from the two signed logs.
+    The per call times are the latency fields of the calls the batch summary counts (7 merchant, 17 buyer). If their sums differ from the summary, the median is left out."""
+    sm = body["summary"]
+    merchant = [r["params"]["latency_ms"] for r in logs["merchant"] if r["action_id"] == "clearwake.model.call"]
+    buyer = []
+    for r in reversed(logs["buyer"]):
+        if len(buyer) >= sm.get("buyer_model_calls", 0):
+            break
+        if r["action_id"] in ("clearwake.buyer.model_draft", "clearwake.buyer.model_decision") and r["params"].get("latency_ms", -1) > 0:
+            buyer.append(r["params"]["latency_ms"])
+    calls_ok = (len(merchant) == sm.get("model_calls") and sum(merchant) == sm.get("merchant_model_ms")
+                and len(buyer) == sm.get("buyer_model_calls") and sum(buyer) == sm.get("buyer_model_ms"))
+    per_case = []
+    for c in body["cases"]:
+        per_case.append({"n": c["n"], "merchant_calls": c.get("model_calls") or 0, "buyer_calls": c.get("buyer_model_calls") or 0,
+                         "model_seconds": round(((c.get("model_ms") or 0) + (c.get("buyer_model_ms") or 0)) / 1000, 1), "cost_usd": "0.00"})
+    every = (merchant + buyer) if calls_ok else []
+    return {"merchant_calls": sm.get("model_calls"), "buyer_calls": sm.get("buyer_model_calls"), "cases": len(body["cases"]),
+            "median_seconds_per_call": round(median(every) / 1000, 1) if every else None, "calls_checked": len(every),
+            "model_seconds_total": round((sm.get("merchant_model_ms", 0) + sm.get("buyer_model_ms", 0)) / 1000, 1),
+            "model": str(body.get("merchant_agent", "")), "cost_per_call_usd": "0.00", "cost_total_usd": "0.00", "per_case": per_case,
+            "note": "Both agents run a local model on this machine through Ollama, so no per call price applies."}
+
+
+def cases_data():
+    """site/data/cases.json: one card per case of the newest clean real sandbox batch, from the case-records run file, the two signed batch logs and the policy file.
+    Nothing is typed here except the four result words and the one sentence that defines VERIFIED."""
+    path, body = clean_sandbox_batch()
+    records = sorted((ROOT / "data" / "runs").glob("case-records-*.json"))
+    if not body or not records:
+        print("cases.json not written: needs a clean real sandbox batch and a case-records run file")
+        return None
+    rec = json.loads(records[-1].read_text(encoding="utf-8"))
+    if rec.get("source_batch") != f"data/runs/{path.name}":
+        print("cases.json not written: case-records names", rec.get("source_batch"), "not", path.name)
+        return None
+    logs = {s: read_log(SITE / "receipts" / f"batch-{s}.ndjson") for s in ("merchant", "buyer")}
+    pol_text = BATCH_POLICY.read_text(encoding="utf-8")
+    offer_rule, claim_rule = policy_op(pol_text, "make_offer"), policy_op(pol_text, "accept_claim")
+    rows = {int(c["n"]): c for c in body["cases"]}
+    out = []
+    for c in rec["cases"]:
+        n, row = int(c["n"]), rows[int(c["n"])]
+        pp, outcome = c.get("paypal_record"), c["outcome"]
+        steps = case_steps(c, logs)
+        card = {"n": n, "scenario": c["scenario"], "order": c["order"], "dispute": c.get("dispute") or "", "ask": c.get("ask"), "paid": row.get("paid"), "outcome": outcome,
+                "paypal_status": c.get("paypal_status") or "", "paypal_stage": c.get("paypal_stage") or "", "steps": steps, "paypal": paypal_facts(pp),
+                "buyer_wrote": next((e.get("notes") for e in (pp or {}).get("evidences", []) if e.get("source") == "SUBMITTED_BY_BUYER"), "") or (row.get("draft") or {}).get("message", "")}
+        if pp:
+            card["raw_label"], card["raw"] = "PayPal's record as read back, personal fields removed", pp
+        tr = c.get("tracking") or {}
+        if tr.get("number"):
+            card["tracking"] = {k: tr.get(k) for k in ("number", "carrier", "carrier_status", "paypal_tracker_status", "how", "confirmed_in_paypal")}
+        if outcome == "settled_inquiry_no_fee":
+            card["result"] = "settled"
+            refund = ((pp.get("refund_details") or {}).get("transactions") or [{}])[0]
+            moves = [f"{m['affected_party']} {m['type']} USD {m['amount']['value']} {m['reason']}" for m in pp.get("money_movements") or []]
+            card["refund"] = {"id": refund.get("id"), "amount": (refund.get("gross_amount") or {}).get("value"), "created": refund.get("create_time"), "movements": moves}
+            card["summary"] = f"PayPal's record reads RESOLVED at {c['paypal_stage']}. Refund {card['refund']['id']} of USD {card['refund']['amount']} is on the record."
+        elif outcome == "pending" and c.get("merchant_state") == "VERIFIED":
+            card["result"] = "answered with proof"
+            card["summary"] = (f"Tracking {tr.get('number')} with {tr.get('carrier')} and supporting info are on PayPal's record. "
+                               f"PayPal holds the case {c['paypal_status'].replace('_', ' ')} at {c['paypal_stage']}.")
+        elif outcome == "escalated_to_merchant_owner":
+            card["result"] = "waiting for owner"
+            amount = (pp.get("dispute_amount") or {}).get("value")
+            decision = next((s for s in reversed(steps) if s["action"].endswith("dispute.decision")), None)
+            if decision:
+                ask = logs["merchant"][decision["line"] - 1]["params"]["offer_minor"]
+                card["rule"] = {"source": "make_offer in " + "data/buyer/manual-batch/merchant-batch-policy.yaml", "decision_line": decision["line"],
+                                "text": (f"The agent decided to settle by offer of USD {usd(ask)}. The owner's policy lets it settle alone up to USD {usd(offer_rule['approval_above_minor'])} "
+                                         f"and ask from there up to the USD {usd(offer_rule['max_amount_minor'])} ceiling. USD {usd(ask)} is above the first figure and not above the second, so it needs the owner.")}
+            else:
+                card["rule"] = {"source": "accept_claim in " + "data/buyer/manual-batch/merchant-batch-policy.yaml", "decision_line": None,
+                                "text": (f"The receipts for this case hold the tracking line and the case closed line, and no decision line. The policy file asks for the owner above USD "
+                                         f"{usd(claim_rule['approval_above_minor'])} when the agent accepts a claim, and this claim is USD {amount}. "
+                                         "PayPal's record offers the seller one response at this stage: accept the claim with a refund.")}
+            card["summary"] = f"Nothing was paid. PayPal shows {c['paypal_status'].replace('_', ' ')} at {c['paypal_stage']} and waits for the owner."
+            if pp.get("seller_response_due_date"):
+                card["due"] = pp["seller_response_due_date"]
+        elif outcome == "handled_by_mandate":
+            card["result"] = "refused"
+            ref = next(s for s in reversed(steps) if s["action"].endswith("buyer.claim_refused"))
+            p = logs["buyer"][ref["line"] - 1]["params"]
+            card["mandate"] = {"paid": usd(p["paid_minor"]), "asked": usd(p["asked_minor"]), "why": p["why"], "receipt": p["mandate_receipt"], "rule": body.get("buyer_claim_rule"),
+                               "line": ref["line"], "dispute_opened": False}
+            card["summary"] = f"The buyer agent's own mandate refused a claim of USD {usd(p['asked_minor'])} on an order that cost USD {usd(p['paid_minor'])}. No dispute was opened."
+            card["raw_label"], card["raw"] = "Buyer receipt params, line %d of batch-buyer.ndjson" % ref["line"], p
+        else:
+            raise ValueError(f"case {n}: outcome {outcome!r} has no card layout")
+        out.append(card)
+    policy_lines = [line for line in pol_text.splitlines() if line.strip() and not line.lstrip().startswith("#")]
+    return {"source": f"data/runs/{records[-1].name}", "batch": f"data/runs/{path.name}", "read_at": rec.get("read_at"), "mode": "Real PayPal sandbox run",
+            "vocab": list(VOCAB), "verified_means": VERIFIED_MEANS, "counts": {w: sum(1 for k in out if k["result"] == w) for w in VOCAB},
+            "waiting": [k["n"] for k in out if k["result"] == "waiting for owner"],
+            "deadlines": [{"n": k["n"], "dispute": k["dispute"], "due": k["due"]} for k in out if k.get("due")],
+            "logs": {s: {"file": f"receipts/batch-{s}.ndjson", "key": body["logs"][s + "_key"], "lines": len(logs[s])} for s in ("merchant", "buyer")},
+            "policy": {"file": "data/buyer/manual-batch/merchant-batch-policy.yaml", "text": "\n".join(policy_lines), "owner_rule": body.get("merchant_rule"),
+                       "refund_approval_above": usd(claim_rule["approval_above_minor"]), "offer_alone_up_to": usd(offer_rule["approval_above_minor"]), "offer_ceiling": usd(offer_rule["max_amount_minor"])},
+            "cost": model_costs(body, logs), "cases": out}
+
+
 def batch_tally(public):
     """web/batch-tally.json for the hosted console: the counted batch tally and the baseline line, read from the run files. Nothing is typed."""
     path, body = clean_sandbox_batch()
@@ -348,7 +608,7 @@ def batch_tally(public):
         mandate = sum(1 for r in rows if r.get("outcome") == "handled_by_mandate")
         out["batch"] = {"tag": "Real PayPal sandbox run", "source": f"data/runs/{path.name}", "items": [
             {"value": f"{n - errors} of {n}", "label": f"disputes handled, {errors} errors, {doubles} double refunds"},
-            {"value": str(settled), "label": f"settled at INQUIRY with no fee, USD {sm.get('refunds_confirmed_total', '0.00')} refunded"},
+            {"value": str(settled), "label": f"settled at INQUIRY, before a claim, USD {sm.get('refunds_confirmed_total', '0.00')} refunded"},
             {"value": str(proof), "label": "answered with proof, under PayPal review"},
             {"value": str(owner), "label": "awaiting the merchant owner"},
             {"value": str(mandate), "label": "refused by the mandate"}]}
@@ -384,10 +644,14 @@ def main():
             print("skipped", source.name, "(not in the site row format, see the top of this file)")
     hud_case()
     (data / "room.json").write_text(json.dumps(room_numbers(), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    cd = cases_data()
+    if cd:
+        (data / "cases.json").write_text(json.dumps(cd, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+        print("cases.json written:", len(cd["cases"]), "cases")
     tot = totals(build()["rows"])
     (data / "totals.json").write_text(json.dumps(tot, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     (ROOT / "web" / "batch-tally.json").write_text(json.dumps(batch_tally(tot["public"]), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json", "hud-case.json", "room.json"))
+    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json", "hud-case.json", "room.json", "cases.json"))
     files.remove("ledger.json"); files.insert(0, "ledger.json")
     (data / "manifest.json").write_text(json.dumps({"files": files}, indent=1) + "\n", encoding="utf-8")
     print("site/data/manifest.json lists:", ", ".join(files))

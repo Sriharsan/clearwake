@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from decimal import Decimal
+from pathlib import Path
 import json
 import time
 from urllib.parse import urlsplit
@@ -73,6 +74,23 @@ def validate_receipt(record, operation, expected_id=None):
         raise Rejected("The provider record lacks a valid sandbox capture link/status.", 409)
     return {"id": refund_id, "status": record["status"], "amount": record["amount"],
         "capture": operation["capture"], "custom_id": operation["request_id"]}
+
+
+def archive_legacy_database(path):
+    """A database made before the 12 Nov 2026 rename names the old case, mode and merchant, so it cannot open under the new names.
+    Keep it aside (never deleted) and let the console start with a fresh one. Returns the archived file names, or an empty list."""
+    path = Path(path)
+    old_provider = path.with_name("rehearsal-provider.sqlite3")
+    if not (path.exists() and old_provider.exists()):
+        return []
+    stamp = __import__("time").strftime("%Y%m%d-%H%M%S")
+    moved = []
+    for item in (path, old_provider, path.with_name("local-provider.sqlite3")):
+        if item.exists():
+            target = item.with_name(item.name + f".before-rename-{stamp}")
+            item.rename(target)
+            moved.append(target.name)
+    return moved
 
 
 class RefundController(Controller):

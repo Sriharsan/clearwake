@@ -51,3 +51,6 @@ th{font:500 .875rem/1.2 var(--font-mono);letter-spacing:.08em;text-transform:upp
 .foot a{color:var(--mist)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media (max-width:480px){.bar .wrap{gap:.25rem}.brand{font-size:1.15rem}.bar nav{gap:0}.bar .wrap nav a{padding:.5rem .3rem;font-size:.875rem}.bar .wrap .brand{font-size:1.15rem}.bar .wrap .theme{margin-left:.15rem;min-width:2.75rem;padding:0}}
+
+/* five link nav: on narrow screens the brand text is hidden so the links and the theme button fit on every page */
+@media (max-width:40rem){.bar .brand{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.bar .wrap{justify-content:center}.bar .wrap nav a{padding:.5rem .3rem}.bar .wrap .theme{margin-left:0}}

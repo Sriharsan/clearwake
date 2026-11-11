@@ -13,7 +13,9 @@ import sqlite3
 import threading
 import time
 import uuid
-from urllib.parse import urlsplit
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone
+from urllib.parse import quote, urlsplit
 from urllib.error import HTTPError, URLError
 import socket
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
@@ -32,7 +34,31 @@ class Offline(Exception):
 
 
 class ProviderRefused(Exception):
-    """PayPal answered with a 4xx: the request was refused and nothing was applied. Not UNKNOWN."""
+    """PayPal answered with a 4xx: the request was refused and nothing was applied. Not UNKNOWN.
+
+    status is the HTTP code and retry_after the raw Retry-After header, when PayPal sent them."""
+    status = None
+    retry_after = None
+
+
+RATE_LIMIT_RETRIES = 3     # at most three repeats after a 429
+RATE_LIMIT_WAIT = 30.0     # seconds of waiting allowed in total for one call
+
+
+def retry_after_seconds(value):
+    """Seconds named by a Retry-After header (whole seconds or an HTTP date), or None."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    value = value.strip()
+    if value.isdigit():
+        return float(int(value))
+    try:
+        when = parsedate_to_datetime(value)
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return max(0.0, (when - datetime.now(timezone.utc)).total_seconds())
+    except Exception:
+        return None
 
 
 def identifier(value):
@@ -100,7 +126,10 @@ def transport(request, timeout=15):
                 body = {}
             issues = ",".join(str(d.get("issue")) for d in body.get("details", []) if isinstance(d, dict))[:200]
             name = body.get("name") or str(body.get("error_description") or body.get("error") or "")[:120]
-            raise ProviderRefused(f"PayPal refused it ({error.code} {name} {issues}).".replace("  ", " ").replace(" )", ")")) from None
+            refused = ProviderRefused(f"PayPal refused it ({error.code} {name} {issues}).".replace("  ", " ").replace(" )", ")"))
+            refused.status = error.code
+            refused.retry_after = error.headers.get("Retry-After") if error.headers else None
+            raise refused from None
         raise GatewayError("The sandbox request could not be confirmed. No automatic retry was sent.") from None
     except GatewayError:
         raise
@@ -120,6 +149,7 @@ class SandboxGateway:
             raise ValueError("Sandbox client ID and secret are required in the server environment.")
         self.client_id, self.secret, self.send = client_id, secret, send
         self._token, self._expires, self._lock = None, 0, threading.Lock()
+        self._sleep = time.sleep
 
     @classmethod
     def from_environment(cls):
@@ -129,11 +159,46 @@ class SandboxGateway:
             raise ValueError(f"PAYPAL_BASE_URL must be exactly {BASE}. Clearwake refuses to run against anything else.")
         return cls(os.environ.get("PAYPAL_CLIENT_ID", ""), os.environ.get("PAYPAL_CLIENT_SECRET", ""))
 
+    def _drop_token(self, token):
+        """Forget a token PayPal rejected (401), unless a newer one is already cached."""
+        with self._lock:
+            if self._token == token:
+                self._token, self._expires = None, 0
+
+    def _guarded(self, build, timeout, token, repeatable):
+        """Send build(token). A 401 drops the cached token and sends once more with a new one; a 429 waits
+        (Retry-After, else 1, 2, 4 seconds) and sends again, at most three times and 30 seconds in all.
+
+        Both answers come before PayPal processes anything, so repeating is safe when the call is a read or
+        carries a stable PayPal-Request-Id. Anything else is never repeated here."""
+        refreshed, waited, tries = False, 0.0, 0
+        while True:
+            try:
+                return self.send(build(token), timeout)
+            except ProviderRefused as refused:
+                if not repeatable:
+                    raise
+                if refused.status == 401 and not refreshed:
+                    refreshed = True
+                    self._drop_token(token)
+                    token = self._access_token()
+                    continue
+                if refused.status == 429 and tries < RATE_LIMIT_RETRIES:
+                    hinted = retry_after_seconds(refused.retry_after)
+                    wait = hinted if hinted is not None else float(2 ** tries)
+                    if waited + wait > RATE_LIMIT_WAIT:
+                        raise
+                    tries, waited = tries + 1, waited + wait
+                    self._sleep(wait)
+                    continue
+                raise
+
     def _access_token(self):
         with self._lock:
             if self._token and self._expires > time.monotonic():
                 return self._token
-            basic = base64.b64encode(f"{self.client_id}:{self.secret}".encode()).decode()
+            # Percent-encode both halves before base64 (RFC 6749 section 2.3.1).
+            basic = base64.b64encode(f"{quote(self.client_id, safe='')}:{quote(self.secret, safe='')}".encode()).decode()
             result = self.send(Request(BASE + "/v1/oauth2/token", data=b"grant_type=client_credentials",
                 headers={"Authorization": "Basic " + basic, "Content-Type": "application/x-www-form-urlencoded"}, method="POST"), 15)
             token, lifetime = result.get("access_token"), result.get("expires_in")
@@ -159,10 +224,14 @@ class SandboxGateway:
         # A read (GET) changes nothing, so a slow answer is read again, up to three times. A write is sent once and never repeated here:
         # its uncertain answer is held and reconciled from PayPal's record.
         attempts = 3 if payload is None else 1
+        data = json.dumps(payload).encode() if payload is not None else None
+
+        def build(bearer):
+            return Request(BASE + path, data=data, headers={**headers, "Authorization": "Bearer " + bearer},
+                           method="POST" if payload is not None else "GET")
         for attempt in range(attempts):
             try:
-                return self.send(Request(BASE + path, data=json.dumps(payload).encode() if payload is not None else None,
-                    headers=headers, method="POST" if payload is not None else "GET"), 30 if payload is None else 45)
+                return self._guarded(build, 30 if payload is None else 45, token, payload is None or bool(request_id))
             except (ProviderRefused, Offline):
                 raise
             except Exception:
@@ -224,9 +293,12 @@ class SandboxGateway:
         with self._lock:
             token = self._token
         body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
+
+        def build(bearer):
+            return Request(BASE + path, data=body, method="POST", headers={"Authorization": "Bearer " + bearer,
+                "Accept": "application/json", "Content-Type": content_type, "PayPal-Request-Id": request_id})
         try:
-            return self.send(Request(BASE + path, data=body, method="POST", headers={"Authorization": "Bearer " + token,
-                "Accept": "application/json", "Content-Type": content_type, "PayPal-Request-Id": request_id}), 45)
+            return self._guarded(build, 45, token, True)
         except (ProviderRefused, Offline):
             raise
         except Exception:

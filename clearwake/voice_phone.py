@@ -247,7 +247,7 @@ def main(argv=None):
     parser.add_argument("--console-model", choices=("scripted", "ollama"), default="scripted")
     args = parser.parse_args(argv)
     from .console import Console
-    from .controller import RefundController
+    from .controller import RefundController, archive_legacy_database
     from .paypal import LocalGateway
     from .server import ClearwakeServer
     ip = lan_address(args.lan_ip)
@@ -257,6 +257,8 @@ def main(argv=None):
         tls = (cert, key)
     database = args.database.resolve()
     database.parent.mkdir(parents=True, exist_ok=True)
+    for kept in archive_legacy_database(database):
+        print("Kept the earlier local database aside as", kept)
     controller = RefundController(database, gateway=LocalGateway(database.with_name("local-provider.sqlite3"), "completed"))
     console = Console(database.parent / "console", args.console_model)
     main_server = ClearwakeServer(("127.0.0.1", args.port), controller, console, hosted=False)   # the main console stays on loopback

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clearwake"
+version = "0.1.0"
+description = "A guard for PayPal's Agent Toolkit: limits, one request id per money move, a read of PayPal's record before any retry, and a signed receipt."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [{ name = "Sriharsan" }]
+dependencies = []
+
+[project.urls]
+Source = "https://github.com/Sriharsan/clearwake"
+
+# The wheel bundles the two engines the guard runs on, so an install needs neither git submodules nor the vendor folders:
+#   verdock_core  from vendor/verdock-core/verdock_core   (receipts, policy, ledger, approvals)
+#   relayloom     from vendor/relayloom/relayloom         (the pinned core the rest of Clearwake extends)
+# pip install git+https://github.com/Sriharsan/clearwake fetches the submodules at their pinned commits and builds this wheel.
+[tool.setuptools]
+packages = ["clearwake", "verdock_core", "relayloom"]
+include-package-data = false
+
+[tool.setuptools.package-dir]
+clearwake = "clearwake"
+verdock_core = "vendor/verdock-core/verdock_core"
+relayloom = "vendor/relayloom/relayloom"
+
+[tool.setuptools.package-data]
+clearwake = ["catalog.json", "packaged/*.yaml"]

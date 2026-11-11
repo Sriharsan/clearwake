@@ -27,7 +27,7 @@ Clearwake
 
 ## 2. Elevator pitch (182 characters, limit 200)
 
-When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before a claim or a fee.
+When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee.
 
 Tagline: When an agent's order goes missing, agents fix it.
 
@@ -38,7 +38,7 @@ Tagline: When an agent's order goes missing, agents fix it.
 
 **When an agent's order goes missing, agents fix it.**
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY with no fee, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. PayPal's record shows a USD 0.77 settlement fee on each of the four, and no USD 15.00 dispute fee. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
 
 It is for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.
 
@@ -54,7 +54,7 @@ Every item below is tagged: **Real PayPal sandbox run** (PayPal's test environme
 
 **Real PayPal sandbox run.** 4 settled, 3 pending with PayPal, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate.
 
-* **Settled at INQUIRY, no fee, 4:** case 3 `PP-R-ISN-10198775` (not shipped), case 6 `PP-R-SVP-10198784` (injected instruction), case 8 `PP-R-HZO-10198791` (lost PayPal response), case 10 `PP-R-ZPH-10198796` (not shipped, second case). Each asked USD 5.00 and PayPal's record reads RESOLVED with a refund of USD 5.00.
+* **Settled at INQUIRY, before a claim, 4:** case 3 `PP-R-ISN-10198775` (not shipped), case 6 `PP-R-SVP-10198784` (injected instruction), case 8 `PP-R-HZO-10198791` (lost PayPal response), case 10 `PP-R-ZPH-10198796` (not shipped, second case). Each asked USD 5.00 and PayPal's record reads RESOLVED with a refund of USD 5.00.
 * **Pending with PayPal at CHARGEBACK, 3:** case 1 `PP-R-YYA-10198768` (delivered with proof), case 2 `PP-R-IRR-10198773` (in transit), case 5 `PP-R-PLD-10198778` (two of three items arrived). The merchant agent sent the supporting info PayPal offered and read it back VERIFIED. PayPal shows UNDER_REVIEW and no outcome yet.
 * **Waiting for the merchant owner, 2:** case 4 `PP-R-FEV-10198802` (lost in transit, PayPal moved it to CHARGEBACK) and case 9 `PP-R-ZZO-10198792` (offer above the USD 5.00 limit, WAITING_FOR_SELLER_RESPONSE at INQUIRY).
 * **Stopped by the buyer's mandate, 1:** case 7, a claim of USD 20.00 on a USD 9.00 order, handed to its person with the evidence. No dispute was filed.
@@ -94,7 +94,7 @@ Models only propose. They cannot approve, send, change a limit or mark a refund 
 
 | Tool | Best use here | Tag | Result |
 | --- | --- | --- | --- |
-| **PayPal APIs** | Orders v2, Payments v2, Disputes v1 (send message, make offer, provide evidence) and Add Tracking, through one allowlisted sandbox adapter | **Real PayPal sandbox run** | The 10 case batch: 4 settled at INQUIRY with no fee, 4 refunds confirmed by PayPal's record |
+| **PayPal APIs** | Orders v2, Payments v2, Disputes v1 (send message, make offer, provide evidence) and Add Tracking, through one allowlisted sandbox adapter | **Real PayPal sandbox run** | The 10 case batch: 4 settled at INQUIRY, before a claim, 4 refunds confirmed by PayPal's record |
 | **PayPal Agent Toolkit and PayPal MCP** | `@paypal/agent-toolkit` 1.11.0 and `@paypal/mcp` 1.8.1 read from source, 47 tools listed ([docs/PAYPAL_MCP_TOOLS.md](https://github.com/Sriharsan/clearwake/blob/main/docs/PAYPAL_MCP_TOOLS.md)). The MCP guard proxy ([docs/MCP_GUARD.md](https://github.com/Sriharsan/clearwake/blob/main/docs/MCP_GUARD.md)) and the 3 line toolkit guard ([docs/TOOLKIT_GUARD.md](https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md)) put the signed policy in front of the money tools | **Planted failure** | Baseline USD 2,633.25 overpaid against USD 0.00 over 200 episodes with the guard |
 | **AG Grid Community** | The dispute ledger: stage filter, deadline countdown, the model's proposal next to the policy decision, PayPal's raw record in the row detail, CSV export | **Verified in your browser** | On the console, on Render and on the site's Control Room |
 | **Render** | The live console at https://clearwake-console.onrender.com/console, live on the free plan | **Verified in your browser** | Rate limited per address, with a Reset button |
@@ -115,7 +115,7 @@ One problem, item not received, end to end. Every part of Clearwake is a step in
 2. **The buyer's agent watches.** When the tracking stalls it opens the item not received dispute in PayPal's Resolution Center as the sandbox buyer, through a browser on the owner's own machine, inside its signed mandate, and only for orders the mandate covers.
 3. **The merchant's agent reads** the dispute, the order, the tracking on PayPal and the signed dispatch record.
 4. **The model drafts, the rules decide.** Evidence when delivered with proof. A message with tracking and a date when in transit. An offer alone, inside the merchant's limits, through PayPal's `make-offer`, when not shipped, lost or short shipped. The buyer's agent accepts only what its mandate allows.
-5. **Both sides read PayPal's record until it says RESOLVED.** "Settled, no fee" appears only when PayPal's record reads RESOLVED at the INQUIRY stage. A lost response is never retried blindly.
+5. **Both sides read PayPal's record until it says RESOLVED.** "Settled at INQUIRY" appears only when PayPal's record reads RESOLVED at the INQUIRY stage. A lost response is never retried blindly.
 6. **Two signed receipts**, one from each side, name the same PayPal dispute id and verify offline in Python or in a browser.
 
 Scope: Clearwake settles item not received. Every other dispute reason is escalated to the owner untouched. The merchant's control room has an AG Grid ledger of every dispute (stage, the model's proposal next to the policy's decision, PayPal's status, a deadline countdown) and a fee leak gauge that counts a fee as avoided only where PayPal's rule would have charged one.
@@ -142,7 +142,7 @@ A model is useful as a proposer and unsafe as a decider, so the limits sit in a 
 
 ## What is real
 
-* **Real PayPal sandbox run:** the 10 case batch, case n (`PP-R-OBG-10196144`, RESOLVED at INQUIRY, no fee), case o (`PP-R-UKF-10195772`, dispatch proof on PayPal's record), case i (`PP-R-SLI-10195419`, tracking on PayPal's record), case m (network cut mid batch, nothing sent twice). Test money, no live PayPal, no customers.
+* **Real PayPal sandbox run:** the 10 case batch, case n (`PP-R-OBG-10196144`, RESOLVED at INQUIRY), case o (`PP-R-UKF-10195772`, dispatch proof on PayPal's record), case i (`PP-R-SLI-10195419`, tracking on PayPal's record), case m (network cut mid batch, nothing sent twice). Test money, no live PayPal, no customers.
 * **Planted failure, local run:** the 200 episode baseline and the 80 attack episodes.
 * **Verified in your browser:** the public site shows a recorded sandbox run and verifies its receipts in your browser. The console on Render is hosted on Render, not network isolated.
 
@@ -152,7 +152,7 @@ The same loop for the other dispute reasons, each with its own signed rules. Dis
 
 ## The result in four numbers
 
-**4 of 10** disputes settled by the two agents at INQUIRY with no fee. **USD 0.00** overpaid in 200 episodes against USD 2,633.25. **0** double refunds against 61. **24 to 62 minutes** from filing to RESOLVED in PayPal's timestamps.
+**4 of 10** disputes settled by the two agents at INQUIRY, before a claim. **USD 0.00** overpaid in 200 episodes against USD 2,633.25. **0** double refunds against 61. **24 to 62 minutes** from filing to RESOLVED in PayPal's timestamps.
 
 Site https://clearwake-mu.vercel.app, Break it page https://clearwake-mu.vercel.app/break, Render console https://clearwake-console.onrender.com/console, repo https://github.com/Sriharsan/clearwake, video [VIDEO_URL]. APIMatic: Context Plugin for PayPal 0.4.1 was run as a review of every PayPal call, portal https://clearwake-api.vercel.app. Postman: newman run of 11 November 2026: 95 assertions, 0 failed (75 on the local attack suite, 20 on three read only PayPal sandbox requests).
 ```
@@ -162,7 +162,7 @@ Site https://clearwake-mu.vercel.app, Break it page https://clearwake-mu.vercel.
 1. The line and the proof sentence, on one slide.
 2. The bad outcome, then the same action stopped: USD 2,633.25 overpaid over 200 episodes on the Agent Toolkit alone, USD 0.00 with Clearwake (**Planted failure**).
 3. The anatomy: one dispute, six layers (rules, buyer agent, merchant agent, policy gate, signed receipts, PayPal's record), case 3 `PP-R-ISN-10198775`, USD 5.00.
-4. The ten case batch counted aloud (**Real PayPal sandbox run**): 4 settled at INQUIRY with no fee, 3 answered with proof under PayPal review, 2 awaiting the merchant owner, 1 refused by the mandate. 4 moved by PayPal to CHARGEBACK once tracking was on the order. Settle times 24 to 62 minutes from filing to RESOLVED.
+4. The ten case batch counted aloud (**Real PayPal sandbox run**): 4 settled at INQUIRY, before a claim, 3 answered with proof under PayPal review, 2 awaiting the merchant owner, 1 refused by the mandate. 4 moved by PayPal to CHARGEBACK once tracking was on the order. Settle times 24 to 62 minutes from filing to RESOLVED.
 5. **Verified in your browser:** a signed receipt, a one character change, the chain breaks.
 6. Built during the hackathon, sponsor tools at their best use, links, and the run command.
 

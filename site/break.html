@@ -17,11 +17,7 @@
 <header class="bar">
   <div class="wrap">
     <a class="brand" href="/">Clearwake</a>
-    <nav aria-label="Pages">
-      <a href="/control-room">Control Room</a>
-      <a href="/developers">Developers</a>
-      <a href="/break" aria-current="page">Break it</a>
-      <button class="theme" type="button" aria-label="Switch to the light theme"><svg class="ico sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg><svg class="ico moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.2A8.5 8.5 0 0 1 9.8 4a8.5 8.5 0 1 0 10.2 10.2z"/></svg></button>
+    <nav aria-label="Pages"> <a href="/">Home</a> <a href="/control-room">Control Room</a> <a href="/break" aria-current="page">Break it</a> <a href="/proof">Proof</a> <a href="/developers">Developers</a> <button class="theme" type="button" aria-label="Switch to the light theme"><svg class="ico sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg><svg class="ico moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.2A8.5 8.5 0 0 1 9.8 4a8.5 8.5 0 1 0 10.2 10.2z"/></svg></button>
     </nav>
   </div>
 </header>
@@ -61,10 +57,11 @@
 
   <section class="use" aria-labelledby="h-use">
     <h2 id="h-use">Use it in three lines</h2>
-    <pre class="codeblock" tabindex="0"><code>from clearwake.toolkit_guard import guard
-api = guard(paypal_tools, reader=paypal_reader)
-api.accept_dispute_claim(dispute_id, note)</code></pre>
-    <p>The guard reads PayPal's record, takes the amount from it and from the signed policy, refuses what is above the limit, gives every money move one request id, and writes a receipt for every call. It covers what <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_FAILURE_CASES.md">the toolkit failure page</a> records, and Clearwake built it as an independent guard. <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md">Read the guard's page</a>.</p>
+    <pre class="codeblock" tabindex="0"><code>pip install git+https://github.com/Sriharsan/clearwake
+from clearwake import guard
+tools = guard(paypal_toolkit_tools, policy="policy.yaml")</code></pre>
+    <p class="plain">Clearwake adds what the toolkit leaves to you: limits, one request id per money move, a read of PayPal's record before any retry, and a signed receipt.</p>
+    <p><code>paypal_toolkit_tools</code> is the tool list your agent framework got from PayPal's toolkit. <code>guard()</code> hands back a list of the same length and order. Of the toolkit's 47 tools, 8 move money and come back wrapped. The other 39 are the same objects, untouched. A wrapped call reads PayPal's record, takes the amount from it and from the signed policy, refuses what is above the limit before any request leaves, gives the move one request id, and writes a signed receipt. It covers what <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_FAILURE_CASES.md">the toolkit failure page</a> records, and Clearwake built it as an independent guard. <a href="/developers#toolkit">Setup on the Developers page</a>, or <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md">read the guard's page</a>.</p>
   </section>
   <noscript><p class="note">This page needs JavaScript to show the recorded episodes and to verify receipts in your browser.</p></noscript>
 </main>

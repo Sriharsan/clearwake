@@ -1148,7 +1148,7 @@
                 "{{dispute_id}}"
               ]
             },
-            "description": "The read that decides. A settlement counts as 'settled, no fee' only when this shows status RESOLVED at dispute_life_cycle_stage INQUIRY."
+            "description": "The read that decides. A settlement counts as 'settled at INQUIRY' only when this shows status RESOLVED at dispute_life_cycle_stage INQUIRY."
           }
         }
       ]

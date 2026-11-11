@@ -12,8 +12,8 @@
 .hud p{overflow-wrap:anywhere}
 /* bar */
 .hud-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1.25rem;padding:.8rem 1rem;border-bottom:1px solid var(--hl)}
-.hud-title{margin:0;font:700 .8rem/1 var(--font-code);letter-spacing:.3em;color:var(--ht)}
-.hud-tag{margin:0;flex:1 1 15rem;font:500 .74rem/1.35 var(--font-code);letter-spacing:.05em;color:var(--hm)}
+.hud-title{margin:0;font:700 .875rem/1 var(--font-code);letter-spacing:.3em;color:var(--ht)}
+.hud-tag{margin:0;flex:1 1 15rem;font:500 .875rem/1.35 var(--font-code);letter-spacing:.05em;color:var(--hm)}
 .hud-ctl{display:flex;gap:.5rem;margin-left:auto}
 .hud-btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-width:2.75rem;min-height:2.75rem;padding:0 1.1rem;border:1px solid var(--hl);border-radius:999px;background:oklch(100% 0 0/.05);color:var(--hf);font:600 .9rem/1 var(--font-sans);cursor:pointer;transition:border-color .25s,box-shadow .25s,background .25s}
 .hud-btn:hover{border-color:var(--ht);background:oklch(86% .13 180/.12);box-shadow:0 0 1.2rem -.3rem var(--ht)}
@@ -33,16 +33,16 @@
 .pn::before{top:-1px;left:-1px;border-right:0;border-bottom:0}.pn::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
 .pn.active{border-color:var(--ht);box-shadow:0 0 2.2rem -.8rem var(--ht)}
 .hud.live .pn:not(.active){opacity:.5}
-.pn-h{display:flex;justify-content:space-between;gap:.5rem;margin-bottom:.9rem;font:700 .7rem/1 var(--font-code);letter-spacing:.2em}
+.pn-h{display:flex;justify-content:space-between;gap:.5rem;margin-bottom:.9rem;font:700 .875rem/1 var(--font-code);letter-spacing:.2em}
 .pn-h .mk{color:var(--ht)}.pn-merch .pn-h .mk{color:var(--ha)}.pn-owner .pn-h .mk{color:var(--hf)}
 .pn-h .st{color:var(--hm);letter-spacing:.08em;text-transform:uppercase;font-weight:600;text-align:right}
-.k{display:block;margin-bottom:.3rem;font:600 .64rem/1 var(--font-code);letter-spacing:.18em;color:var(--hm)}
+.k{display:block;margin-bottom:.3rem;font:600 .875rem/1 var(--font-code);letter-spacing:.18em;color:var(--hm)}
 .it{margin:0 0 .8rem;padding-left:.75rem;border-left:2px solid var(--hl);font:500 .98rem/1.38 var(--font-sans);color:var(--hf)}
 .pn-merch .it{border-left-color:oklch(80% .15 75/.5)}
 .it b{font-weight:700}.it .mono{font-size:.88em}.it .dim{color:var(--hm)}.it .ok{color:var(--hg)}
 .hud.live .it{opacity:0;transform:translateY(10px);transition:opacity .55s,transform .6s cubic-bezier(.2,.7,.2,1)}
 .hud.live .it.on{opacity:1;transform:none}
-.hx{font:500 .78rem/1.3 var(--font-code);color:var(--hm);letter-spacing:.02em}
+.hx{font:500 .875rem/1.3 var(--font-code);color:var(--hm);letter-spacing:.02em}
 /* tool cards */
 .tools{display:grid;gap:.4rem;margin-bottom:.8rem}
 .tool{display:flex;align-items:center;gap:.7rem;margin:0;padding:.55rem .75rem;border:1px solid oklch(80% .15 75/.35);border-left:3px solid var(--ha);border-radius:.25rem;font:600 .9rem/1 var(--font-code);background:oklch(80% .15 75/.07)}
@@ -77,7 +77,7 @@
 .hud.live .rrow.locked .rr{animation:snap .5s cubic-bezier(.3,1.6,.5,1)}
 @keyframes snap{0%{transform:scale(1)}40%{transform:scale(1.22)}100%{transform:scale(1)}}
 @keyframes spin{to{transform:rotate(360deg)}}
-.rl{margin:0 0 .2rem;font:600 .66rem/1.3 var(--font-code);letter-spacing:.16em;text-transform:uppercase;color:var(--hm)}
+.rl{margin:0 0 .2rem;font:600 .875rem/1.3 var(--font-code);letter-spacing:.16em;text-transform:uppercase;color:var(--hm)}
 .rl .sig{display:none;color:var(--hg);margin-left:.4rem}.hud:not(.live) .rl .sig,.hud.live .rrow.locked .sig{display:inline}
 .say{margin:0;min-height:4.2em;font:500 1.02rem/1.4 var(--font-sans);color:var(--hf)}
 .say.typing::after{content:"";display:inline-block;width:.5ch;height:1em;margin-left:2px;vertical-align:-.15em;background:var(--ht);animation:blink 1s steps(2) infinite}
@@ -99,7 +99,7 @@
 .rc-sign{fill:none;stroke:var(--ht);stroke-width:6;stroke-linecap:round;stroke-dasharray:100 20;transition:stroke .6s,opacity .6s}
 .hud.live .core:not(.armed) .rc-sign{opacity:.12}
 .rc-disc{fill:var(--hb);stroke:var(--hl);stroke-width:1}
-.rc-micro{fill:var(--hm);font:600 12px var(--font-code);letter-spacing:.3em}
+.rc-micro{fill:var(--hm);font:600 .875rem var(--font-code);letter-spacing:.3em}
 .rc-id{fill:var(--hf);font:700 28px var(--font-code)}
 .rc-state{fill:var(--ht);font:700 15px var(--font-code);letter-spacing:.18em}
 .core.done .rc-sign,.core.done .rc-pulse{stroke:var(--hg)}.core.done .rc-state{fill:var(--hg)}
@@ -109,9 +109,9 @@
 @keyframes flash{0%{stroke:var(--hg);stroke-width:14}100%{stroke:var(--hl);stroke-width:6}}
 /* receipt chips snap to the ring */
 .chips{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;width:100%;margin-top:.25rem}
-.chip{margin:0;min-width:0;max-width:15rem;padding:.55rem .8rem;border:1px solid var(--hl);border-left:3px solid var(--ht);border-radius:.3rem;background:var(--hp);text-align:left;font:600 .64rem/1.3 var(--font-code);letter-spacing:.12em;color:var(--hm)}
+.chip{margin:0;min-width:0;max-width:15rem;padding:.55rem .8rem;border:1px solid var(--hl);border-left:3px solid var(--ht);border-radius:.3rem;background:var(--hp);text-align:left;font:600 .875rem/1.3 var(--font-code);letter-spacing:.12em;color:var(--hm)}
 .chip-r{border-left-color:var(--ha)}
-.chip .k{margin-bottom:.25rem}.chip .hx{display:block;color:var(--hf);font-size:.8rem;letter-spacing:0;overflow-wrap:anywhere}
+.chip .k{margin-bottom:.25rem}.chip .hx{display:block;color:var(--hf);font-size:.875rem;letter-spacing:0;overflow-wrap:anywhere}
 .hud.live .chip{opacity:0}.hud.live .chip-l{transform:translateX(-5rem)}.hud.live .chip-r{transform:translateX(5rem)}
 .hud.live .chip.on{opacity:1;transform:none;transition:opacity .35s,transform .6s cubic-bezier(.3,1.5,.5,1)}
 /* caption */
@@ -258,3 +258,4 @@
 @media (max-width:560px){.fig{width:8.6rem;height:10.75rem;margin-right:.1rem}}
 @media (prefers-reduced-motion:reduce){.fi,.fi-blink,.fig.speaking .fi-talk{animation:none!important}.fig.speaking .fi-talk{opacity:1}}
 .fi{-webkit-mask-image:radial-gradient(ellipse 66% 68% at 50% 50%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse 66% 68% at 50% 50%,#000 62%,transparent 100%)}
+@media (max-width:55.99rem){.chip{max-width:100%;min-width:0}.chip .k{letter-spacing:.06em;overflow-wrap:anywhere}.pn-h{letter-spacing:.12em;flex-wrap:wrap}.rl{letter-spacing:.08em}}

@@ -57,7 +57,7 @@ class SettleTests(unittest.TestCase):
         self.assertEqual(self.refunds_at_provider(), [])  # no money until the buyer accepts
         self.gateway.buyer_accepts_offer(d)
         settled = self.swarm.handle_dispute(d, 2000, "buyer-n1")
-        self.assertEqual(settled.state, VERIFIED); self.assertIn("Settled, no fee", settled.detail)
+        self.assertEqual(settled.state, VERIFIED); self.assertIn("Settled at INQUIRY", settled.detail)
         self.assertEqual(len(self.refunds_at_provider()), 1)
         self.assertEqual(len(self.refunds_at_provider()), len(set(self.refunds_at_provider())))
         self.assertTrue(verify_log(self.swarm.receipts.path, self.swarm.receipts.public_key)["ok"])

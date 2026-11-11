@@ -251,3 +251,14 @@ kbd{font:600 .72rem/1 var(--font-sans);border:1px solid var(--border);border-rad
 .sec{padding:clamp(2rem,4.5vw,3.5rem) 0}
 .foot{margin-top:0}
 .tw td:first-child{white-space:nowrap}
+
+/* Developers page: every line of body text is 18px (tables, lists, notes, error entries); code stays a little smaller */
+.secbody p,.secbody li,.secbody dd,.secbody dt,.secbody .note,.secbody .hint,.secbody .tw table,.secbody .tw td,.secbody .tw th,.errlist dd,.errlist dt,.secbody .errwhere{font-size:1.125rem !important;line-height:1.6}
+.secbody .tw td code,.secbody .tw th code{font-size:.9em}
+.secbody .tw table{min-width:36rem}
+.cb pre code{font-size:inherit}
+.tk table{min-width:0;table-layout:auto}
+.tk td,.tk th{vertical-align:top}
+.tk td code{white-space:normal !important;overflow-wrap:anywhere}
+.tk td:nth-child(2),.tk th:nth-child(2){width:5rem}
+@media (max-width:560px){.tk table{min-width:30rem}}

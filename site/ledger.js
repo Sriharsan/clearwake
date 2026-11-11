@@ -30,17 +30,17 @@
   ];
 
   var TITLES = { c: 'Refund under the limit', d: 'Refund above the approval line, approved', e: 'Lost reply, reconciled', m1: 'Refund before the network cut', m2: 'Refund held offline, then resumed', m3: 'Refund held offline, then resumed',
-    i: 'Item not received, tracking sent', n: 'Dispute settled by offer', o: 'Dispatch proof sent as evidence' };
+    i: 'Item not received, tracking sent', n: '3 Nov: offer paid, dispute resolved', o: '3 Nov: parcel count sent as evidence' };
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var KINDS = { settled: 'Settled at INQUIRY, no fee', review: 'Answered with proof, under PayPal review', owner: 'Awaiting the merchant owner', mandate: 'Buyer claim refused by the mandate' };
+  var KINDS = { settled: 'settled', review: 'answered with proof', owner: 'waiting for owner', mandate: 'refused' };
   function kindOf(r) {
     var o = String(r.outcome || '').toLowerCase();
-    if (/^handled by mandate/.test(o)) return 'mandate';
-    if (r.state === 'awaiting approval' || /^escalated to merchant owner/.test(o)) return 'owner';
+    if (/^(refused|handled by mandate)/.test(o)) return 'mandate';
+    if (r.state === 'awaiting approval' || /^(waiting for owner|escalated to merchant owner)/.test(o)) return 'owner';
     if (r.paypal_status === 'RESOLVED' && r.stage === 'INQUIRY') return 'settled';
     return 'review';
   }
-  function titleOf(c, r) { var b = /^b(\d+)$/.exec(c); return TITLES[c] || (b ? 'Batch dispute ' + b[1] + ' of 10' + (r ? ', ' + KINDS[kindOf(r)] : '') : String(c)); }
+  function titleOf(c, r) { var b = /^b(\d+)$/.exec(c); return TITLES[c] || (b ? 'Case ' + b[1] + ' of 10' + (r ? ', ' + KINDS[kindOf(r)] : '') : String(c)); }
   function dateOf(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
   function idOf(r) {
     if (/^batch-sandbox/.test(r.dispute || '')) return 'none, refused before PayPal was called' + (r.record && r.record.order_id ? ' (order ' + r.record.order_id + ')' : '');
@@ -112,34 +112,9 @@
     document.body.append(a); a.click(); a.remove();
   }
 
-  // ---- batch ledger: counts and rows computed here from the batch file ----
+  // ---- the batch: its counts and cards are drawn by room.js from data/cases.json; this file keeps the file hash and the grid ----
   var BATCH = 'batch-sandbox-20261111-132948.json';
   function mk(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; }
-  function paintBatch() {
-    var list = $('batch-list'); if (!list) return;
-    var batch = rows.filter(function (r) { return r.file === BATCH; }).sort(function (a, b) { return +a.case.slice(1) - +b.case.slice(1); });
-    if (!batch.length) return;
-    var n = { settled: 0, review: 0, owner: 0, mandate: 0 };
-    list.textContent = '';
-    batch.forEach(function (r, i) {
-      var k = kindOf(r); n[k]++;
-      var li = mk('li', 'b-' + k), head = mk('div', 'b-head'), meta = mk('p', 'b-meta');
-      head.append(mk('span', 'b-n tnum', (i + 1) + ' of ' + batch.length), mk('h3', null, KINDS[k]));
-      if (k === 'mandate') head.append(mk('span', 'tag amber', 'Planted failure'));
-      var idTxt = k === 'mandate' ? 'No dispute id. The mandate refused before PayPal was called' + (r.record && r.record.order_id ? ', order ' + r.record.order_id : '') : r.dispute;
-      meta.append(mk('span', 'id wrap-any', idTxt), document.createTextNode(' , ' + dateOf(r.recorded) + ', USD ' + r.amount + (r.stage ? ', stage ' + r.stage : '') + (r.paypal_status ? ', PayPal ' + readableStatus(r.paypal_status) : '')));
-      li.append(head, meta, mk('p', 'b-out', sentence(r, k)));
-      list.append(li);
-    });
-    $('t-settled').textContent = n.settled; $('t-review').textContent = n.review; $('t-owner').textContent = n.owner; $('t-mandate').textContent = n.mandate;
-  }
-  function readableStatus(v) { return String(v).replaceAll('_', ' '); }
-  function sentence(r, k) {
-    if (k === 'settled') return 'Refund USD 5.00 confirmed by PayPal. The case ended at INQUIRY, so no dispute fee applied.';
-    if (k === 'review') return 'Evidence sent. PayPal holds the case UNDER REVIEW. No decision has been returned.';
-    if (k === 'owner') return 'Above the policy limit, so the merchant agent handed it to the owner with the evidence. Nothing was paid.';
-    return 'The buyer agent claimed USD ' + r.amount + ', above its mandate. Refused, and handed to its person with the evidence.';
-  }
   function hashBatch() {
     var el = $('batch-hash'); if (!el || !window.crypto || !crypto.subtle) return;
     fetch('data/' + BATCH, { credentials: 'omit' }).then(function (r) { return r.arrayBuffer(); }).then(function (b) { return crypto.subtle.digest('SHA-256', b); }).then(function (d) {
@@ -172,7 +147,7 @@
     if (ag.ModuleRegistry && ag.AllCommunityModule) ag.ModuleRegistry.registerModules([ag.AllCommunityModule]);
     // Colours are CSS variables, so the grid follows the light and dark themes and its style text never changes (the CSP lists its hashes).
     var theme = ag.themeQuartz.withParams({ backgroundColor: 'var(--surface)', foregroundColor: 'var(--foreground)', headerBackgroundColor: 'var(--surface-2)',
-      borderColor: 'var(--border)', accentColor: 'var(--teal)', oddRowBackgroundColor: 'var(--background)', fontFamily: 'Figtree, system-ui, sans-serif', fontSize: 14, headerFontSize: 12, spacing: 7, wrapperBorderRadius: 8 });
+      borderColor: 'var(--border)', accentColor: 'var(--teal)', oddRowBackgroundColor: 'var(--background)', fontFamily: 'Figtree, system-ui, sans-serif', fontSize: 14, headerFontSize: 14, spacing: 7, wrapperBorderRadius: 8 });
     api = ag.createGrid(host, {
       theme: theme, loading: false, columnDefs: COLS.map(function (c) { return Object.assign({ sortable: true, resizable: true }, c); }), rowData: rows,
       getRowId: function (p) { return p.data.dispute; }, ensureDomOrder: true, animateRows: false, domLayout: 'autoHeight',
@@ -196,7 +171,7 @@
   loadAll().then(function (list) {
     rows = list;
     if (!rows.length) { $('ledger-count').textContent = 'No recorded rows could be loaded.'; return; }
-    paintBatch(); hashBatch();
+    hashBatch();
     build();
     var upd = document.createEvent('Event'); upd.initEvent('clearwake:ledger', true, false); document.dispatchEvent(upd);
   });

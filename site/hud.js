@@ -1,4 +1,4 @@
-// THE CONVERSATION scene and the dispute id diagram on the Home page.
+// THE CONVERSATION scene and the dispute id diagram on the Proof page; on the Home page it fills the seven steps from the same recorded case.
 // Every value shown is read at load from data/hud-case.json and the two signed logs receipts/batch-merchant.ndjson and receipts/batch-buyer.ndjson
 // (batch case 3, real PayPal sandbox, written by scripts/build_site_data.py from the newest clean batch run).
 // Nothing numeric is typed in this file. No inline styles: states are class names, shapes move through CSS transforms.
@@ -9,7 +9,11 @@
   var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
   var CANCEL = { cancel: true };
   var hud = $('hud');
-  if (!hud) return;
+  if (!hud) {
+    /* the Home page carries the seven steps as text: only the values are filled in, from the same recorded case */
+    if ($('steps7')) load().then(fill).catch(function (err) { if (window.console) console.error('hud', err); });
+    return;
+  }
 
   /* ---------- data ---------- */
   function sha256(text) {
@@ -43,8 +47,7 @@
   }
   function fill(D) {
     Array.prototype.forEach.call(doc.querySelectorAll('[data-f]'), function (n) { if (D[n.getAttribute('data-f')] != null) n.textContent = D[n.getAttribute('data-f')]; });
-    $('gb-fill').setAttribute('width', String(300 * D.ratio));
-    $('gb-mark').setAttribute('d', 'M299 0v16');
+    if ($('gb-fill')) { $('gb-fill').setAttribute('width', String(300 * D.ratio)); $('gb-mark').setAttribute('d', 'M299 0v16'); }
   }
 
   /* ---------- a clock that can pause ---------- */
@@ -257,7 +260,7 @@
       function () { cap('A proposal comes in. The rule decides.'); st('merch-st', 'proposing'); on('m1', 't2'); return sleep(1900); },
       function () { on('m2'); st('rc-state', 'OFFER ' + D.offer.replace('USD ', '')); return sleep(2000); },
       function () { st('merch-st', 'inside the limit'); cap('One offer, sent alone.'); on('t3', 'm3'); return sleep(1700); },
-      function () { cap('PayPal’s record reads ' + D.status + ' at ' + D.stage + '. No fee.'); active('merch'); st('merch-st', 'resolved'); on('m4'); core.classList.add('done', 'flash'); lookAt('merch', true); st('rc-state', D.status); return sleep(1600); },
+      function () { cap('PayPal’s record reads ' + D.status + ' at ' + D.stage + '. Before any claim.'); active('merch'); st('merch-st', 'resolved'); on('m4'); core.classList.add('done', 'flash'); lookAt('merch', true); st('rc-state', D.status); return sleep(1600); },
       function () { active('buyer'); st('buyer-st', 'resolved'); cap('The buyer agent reads the same record.'); on('b4'); return sleep(1700); },
       function () { cap('Two signed receipts, one dispute id.'); on('chip3'); return sleep(650); },
       function () { on('chip5'); return sleep(1700); },
