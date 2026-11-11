@@ -120,7 +120,7 @@ input[type=range]{width:100%;min-height:2.75rem;accent-color:var(--amber);margin
 .photo img{display:block;width:min(100%,62rem);height:auto}
 .photo figcaption{color:var(--mist);font-size:.85rem;margin-top:.6rem;max-width:36rem}
 .proof{background:var(--background);border:1px solid var(--border);padding:1.25rem;margin-top:1rem}
-@media (min-width:62rem){.proof{position:absolute;right:0;top:3rem;width:26rem;box-shadow:0 0 0 .75rem var(--background)}}
+@media (min-width:62rem){.proof{max-width:38rem}}
 .proof dl>div{padding:.55rem 0;border-bottom:1px solid var(--border)}.proof dl>div:last-child{border:0}
 .proof .btn{margin-top:1rem;width:100%}
 .result{margin:.75rem 0 0;font:600 .9rem/1.5 var(--font-sans);color:var(--mist)}

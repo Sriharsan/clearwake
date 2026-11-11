@@ -10,10 +10,12 @@
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="home.css">
 <link rel="stylesheet" href="hud.css">
+<link rel="stylesheet" href="anatomy.css">
 <script src="theme.js"></script>
 <script src="app.js" type="module"></script>
 <script src="totals.js" defer></script>
 <script src="hud.js" defer></script>
+<script src="anatomy.js" defer></script>
 </head>
 <body>
 <header class="bar">
@@ -140,6 +142,36 @@
     </div>
   </section>
 
+  <section class="band wrap anat" id="anatomy" aria-labelledby="anat-h" data-step="0">
+    <p class="eyebrow">How it works</p>
+    <h2 id="anat-h">One dispute. Six layers. Every layer checked.</h2>
+    <p class="lede">Batch case 3 ran on the real PayPal sandbox. Follow it from the owner's spoken rule down to PayPal's record.</p>
+    <span class="anat-tag">Real PayPal sandbox run, case 3</span>
+    <div class="anat-grid">
+      <div class="anat-stage" role="group" aria-label="Six layers, one case, USD 5.00 paid once">
+        <div class="anat-thread" aria-hidden="true"></div>
+        <div class="anat-bead" aria-hidden="true">Case 3 &middot; USD 5.00</div>
+        <ol class="anat-sheets">
+          <li class="anat-sheet" tabindex="0"><span class="anat-n">1</span><span class="anat-name">Owner's spoken rules<span class="anat-sub">Spoken once. Read back. Signed.</span></span></li>
+          <li class="anat-sheet" tabindex="0"><span class="anat-n">2</span><span class="anat-name">Buyer agent<span class="anat-sub">Files the claim. Cannot pay itself.</span></span></li>
+          <li class="anat-sheet" tabindex="0"><span class="anat-n">3</span><span class="anat-name">Merchant agent<span class="anat-sub">Offers inside its owner's limit.</span></span></li>
+          <li class="anat-sheet" tabindex="0"><span class="anat-n">4</span><span class="anat-name">Policy gate<span class="anat-sub">Every action checked before money moves.</span></span></li>
+          <li class="anat-sheet" tabindex="0"><span class="anat-n">5</span><span class="anat-name">Signed receipts chain<span class="anat-sub">Each step signed. Each link checked.</span></span></li>
+          <li class="anat-sheet" tabindex="0"><span class="anat-n">6</span><span class="anat-name">PayPal's record<span class="anat-sub">The judge. Nothing counts until it matches.</span></span></li>
+        </ol>
+      </div>
+      <div class="anat-card">
+        <h3>What each layer did to PP-R-ISN-10198775</h3>
+        <ol class="anat-lines">
+          <li><b>1</b><span></span></li><li><b>2</b><span></span></li><li><b>3</b><span></span></li>
+          <li><b>4</b><span></span></li><li><b>5</b><span></span></li><li><b>6</b><span></span></li>
+        </ol>
+        <p class="anat-cap" aria-live="polite"></p>
+        <div class="anat-ctl"><button class="btn anat-replay" type="button">Replay</button><a class="btn" href="receipts/manifest.json">Open the signed receipts</a></div>
+      </div>
+    </div>
+  </section>
+
   <section class="band wrap measured" id="measured" aria-labelledby="m-h">
     <p class="eyebrow">Measured</p>
     <h2 id="m-h">Numbers from the recorded runs.</h2>
@@ -249,20 +281,20 @@
         <h2 class="lane-title">Settled before escalation</h2>
         <ul class="marks">
           <li class="mark c1"><b>Settled in conversation</b><span class="mono">Batch case 3, USD 5.00 offer</span><span class="mono dim">PP-R-ISN-10198775, RESOLVED at INQUIRY</span></li>
-          <li class="mark c2"><b>Refund under the limit</b><span class="mono">Case c, USD 1.50</span><span class="mono dim">6SN41486G5579815G, VERIFIED</span></li>
+          <li class="mark c2"><b>Refund under the limit</b><span class="mono">Real sandbox run, USD 1.50</span><span class="mono dim">6SN41486G5579815G, VERIFIED</span></li>
         </ul>
       </div>
       <div class="lane blue">
         <h2 class="lane-title">Evidence sent</h2>
         <ul class="marks">
-          <li class="mark c3"><b>Item not received</b><span class="mono">Case i, tracking</span><span class="mono dim">PP-R-SLI-10195419, read back VERIFIED</span></li>
-          <li class="mark c4"><b>Buyer says 2 of 3 arrived</b><span class="mono">Case o, dispatch proof</span><span class="mono dim">PP-R-UKF-10195772, 3 of 3 counted</span></li>
+          <li class="mark c3"><b>Item not received</b><span class="mono">Real sandbox run, tracking sent</span><span class="mono dim">PP-R-SLI-10195419, read back VERIFIED</span></li>
+          <li class="mark c4"><b>Buyer says 2 of 3 arrived</b><span class="mono">Real sandbox run, dispatch proof</span><span class="mono dim">PP-R-UKF-10195772, 3 of 3 counted</span></li>
         </ul>
       </div>
       <div class="lane amber">
         <h2 class="lane-title">Needs you</h2>
         <ul class="marks">
-          <li class="mark c5"><b>Refund above the approval line</b><span class="mono">Case d, USD 3.50</span><span class="mono dim">2NB27940EC188891M, after approval</span></li>
+          <li class="mark c5"><b>Refund above the approval line</b><span class="mono">Real sandbox run, USD 3.50</span><span class="mono dim">2NB27940EC188891M, after approval</span></li>
         </ul>
       </div>
     </div>
@@ -272,7 +304,7 @@
     <div class="wrap">
       <p class="eyebrow">Settled in conversation</p>
       <h2 id="wake-h">The wake of one dispute. Each ring is a signed step.</h2>
-      <p class="lede">Case n, 3 Nov 2026. Scroll, and the rings follow the five signed receipts of dispute PP-R-OBG-10196144. Pick any step and change one value in it: your browser checks every signature and hash with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
+      <p class="lede">Real sandbox run, 3 Nov 2026. Scroll, and the rings follow the five signed receipts of dispute PP-R-OBG-10196144. Pick any step and change one value in it: your browser checks every signature and hash with WebCrypto, and the wake shows where it breaks. Nothing is uploaded.</p>
     </div>
     <div class="wake-scene wrap" id="wake-scene">
       <div class="wake-sticky">
@@ -331,9 +363,8 @@
   <section class="band wrap dispatch" id="dispatch" aria-labelledby="dispatch-h">
     <p class="eyebrow">Dispatch proof</p>
     <h2 id="dispatch-h">Counted on your own machine, before the parcel leaves.</h2>
-    <p class="lede">SAM 3 (open weights from Meta) counted the items in the packing photo on a laptop CPU with no network, and Clearwake signed the count. Case o, 3 Nov 2026.</p>
+    <p class="lede">SAM 3 (open weights from Meta) counted the items in the packing photo on a laptop CPU with no network, and Clearwake signed the count. Real sandbox run, 3 Nov 2026.</p>
     <div class="dispatch-stage">
-      <figure class="photo"><img src="dispatch/sam-count.jpg" width="800" height="600" alt="A photo of three kraft notebooks on a wooden table with three numbered boxes drawn around the notebooks, scores 0.62, 0.59 and 0.70"><figcaption>SAM 3 found 3. Prompt "book"; 16 s to load, 56 s to count. A CC0 test photo by Jeff Sheldon, not a real parcel.</figcaption></figure>
       <div class="proof" id="proof">
         <dl>
           <div><dt>Order</dt><dd class="mono">7RV99265V1496281G</dd></div>
@@ -353,7 +384,7 @@
   <section class="band wrap cable" id="cable" aria-labelledby="cable-h">
     <p class="eyebrow">One proof case: the network cut</p>
     <h2 id="cable-h">Drag the plug out. Money waits.</h2>
-    <p class="lede">Case m, network isolated containers, 31 Oct 2026. Drag the plug left, or focus it and press the left arrow. Press the right arrow to plug it back in.</p>
+    <p class="lede">Real run in network isolated containers, 31 Oct 2026. Drag the plug left, or focus it and press the left arrow. Press the right arrow to plug it back in.</p>
     <svg id="cable-svg" class="cable-svg" viewBox="0 0 640 130" role="group" aria-label="Cable between the agents and the egress gateway">
       <text class="c-t" x="10" y="22">Agents</text>
       <text class="c-t right" x="630" y="22">Egress gateway</text>
@@ -471,12 +502,11 @@
       <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
 cd clearwake
 python -m clearwake --port 8810</pre>
-      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. Speak to it from a phone with <span class="mono">python -m clearwake --phone</span>. The network isolated run (case m) needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
+      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. Speak to it from a phone with <span class="mono">python -m clearwake --phone</span>. The network isolated run needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
     </div>
   </section>
 
   <section class="closing" aria-labelledby="close-h">
-    <img class="wave" src="img/hokusai-great-wave.jpg" width="600" height="403" alt="" loading="lazy">
     <div class="wrap closing-in">
       <h2 id="close-h">Disputes that end in a conversation do not end in a fee.</h2>
       <div class="cta">
@@ -491,7 +521,6 @@ python -m clearwake --port 8810</pre>
   <div class="wrap">
     <p>Clearwake. When an agent's order goes missing, agents fix it.</p>
     <p><a href="https://github.com/Sriharsan/clearwake">Repository</a> &nbsp; <a href="receipts/manifest.json">Receipts</a> &nbsp; <a href="https://github.com/Sriharsan/clearwake/blob/main/LICENSE">Licences</a></p>
-    <p class="credit">Art: Hokusai, The Great Wave, Met Museum, public domain. Type: Figtree.</p>
   </div>
 </footer>
 </body>

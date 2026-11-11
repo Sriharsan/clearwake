@@ -28,4 +28,3 @@ No private Verdock source, history, credentials or records are included in this 
 
 ## Artwork
 
-* Katsushika Hokusai, Under the Wave off Kanagawa (The Great Wave), ca. 1830 to 1832. The Metropolitan Museum of Art, H. O. Havemeyer Collection, Bequest of Mrs. H. O. Havemeyer, 1929. Public domain, Open Access (CC0), https://www.metmuseum.org/art/collection/search/45434. Used in `site/img/hokusai-great-wave.jpg`, resized to 2000 px wide.
