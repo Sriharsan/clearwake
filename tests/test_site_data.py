@@ -34,7 +34,7 @@ class SiteDataTests(unittest.TestCase):
     @needs_runs
     def test_totals_come_from_the_run_files_and_a_rehearsal_batch_stays_out_of_the_public_set(self):
         t = json.loads((SITE / "data" / "totals.json").read_text(encoding="utf-8"))
-        self.assertTrue(t["public"]); self.assertLessEqual(len(t["public"]), 3)
+        self.assertTrue(t["public"]); self.assertLessEqual(len(t["public"]), 6)
         for n in t["public"] + t["local"]:
             self.assertTrue(n["value"] and n["label"] and n["source"])
         self.assertFalse([n for n in t["public"] if "batch-rehearsal" in n["source"]])

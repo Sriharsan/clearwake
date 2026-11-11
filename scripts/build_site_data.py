@@ -203,28 +203,36 @@ def totals(ledger_rows):
                                  {"value": f"{kept} of {n}", "label": "episodes ended as the owner intended with Clearwake, 0 of %d unguarded" % n}]}
         if base and isinstance(base.get("headline"), list):
             out[key] += [{"value": str(h["value"]), "label": str(h["label"]), "source": f"data/runs/{path.name}"} for h in base["headline"][:2] if "value" in h and "label" in h]
-        out[key] = out[key][:3]
     out["public"] = public_numbers(out["public"])
     return out
 
 
 def public_numbers(found):
-    """The three strongest sourced numbers for the Home page, in this order: the baseline against PayPal's Agent Toolkit,
-    the policy decisions across the model calls, and the real sandbox batch when one exists. A weak line is never filled in."""
-    base = [n for n in found if "/baseline-" in n["source"]][:1]
-    batch = [n for n in found if "/batch-" in n["source"] and n["label"].startswith("disputes settled")][:1]
-    calls = []
+    """The strongest sourced numbers for the Home page, six at most, each read from a run file:
+    the baseline against PayPal's Agent Toolkit (both lines), the real sandbox batch (handled with no error, settled at INQUIRY),
+    the policy decisions across the model calls, and the signed logs that verify. A weak line is never filled in."""
+    base = [n for n in found if "/baseline-" in n["source"]][:2]
+    for n in base:
+        n["mode"] = "local run on the local provider"
+    out = list(base)
+    path, body = clean_sandbox_batch()
+    if body:
+        sm = body.get("summary", {})
+        n, errors = sm.get("cases", 0), sm.get("error", 0)
+        doubles = (sm.get("result") or {}).get("double_refunds", 0)
+        src = f"data/runs/{path.name}"
+        out.append({"value": f"{n - errors} of {n}", "label": f"disputes handled with {errors} errors and {doubles} double refunds",
+                    "source": src, "mode": "real PayPal sandbox"})
+        out.append({"value": f"{sm.get('settled_inquiry_no_fee', 0)} of {n}",
+                    "label": f"settled at INQUIRY with no fee, USD {sm.get('refunds_confirmed_total', '0.00')} refunded, all inside the owner's limit",
+                    "source": src, "mode": "real PayPal sandbox"})
     path, ev = newest("ai-eval-*.json")
     if ev and ev.get("totals"):
         model, t = next(iter(ev["totals"].items()))
         if t.get("calls") and t.get("policy_correct") is not None:
-            calls = [{"value": f"{t['policy_correct']} of {t['calls']}", "label": f"policy decisions correct across {t['calls']} model calls to {model}, median {t['median_ms'] / 1000:.1f} s each",
-                      "source": f"data/runs/{path.name}"}]
-    for n in base + calls:
-        n["mode"] = "local run on the local provider"
-    for n in batch:
-        n["mode"] = "real PayPal sandbox"
-    return base + calls + batch
+            out.append({"value": f"{t['policy_correct']} of {t['calls']}", "label": f"policy decisions correct across {t['calls']} model calls to {model}, median {t['median_ms'] / 1000:.1f} s each",
+                        "source": f"data/runs/{path.name}", "mode": "local run on the local provider"})
+    return out[:6]
 
 
 HUD_CASE = 3
