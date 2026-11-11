@@ -245,8 +245,6 @@
   }
 
   function start() {
-    var theme = document.querySelector('.theme');
-    if (theme && !theme.textContent) theme.textContent = 'Light';
     fetch('data/break.json').then(function (r) { if (!r.ok) throw new Error('data'); return r.json(); }).then(function (data) {
       DATA = data; LIMIT = data.owner_limit_minor;
       $('label').textContent = 'Replay of a recorded run: ' + data.episodes + ' episodes, seed ' + data.seed + ', on the ' + data.layer + '. No PayPal call is made and no money moves.';

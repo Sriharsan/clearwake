@@ -232,6 +232,36 @@
   });
   if (window.speechSynthesis && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", function () {});
 
+
+  // ---- browser speech: used when the server has no speech model (the hosted console) ---------------------------
+  // The browser reads the speech. Chrome does this with its own speech service. Typing stays available.
+  function browserSpeech() {
+    var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) return false;
+    var rec = null, heard = "", live = false;
+    var label = $("label");
+    if (label) label.textContent = "Voice rules. Your browser reads the speech and the console reads it back before anything is signed. No PayPal call is made on this page.";
+    notice("This server has no speech model, so your browser reads the speech. Hold the button and speak. Chrome sends the audio to its own speech service for this step.");
+    function stop() { if (rec && live) { try { rec.stop(); } catch (e) {} } }
+    el.mic.addEventListener("pointerdown", function (ev) {
+      ev.stopImmediatePropagation(); ev.preventDefault();
+      if (state !== "idle") return;
+      heard = ""; live = true; state = "recording"; paint(); say("Listening. Speak your rule.");
+      rec = new Rec(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false;
+      rec.onresult = function (e) { var t = ""; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; heard = t; el.transcript.textContent = t; };
+      rec.onerror = function () { live = false; state = "idle"; paint(); say("I heard nothing. Say it again, or use Type instead below."); };
+      rec.onend = function () {
+        live = false;
+        if (!heard.trim()) { if (state === "recording") { state = "idle"; paint(); say("I heard nothing. Say it again, closer to the microphone."); } return; }
+        el.chip.textContent = "Heard"; turn({ text: heard.trim() });
+      };
+      try { rec.start(); } catch (e) { live = false; state = "idle"; paint(); }
+    }, true);
+    el.mic.addEventListener("pointerup", function (ev) { ev.stopImmediatePropagation(); stop(); }, true);
+    el.mic.addEventListener("pointercancel", function (ev) { ev.stopImmediatePropagation(); stop(); }, true);
+    return true;
+  }
+
   // ---- start ---------------------------------------------------------------------------------------------------
   paint();
   if (!secure()) {
@@ -242,6 +272,6 @@
     say("Typing is ready.");
   }
   session().then(function () { return fetch("/console/api/voice/status", { credentials: "same-origin" }).then(function (r) { return r.json(); }); })
-    .then(function (s) { if (s && s.stt === false) { notice("Speech to text is not installed on this server, so use Type instead below. Everything else works the same."); el.typed.open = true; } })
+    .then(function (s) { if (s && s.stt === false) { if (!browserSpeech()) { notice("This server has no speech model and this browser has none either, so use Type instead below. Everything else works the same."); el.typed.open = true; } } })
     .catch(function () { notice("This page could not reach the console server."); });
 })();
