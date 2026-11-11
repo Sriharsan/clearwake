@@ -23,8 +23,13 @@ code,pre,.mono{font-family:var(--font-code);font-size:.92em}
 .bar nav{display:flex;align-items:center;gap:.25rem}
 .bar nav a{white-space:nowrap;color:var(--mist);text-decoration:none;padding:.5rem .75rem;border-radius:var(--radius);font-size:.95rem}
 .bar nav a:hover,.bar nav a[aria-current="page"]{color:var(--foreground)}
-.theme{display:grid;place-items:center;width:2.5rem;height:2.5rem;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--foreground);cursor:pointer;font:inherit}
-.theme:hover{background:var(--surface)}
+.theme{display:grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;border:1px solid var(--border);border-radius:50%;background:transparent;color:var(--foreground);cursor:pointer;font:inherit;transition:background .25s,border-color .25s}
+.theme:hover{background:var(--surface);border-color:var(--teal)}
+.theme .ico{grid-area:1/1;width:1.3rem;height:1.3rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:opacity .35s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+.theme .moon{opacity:0;transform:rotate(-70deg) scale(.5)}
+:root[data-theme="light"] .theme .sun{opacity:0;transform:rotate(70deg) scale(.5)}
+:root[data-theme="light"] .theme .moon{opacity:1;transform:none}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .theme .sun{opacity:0;transform:rotate(70deg) scale(.5)}:root:not([data-theme="dark"]) .theme .moon{opacity:1;transform:none}}
 /* buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:2.75rem;padding:.6rem 1.25rem;border-radius:var(--radius);border:1px solid var(--border);color:var(--foreground);background:transparent;text-decoration:none;font:500 1rem/1 var(--font-sans);cursor:pointer}
 .btn:hover{background:var(--surface)}
@@ -45,4 +50,4 @@ th{font:500 .75rem/1.2 var(--font-mono);letter-spacing:.08em;text-transform:uppe
 .foot .wrap{display:flex;flex-wrap:wrap;gap:1rem 2rem;justify-content:space-between}
 .foot a{color:var(--mist)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media (max-width:480px){.bar .wrap{gap:.5rem}.brand{font-size:1.35rem}.bar nav{gap:0}.bar nav a{padding:.5rem .45rem;font-size:.88rem}}
+@media (max-width:480px){.bar .wrap{gap:.25rem}.brand{font-size:1.15rem}.bar nav{gap:0}.bar .wrap nav a{padding:.5rem .3rem;font-size:.8rem}.bar .wrap .brand{font-size:1.15rem}.bar .wrap .theme{margin-left:.15rem;min-width:2.75rem;padding:0}}

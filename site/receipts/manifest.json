@@ -31,6 +31,22 @@
    "lines": 5,
    "ok_in_python": true,
    "recorded": "2026-11-03"
+  },
+  {
+   "file": "receipts/batch-merchant.ndjson",
+   "title": "Ten case batch, merchant agent: real sandbox, case 3 settled at INQUIRY",
+   "public_key": "6d732eb0d8d570e71f72d845270093ad1c66af02feae35baf39bfd2654fe78c9",
+   "lines": 107,
+   "ok_in_python": true,
+   "recorded": "2026-11-11"
+  },
+  {
+   "file": "receipts/batch-buyer.ndjson",
+   "title": "Ten case batch, buyer agent: real sandbox, case 3 settled at INQUIRY",
+   "public_key": "9d2acf5d4ede083ebcf6d34d9a4e92dd98957ed8b59b68fc080b5af45a7cf9b1",
+   "lines": 277,
+   "ok_in_python": true,
+   "recorded": "2026-11-11"
   }
  ]
 }

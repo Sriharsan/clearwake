@@ -126,3 +126,12 @@ Each cell: an agent using PayPal's Agent Toolkit directly / Clearwake.
 With the page's second variant (a 422 on an accept of an already resolved dispute) the toolkit agent totals USD 2423.75 overpaid, 0 double refunds, 120 wrongly accepted claims, and 80 of 200 final records matching the owner's intent. Clearwake needed the owner's approval on 88 of 200 episodes. No claim was escalated on either side, so fees are USD 0.00 in both columns.
 
 Limits: the toolkit side is its recorded behaviour driven by fixed rules, with no language model choosing calls; the layer is a local PayPal layer, not PayPal; and the page records only `accept_dispute_claim` as the toolkit's money returning dispute action. See `docs/BASELINE.md`.
+
+## Note 2026-11-11: the TypeScript toolkit and MCP server
+
+Read from the published npm package source (`@paypal/agent-toolkit` 1.11.0, `@paypal/mcp` 1.8.1; see `docs/PAYPAL_MCP_TOOLS.md`). Nothing above is withdrawn; this is what differs from the Python toolkit that the cases ran.
+
+- Same version number, different code. The npm toolkit sends requests with axios, not `requests`. It adds `PayPal-Request-Id` only when its context carries a `request_id`, and `@paypal/mcp` passes none, so the MCP server sends no request id either. No retry and no amount or count limit were found there either.
+- `accept_dispute_claim` there posts `{note}` and also passes its arguments as query parameters. Its `note` must match `^[A-Za-z0-9_-]{1,255}$`, so a note with spaces such as the one in case g is rejected by the tool's schema before any PayPal call. The amount and limit in case g would be rejected too (the schema allows only `dispute_id` and `note`).
+- The npm toolkit does have a money returning refund tool, `create_refund` (capture id, optional amount; no amount refunds the full capture). The line "Capture refund tool: None" in the table above describes the Python toolkit only.
+- The toolkit defines 47 tools and the MCP server offers 28 with `--tools=all`. Dispute tools: `list_disputes`, `get_dispute`, `accept_dispute_claim` only.

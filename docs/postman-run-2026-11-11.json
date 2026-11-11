@@ -1,0 +1,177 @@
+{
+  "collection": "Clearwake PayPal sandbox read only calls",
+  "environment": "local sandbox environment (values not recorded)",
+  "date": "2026-11-11",
+  "runner": "newman (cli, json reporters)",
+  "base_url": "https://api-m.sandbox.paypal.com",
+  "stats": {
+    "iterations": {
+      "total": 1,
+      "pending": 0,
+      "failed": 0
+    },
+    "items": {
+      "total": 3,
+      "pending": 0,
+      "failed": 0
+    },
+    "scripts": {
+      "total": 6,
+      "pending": 0,
+      "failed": 0
+    },
+    "prerequests": {
+      "total": 3,
+      "pending": 0,
+      "failed": 0
+    },
+    "requests": {
+      "total": 3,
+      "pending": 0,
+      "failed": 0
+    },
+    "tests": {
+      "total": 3,
+      "pending": 0,
+      "failed": 0
+    },
+    "assertions": {
+      "total": 20,
+      "pending": 0,
+      "failed": 0
+    },
+    "testScripts": {
+      "total": 3,
+      "pending": 0,
+      "failed": 0
+    },
+    "prerequestScripts": {
+      "total": 3,
+      "pending": 0,
+      "failed": 0
+    }
+  },
+  "timings": {
+    "started": 1794373952762,
+    "completed": 1794373956670,
+    "responseAverage": 1147.6666666666667,
+    "responseMin": 447,
+    "responseMax": 1735,
+    "responseSd": 531.8955620127779
+  },
+  "executions": [
+    {
+      "folder_request": "Get access token (OAuth client credentials)",
+      "method": "POST",
+      "path": "/v1/oauth2/token",
+      "status": "OK",
+      "code": 200,
+      "response_time_ms": 1261,
+      "response_size_bytes": 1806,
+      "assertions": [
+        {
+          "name": "response time under 15 s (Clearwake timeout)",
+          "passed": true
+        },
+        {
+          "name": "no PayPal debug id leaks a secret: body has no client secret",
+          "passed": true
+        },
+        {
+          "name": "status is 200",
+          "passed": true
+        },
+        {
+          "name": "token_type is Bearer",
+          "passed": true
+        },
+        {
+          "name": "access_token is a non-empty string without line breaks",
+          "passed": true
+        },
+        {
+          "name": "expires_in is an integer of at least 60",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "folder_request": "List disputes",
+      "method": "GET",
+      "path": "/v1/customer/disputes",
+      "status": "OK",
+      "code": 200,
+      "response_time_ms": 447,
+      "response_size_bytes": 3538,
+      "assertions": [
+        {
+          "name": "response time under 15 s (Clearwake timeout)",
+          "passed": true
+        },
+        {
+          "name": "no PayPal debug id leaks a secret: body has no client secret",
+          "passed": true
+        },
+        {
+          "name": "status is 200",
+          "passed": true
+        },
+        {
+          "name": "items is an array (empty when no dispute is open)",
+          "passed": true
+        },
+        {
+          "name": "each item has a dispute id, a status and a life cycle stage",
+          "passed": true
+        }
+      ]
+    },
+    {
+      "folder_request": "Get dispute",
+      "method": "GET",
+      "path": "/v1/customer/disputes/PP-R-QQO-10198756",
+      "status": "OK",
+      "code": 200,
+      "response_time_ms": 1735,
+      "response_size_bytes": 2059,
+      "assertions": [
+        {
+          "name": "response time under 15 s (Clearwake timeout)",
+          "passed": true
+        },
+        {
+          "name": "no PayPal debug id leaks a secret: body has no client secret",
+          "passed": true
+        },
+        {
+          "name": "status is 200",
+          "passed": true
+        },
+        {
+          "name": "dispute_id equals the request",
+          "passed": true
+        },
+        {
+          "name": "life cycle stage is INQUIRY, CHARGEBACK or PRE_ARBITRATION",
+          "passed": true
+        },
+        {
+          "name": "status is a known dispute status",
+          "passed": true
+        },
+        {
+          "name": "dispute amount is USD with two decimals",
+          "passed": true
+        },
+        {
+          "name": "a disputed transaction names the seller transaction",
+          "passed": true
+        },
+        {
+          "name": "links list the actions PayPal offers",
+          "passed": true
+        }
+      ]
+    }
+  ]
+}

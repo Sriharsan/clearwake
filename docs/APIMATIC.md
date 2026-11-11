@@ -35,7 +35,7 @@ This table is empty on purpose. It is filled by hand from what the plugin actual
 
 | Date | PayPal call | What the plugin said | What was changed in the code or the collection | Commit |
 | --- | --- | --- | --- | --- |
-|  |  |  |  |  |
+| 11 Nov 2026 | none run | The plugin was not run. https://context.apimatic.io/ is a directory of plugins that a coding agent loads (`npx context-plugins install paypal`); it has no browser form that checks a call. No correction is claimed. | Nothing | none |
 |  |  |  |  |  |
 |  |  |  |  |  |
 
@@ -102,3 +102,81 @@ Start the local console first (`python -m clearwake --port 8810`). The snippet m
 * Links in this order: `OpenAPI spec (YAML)` to `https://github.com/Sriharsan/clearwake/blob/main/openapi/clearwake-console.openapi.yaml`; `API portal` to `[APIMATIC_PORTAL_URL]`; `Postman collection` to `https://github.com/Sriharsan/clearwake/blob/main/postman/clearwake-paypal.postman_collection.json`.
 * Code block: the Python SDK snippet above, once it has run.
 * The spec and Postman links can go in now. Add the portal link and the snippet only after the portal exists and the snippet has run.
+
+## Run of 11 Nov
+
+Done through Sri's signed in Chrome, in a new tab, on 11 November 2026.
+
+* Spec on GitHub: `https://raw.githubusercontent.com/Sriharsan/clearwake/main/openapi/clearwake-console.openapi.yaml` was fetched. It has the three routes `/console/api/negotiation`, `/console/api/totals` and `/console/api/negotiate` (operationId `negotiate`), next to the 8 earlier ones. The pushed file is current.
+* APIMatic: https://app.apimatic.io opened the login page (Email and Password, Continue with Google, Continue with GitHub, Enterprise SSO). The browser had no signed in APIMatic session, so the run stopped there. No password was typed and no sign in button was pressed.
+* Not done because of that: spec import, validation (warnings and errors: none seen, none recorded), Python SDK, API portal. No portal URL and no SDK file name exist yet, and the SDK snippet above stays a placeholder because it has not run. Whether the free trial allows the SDK and the portal is not known, since the dashboard was not reached.
+* Context Plugin: https://context.apimatic.io/ is "API Context Marketplace", a directory of plugins for coding agents (install in a terminal, see Step A). It cannot be used from a browser, so no PayPal call was checked and the correction log above holds no correction.
+* Next step for Sri: sign in at https://app.apimatic.io (Continue with GitHub), then tell the agent to continue with the import and the generation.
+
+### Run of 11 Nov, second part (after Sri signed in with GitHub)
+
+* Import: the file upload tool was refused for the local path (outside the folders the session may read), so the spec was imported from the public raw GitHub URL at https://app.apimatic.io (onboarding page, "Paste API Spec URL"). APIMatic accepted `clearwake-console.openapi.yaml`.
+* What APIMatic reported (API score screen, nothing else was changed): API Score 74 out of 100, "394 issues found", label "Needs improvement". Surface scores: SDK generation 100/100, Documentation generation 87/100, AI tool generation 88/100. For comparison it showed Adyen 90, Twilio 92, JP Morgan 83. The per issue list (the 394 issues) was not opened, so no individual warning or correction text is recorded, and APIMatic did not report that it corrected anything. The options offered were "Proceed As Is", "Audit / Fix Your Spec" and "Upload a Different Spec". "Proceed As Is" was chosen, so the spec was not altered.
+* Project: APIMatic then showed "Your project is ready" at https://onboarding.apimatic.io/setup. Portal, SDK and AI tooling generation there is a local CLI flow: install `@apimatic/cli@2` (needs Node.js 24 or later; this machine has Node 22.15.0), download the project files, unzip, run `apimatic quickstart`. The "Download Files" step and the CLI sign in were not done by the agent (a download and a global install were outside what the agent may do without Sri's go ahead). The dash.apimatic.io page showed only "Publish SDKs", with no generate button reached.
+* Not done: Python SDK generation, API portal generation. There is no portal URL and no SDK file name. The SDK snippet was not run against the local console on port 8845 because no SDK exists; nothing was started on that port. Whether the free trial allows generation is not known, since the block was the local CLI route, not a plan limit.
+* Next step for Sri: upgrade Node to 24 or later, run `npm install -g @apimatic/cli@2`, `apimatic auth login`, press Download Files on https://onboarding.apimatic.io/setup, unzip, run `apimatic quickstart`.
+
+### Run of 11 Nov, third part: per issue list not reachable
+
+The 394 issue list could not be opened. After "Proceed As Is" the web app goes to https://onboarding.apimatic.io/setup (CLI steps only); opening /onboarding again redirects there, and Publishing Center and Settings did not lead to an issue list or a new import form. The score screen with "Audit / Fix Your Spec" appeared only once, right after the import. So no category breakdown exists, the spec was not edited for APIMatic, and no new score was recorded. Score stays 74 out of 100 with 394 issues (SDK 100, documentation 87, AI tool 88). The CLI (`apimatic api validate`) would list the issues; that is the "needs Sri" step.
+
+### Run of 11 Nov, fourth part: spec examples added, score not re-measured
+
+APIMatic's own issue list could not be opened (third part), so the file was improved on our own judgment, with true additions only. The spec already had a summary, description, camelCase operationId and tag on every operation, the cookie plus `X-Clearwake-CSRF` security schemes, enums and patterns, and the 400, 403, 404, 409 and 429 responses with `Retry-After`. Added, all copied from real responses of a local console on port 8845 (killed afterwards): response examples for `buy`, `getNegotiation`, `negotiate`, `getTotals` and `reset`; request examples for `approve` and `reconcile`; error body examples for 400, 403 and 404 (the real messages the server returned). The 409 and 429 bodies were not provoked, so they carry no example.
+
+Checks after the edit: `python openapi/check_openapi.py` and `python openapi/check_openapi.py --live` both pass (11 operations, 22 schemas, routes match `clearwake/server.py`).
+
+The APIMatic score of the improved file was not re-measured. It is still 74 out of 100 with 394 issues for the earlier file. Re-measuring needs a new import (after the lead pushes) or the CLI step that needs Sri.
+
+### Run of 11 Nov, fifth part: CLI route (approved by Sri), spec improved, SDK and portal generated
+
+How it ran: a temporary Node 24 and the APIMatic CLI through `npx -y -p node@24 -p @apimatic/cli@2 apimatic ...` (CLI 2.2.0, node v24.22.2), from `build/apimatic/`. Nothing was installed globally and no PATH or registry setting changed. `apimatic auth login` opened the browser; Sri's signed in browser session completed it. No password or key was typed or stored by the agent. `build/` is not in `.gitignore`: do not commit it (it holds the generated SDK, portal and a Python virtual environment) or add it to `.gitignore` first.
+
+Validation with `apimatic api validate --file=openapi/clearwake-console.openapi.yaml` (no errors in any run; every finding is a warning or information):
+
+| Run | Findings | What they were |
+| --- | --- | --- |
+| Before | 382 | 189 "example or default value is missing", 160 "schema should include a non-empty description", 10 inline complex schema, 7 media type example missing, 6 request body description missing, 5 inline enum, 2 header example missing, 1 file name convention, 1 schema key and property name conflict, 1 server environment information |
+| After | 104 | 80 "example or default value is missing", 10 inline complex schema, 5 inline enum, 4 "example does not conform" on the large real response examples (state, case, approve, reconcile), 2 media type example missing, 1 file name convention, 1 schema key and property name conflict (the `Error` schema has a property named `error`; renaming the schema breaks `openapi/check_openapi.py`, so it stays), 1 server environment information |
+
+The web import score screen had said 74 out of 100 with 394 issues (SDK 100, documentation 87, AI tool 88). The CLI count is 382 for the same file. The score of the improved file was not re-shown, because the web import form is gone; only the CLI counts above are measured.
+
+Spec edits (true additions only; no route or field added): descriptions on every schema and property that lacked one, request body descriptions, and examples taken from real responses of a local console on port 8845. `python openapi/check_openapi.py` and `--live` pass after the edit (11 operations, 22 schemas). The YAML was rewritten by a script, so its layout changed (same content). Copies: `build/apimatic/spec-before-enrich.yaml` (before) and the scripts `enrich_spec.py`, `enrich2.py`, `enrich3.py` in the same folder.
+
+SDK: `apimatic sdk generate -l python -i ./project -d ./sdk` produced `build/apimatic/sdk` (package `clearwake-console-api` 0.6.1, module `clearwake_console_api`, MIT, Python 3.10 or later). Installed into `build/apimatic/venv` with `pip install ./sdk`.
+
+Portal: `apimatic portal generate -i ./project -d ./portal` needs `src/apimatic.json`; the file used is `{"version":"1.0","languages":{"python":{}},"portal":{}}` in `build/apimatic/project/src`. The first run failed with a connection reset in the prerender step; the second run succeeded. Result: a static site of 6.3 MB in `build/apimatic/portal` (open `index.html`; set `404.html` as the error document on a static host). The CLI offers no publish command for the portal, so there is no APIMatic hosted URL. The portal is a static folder; hosting it is a step for Sri.
+
+SDK snippet, run on 11 Nov 2026 against `python -m clearwake --port 8845` (the process was stopped by PID afterwards); the file is `build/apimatic/sdk_call.py`:
+
+```python
+from clearwake_console_api import ClearwakeConsoleApiClient
+
+BASE = "http://127.0.0.1:8845"
+anon = ClearwakeConsoleApiClient(base_url=BASE)
+raw = anon.session_api.with_raw_response.get_session()
+session = raw.payload
+cookie = raw.headers["set-cookie"].split(";")[0].split("=", 1)[1]
+print("label:", session.label)
+
+client = ClearwakeConsoleApiClient(base_url=BASE, console_session=cookie, csrf_token=session.csrf)
+purchase = client.buyer_agent.buy(body={"request": "a pack of three A5 notebooks"})
+print("buy allowed:", purchase.allowed, "-", purchase.reason)
+run = client.merchant_agent.run_case(body={"case": "n"})
+print("case n:", run.entries[0].state, "-", run.entries[0].detail)
+```
+
+Output seen:
+
+```
+label: local run data
+buy allowed: True - Inside the mandate.
+case n: VERIFIED - Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.
+```
+
+The Context Plugin for PayPal (Step A) was still not run: `apimatic plugin` generates context plugins for our own SDK, which is a different thing and was not run either.

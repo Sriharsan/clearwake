@@ -75,8 +75,17 @@ class ManualBuyer:
         return self.wait(order_id, "approve_order", lambda: status() in ("APPROVED", "COMPLETED"), {"order_id": order_id})
 
     def _find(self, capture_id):
-        for item in self.gateway.disputes():
-            if capture_id in [t.get("seller_transaction_id") for t in item.get("disputed_transactions", [])]:
+        """The dispute whose disputed transaction is this capture. PayPal's list leaves the transaction out and the dispute record carries it,
+        so an item without it is read once by id (newest first, at most 25)."""
+        items = sorted(self.gateway.disputes(), key=lambda i: i.get("create_time") or "", reverse=True)
+        for item in items[:25]:
+            transactions = item.get("disputed_transactions")
+            if not transactions or not any(t.get("seller_transaction_id") for t in transactions):
+                try:
+                    transactions = self.gateway.dispute(item["dispute_id"]).get("disputed_transactions", [])
+                except Exception:   # a record that cannot be read now is tried again on the next poll
+                    continue
+            if capture_id in [t.get("seller_transaction_id") for t in transactions]:
                 return item["dispute_id"]
         return None
 

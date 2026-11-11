@@ -156,13 +156,20 @@ class SandboxGateway:
         headers = {"Authorization": "Bearer " + token, "Accept": "application/json"}
         if payload is not None:
             headers.update({"Content-Type": "application/json", "PayPal-Request-Id": request_id, "Prefer": "return=representation"})
-        try:
-            return self.send(Request(BASE + path, data=json.dumps(payload).encode() if payload is not None else None,
-                headers=headers, method="POST" if payload is not None else "GET"), 15)
-        except (ProviderRefused, Offline):
-            raise
-        except Exception:
-            raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
+        # A read (GET) changes nothing, so a slow answer is read again, up to three times. A write is sent once and never repeated here:
+        # its uncertain answer is held and reconciled from PayPal's record.
+        attempts = 3 if payload is None else 1
+        for attempt in range(attempts):
+            try:
+                return self.send(Request(BASE + path, data=json.dumps(payload).encode() if payload is not None else None,
+                    headers=headers, method="POST" if payload is not None else "GET"), 30 if payload is None else 45)
+            except (ProviderRefused, Offline):
+                raise
+            except Exception:
+                if attempt + 1 < attempts:
+                    time.sleep(1 + attempt)
+                    continue
+                raise GatewayError("The sandbox response is uncertain. No automatic retry was sent.") from None
 
     def capture(self, capture_id):
         return self._request(f"/v2/payments/captures/{identifier(capture_id)}")
@@ -219,7 +226,7 @@ class SandboxGateway:
         body = payload if isinstance(payload, bytes) else json.dumps(payload).encode()
         try:
             return self.send(Request(BASE + path, data=body, method="POST", headers={"Authorization": "Bearer " + token,
-                "Accept": "application/json", "Content-Type": content_type, "PayPal-Request-Id": request_id}), 15)
+                "Accept": "application/json", "Content-Type": content_type, "PayPal-Request-Id": request_id}), 45)
         except (ProviderRefused, Offline):
             raise
         except Exception:

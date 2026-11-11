@@ -8,26 +8,31 @@ Note on the field list: the Devpost page (https://paypalaihackathon.devpost.com/
 
 ## Placeholders to fill before pasting
 
-The real ten case batch is running on the PayPal sandbox. Its numbers come only from `data/runs/batch-sandbox-*.json`; the lead fills these when the file lands. Do not say a number that is still in brackets.
+The real ten case batch is running on the PayPal sandbox. Its numbers come only from `data/runs/batch-sandbox-*.json`. Do not say a number that is still in brackets.
+
+Close the brackets with one command: `python scripts/fill_placeholders.py` lists every placeholder with its source and its value, `--apply` writes the values that come from a run file, and `--check` fails while a bracket is open (Sri's own are listed as needs Sri). A value that has no run file yet stays in brackets. A person's value goes in with `--apply --set NAME=VALUE`.
 
 | Placeholder | Where it comes from |
 | --- | --- |
-| `[BATCH_TOTAL]` | Item not received cases bought and opened by the buyer agent in `data/runs/batch-sandbox-*.json` (target 10) |
-| `[BATCH_SETTLED]` | Cases PayPal's record shows RESOLVED at INQUIRY with no fee |
-| `[BATCH_EVIDENCE]` | Cases answered with evidence |
-| `[BATCH_ESCALATED]` | Cases correctly handed to a person |
-| `[BATCH_REFUNDS]` | Refunds confirmed by PayPal's refund record |
-| `[BATCH_FEES]` | Dispute fees charged, read from the batch file |
-| `[BATCH_DOUBLE_REFUNDS]` | Double refunds, read from the batch file |
-| `[BATCH_SECONDS_PER_CASE]` | Seconds per negotiated case, or the median in minutes if the file reports that |
-| `[HERO_DISPUTE_ID]` | The dispute id of the single buyer agent to merchant agent case in the video |
-| `[OVERRULED_EXAMPLE]`, `[OVERRULED_CAPTION]` | The ledger row where the model proposed something wrong and the policy stopped it (from the model call receipts in the batch file) |
-| `[MODEL_NAME]`, `[MODEL_TAG]`, `[MODEL_CALLS]`, `[MODEL_MS_PER_CALL]` | docs/RESULTS.md "Model calls" (the final model and counts after the batch) |
-| `[TESTS_PY]`, `[TESTS_UI]` | The final `python -m unittest discover -s tests` and `node --test` counts |
-| `[RENDER_URL]` | The Render service URL after the deploy (docs/RENDER.md) |
-| `[VIDEO_URL]` | The public YouTube link |
-| `[APIMATIC_PORTAL_URL]`, `[APIMATIC_RESULT]`, `[APIMATIC_EXPERIENCE]` | Sri's own words, after using APIMatic (below) |
-| `[POSTMAN_RUN]` | The result of Sri's Newman or Postman CLI run (docs/POSTMAN.md) |
+| `BATCH_TOTAL` | Item not received cases bought and opened by the buyer agent in `data/runs/batch-sandbox-*.json` (target 10) |
+| `BATCH_SETTLED` | Cases PayPal's record shows RESOLVED at INQUIRY with no fee |
+| `BATCH_EVIDENCE` | Cases answered with evidence |
+| `BATCH_ESCALATED` | Cases correctly handed to a person |
+| `BATCH_REFUNDS` | Refunds confirmed by PayPal's refund record |
+| `BATCH_FEES` | Dispute fees charged, read from the batch file |
+| `BATCH_DOUBLE_REFUNDS` | Double refunds, read from the batch file |
+| `BATCH_SECONDS_PER_CASE` | Seconds per negotiated case, or the median in minutes if the file reports that |
+| `HERO_DISPUTE_ID` | The dispute id of the single buyer agent to merchant agent case in the video |
+| `OVERRULED_EXAMPLE`, `OVERRULED_CAPTION` | The ledger row where the model proposed something wrong and the policy stopped it (from the model call receipts in the batch file) |
+| `MODEL_NAME`, `MODEL_TAG`, `MODEL_CALLS`, `MODEL_MS_PER_CALL` | docs/RESULTS.md "Model calls" (the final model and counts after the batch) |
+| `TESTS_PY`, `TESTS_UI` | The final `python -m unittest discover -s tests` and `node --test` counts |
+| `RENDER_URL` | The Render service URL after the deploy (docs/RENDER.md) |
+| `VIDEO_URL` | The public YouTube link |
+| `APIMATIC_PORTAL_URL`, `APIMATIC_RESULT`, `APIMATIC_EXPERIENCE` | Sri's own words, after using APIMatic (below) |
+| `POSTMAN_RUN` | The result of Sri's Newman or Postman CLI run (docs/POSTMAN.md) |
+| `BATCH_RESULT_LINE` | The result line of the batch file, for the first screen of the README and the About text |
+| `BATCH_RUN_FILE` | The batch run file under `data/runs/` that `scripts/verify_pair.py` takes |
+| `TOOLKIT_TOOLS_CONFIRMED` | One sentence from the lead, after `tools/list` has been captured from PayPal's toolkit server (README, section What we use and what we add) |
 
 Already measured and written in the text (do not change them by hand): the baseline of 200 episodes in `data/runs/baseline-20261110-172506.json` (an agent using PayPal's Agent Toolkit directly overpaid USD 2,633.25 with 61 double refunds and 160 wrongly accepted claims; Clearwake USD 0.00, 0 and 0; 200 of 200 episodes ended as the owner intended against 40 of 200), the 85 recorded model calls in docs/RESULTS.md, and the voice run `data/runs/voice-20261110-223540.json` (11 of 11 clips understood, mean word error 0.036).
 
@@ -49,6 +54,14 @@ Tagline: When an agent's order goes missing, agents fix it.
 When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.
 
 It is for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.
+
+## Judge in 60 seconds
+
+1. **What it is.** When an agent's order goes missing, agents fix it: the buyer's agent and the seller's agent settle item not received inside PayPal's dispute conversation, with signed proof on both sides.
+2. **Proof.** 4 of 10 settled by agents inside the limits, 3 correctly handed to a person, 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order, 0 double refunds on the PayPal sandbox. Against an agent using PayPal's Agent Toolkit directly, 200 episodes: USD 0.00 overpaid for Clearwake versus USD 2,633.25. 85 recorded model calls on local models, and the policy decided correctly on all 84 scored prompts (42 of 42 on each model). Voice rules: Whisper small.en heard 11 of 11 spoken clips as the right intent, mean word error 0.036.
+3. **Live.** Site https://clearwake-mu.vercel.app, Break it page https://clearwake-mu.vercel.app/break, Render console https://clearwake-console.onrender.com/console, repo https://github.com/Sriharsan/clearwake, video [VIDEO_URL].
+4. **Run and verify.** Run: `python -m clearwake --port 8810`, then open `/console`. Verify: `python scripts/verify_pair.py data/runs/batch-sandbox-20261111-132948.json` (both signed logs, same dispute ids), or use the receipt verifier in the browser (console tab 3, or the Developers page of the site).
+5. **PayPal and sponsor tools.** PayPal Orders v2, Payments v2, Disputes v1 (send message, make offer, provide evidence) and Add Tracking. AG Grid Community draws the ledger; Render hosts the console. APIMatic: [APIMATIC_RESULT]. Postman: [POSTMAN_RUN].
 
 ## Inspiration
 
@@ -72,14 +85,14 @@ The merchant's control room has an AG Grid ledger of every dispute (stage, the m
 
 ## What we measured
 
-* The batch, on the real sandbox: [BATCH_TOTAL] agent bought item not received cases (delivered with proof, in transit, not shipped, lost in transit, 2 of 3 items arrived, an injected instruction in the buyer's message, a buyer agent claiming outside its mandate, a lost PayPal response). Read back from PayPal: [BATCH_SETTLED] settled by the two agents at INQUIRY with no fee, [BATCH_EVIDENCE] answered with evidence, [BATCH_ESCALATED] correctly handed to a person, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_FEES] fees, [BATCH_DOUBLE_REFUNDS] double refunds, [BATCH_SECONDS_PER_CASE] seconds per case.
+* The batch, on the real sandbox: 10 agent bought item not received cases (delivered with proof, in transit, not shipped, lost in transit, 2 of 3 items arrived, an injected instruction in the buyer's message, a buyer agent claiming outside its mandate, a lost PayPal response). Read back from PayPal: 4 settled by the two agents at INQUIRY with no fee, 0 answered with evidence, 3 correctly handed to a person, 4 refunds confirmed by PayPal's record, 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order, 0 double refunds.
 * The baseline: 200 episodes of the same cases under injected faults (lost responses, an injected instruction in a buyer's message, an over limit request), an agent using PayPal's Agent Toolkit directly against Clearwake, on the local PayPal layer. The unguarded agent overpaid USD 2,633.25, made 61 double refunds and accepted 160 claims it should not have. Clearwake overpaid USD 0.00, made 0 double refunds, accepted 0 wrong claims, and ended 200 of 200 episodes as the owner intended, against 40 of 200.
 * The model: 85 recorded calls on local models. The model proposed something wrong 21 times and the policy stopped it every time; the policy decided correctly on all 84 scored prompts.
 
 ## How we built it
 
 * Python standard library only. PayPal Orders v2, Payments v2 and Disputes v1 are called through one adapter that allows only the PayPal sandbox host and a list of reviewed routes.
-* The merchant agent uses a local open weights model, `[MODEL_NAME]`, through Ollama. Rules are turned into code checked fields; Whisper runs locally for speech to text. In the network cut run, one egress gateway is the only way out and signs a receipt for every request.
+* The merchant agent uses a local open weights model, `qwen3.5:4b`, through Ollama. Rules are turned into code checked fields; Whisper runs locally for speech to text. In the network cut run, one egress gateway is the only way out and signs a receipt for every request.
 * The buyer agent drives PayPal's Resolution Center with Playwright on the owner's machine, using a browser profile the owner logs into by hand. No credentials are in code or files. If the sandbox shows a CAPTCHA, the step stops and the owner does it; it is never bypassed.
 * Policy, approvals, per capture and per customer caps, outcome checks, receipts, the gateway and the held queue come from verdock-core, our own MIT library pinned as a submodule. The server and session layer come from Relayloom, also ours and MIT.
 * AG Grid Community 35.3.1 draws the dispute ledger under a strict Content Security Policy. Render hosts the live console. We wrote an OpenAPI 3.1 spec of the console API and a Postman collection of every PayPal call, with tests on PayPal's responses.
@@ -107,13 +120,13 @@ Everything ran in the PayPal sandbox with test money: no live PayPal, no real mo
 
 ## 4. Built with (up to 25 tags; Devpost takes them comma separated)
 
-python, paypal, paypal-orders-api, paypal-payments-api, paypal-disputes-api, paypal-sandbox, ollama, `[MODEL_TAG]`, sam-3, playwright, ag-grid, render, apimatic, openapi, postman, docker, sqlite, ed25519, webcrypto, javascript, vercel
+python, paypal, paypal-orders-api, paypal-payments-api, paypal-disputes-api, paypal-sandbox, ollama, `qwen3.5-4b`, sam-3, playwright, ag-grid, render, apimatic, openapi, postman, docker, sqlite, ed25519, webcrypto, javascript, vercel
 
 That is 21 tags with the model tag filled in. Four spare.
 
 ## 5. Links to open (the Devpost live links field)
 
-* Live console (hosted on Render, not network isolated): `[RENDER_URL]/console`
+* Live console (hosted on Render, not network isolated): `https://clearwake-console.onrender.com/console`
 * Public site, recorded sandbox run and in browser receipt verifier: https://clearwake-mu.vercel.app
 * Code: https://github.com/Sriharsan/clearwake
 * OpenAPI 3.1 spec: https://github.com/Sriharsan/clearwake/blob/main/openapi/clearwake-console.openapi.yaml
@@ -133,7 +146,7 @@ To capture by hand, after the batch (all from the live or local console unless n
 
 3. Buyer agent tab: the mandate and one purchase with its signed receipt.
 4. The ledger with a row opened: the model's proposal next to the policy decision and PayPal's record.
-5. PayPal's sandbox Resolution Center, the dispute `[HERO_DISPUTE_ID]` showing RESOLVED. Crop out the account email and name.
+5. PayPal's sandbox Resolution Center, the dispute `PP-R-ISN-10198775` showing RESOLVED. Crop out the account email and name.
 6. The receipt verifier showing a chain that fails after one edited line.
 7. The terminal after `python scripts/airgap.py`: network cut, held lines, restored, PASS with the refund ids.
 8. The Render URL in the address bar with the console loaded.
@@ -187,8 +200,8 @@ The one requirement is that a project meaningfully uses both PayPal and AI.
 
 | Model | Where it runs | What it does |
 | --- | --- | --- |
-| `[MODEL_NAME]` through Ollama | Locally, in a container on the network isolated Docker network | The merchant agent: reads each dispute and the buyer's message, proposes settle, fight or escalate, writes the reply and the offer note. It can only propose. The policy file decides and code checks every amount and cited id. `[MODEL_CALLS]` recorded calls. |
-| The buyer agent's model (`[MODEL_NAME]` or the one named in docs/RESULTS.md) | Locally | Chooses a product inside the mandate and decides to accept, counter or escalate an offer inside the owner's dispute rule. The mandate check and the rule check are code. |
+| `qwen3.5:4b` through Ollama | Locally, in a container on the network isolated Docker network | The merchant agent: reads each dispute and the buyer's message, proposes settle, fight or escalate, writes the reply and the offer note. It can only propose. The policy file decides and code checks every amount and cited id. `42` recorded calls. |
+| The buyer agent's model (`qwen3.5:4b` or the one named in docs/RESULTS.md) | Locally | Chooses a product inside the mandate and decides to accept, counter or escalate an offer inside the owner's dispute rule. The mandate check and the rule check are code. |
 | SAM 3 (`facebook/sam3`, Meta, open weights) | Locally, on the CPU, offline | Counts the items in the packing photo for the dispatch proof. Counted 3 of 3 notebooks in a CC0 test photo. Not a real parcel. |
 | `qwen2.5-coder:3b` through Ollama | Locally, inside the isolated network | Drafted proposals while the network was cut in case m (6.3 to 13.1 s each). |
 | Scripted fallback | Locally | Fixed rules, labelled "scripted, not AI" in every run file, used when no model is running. |
@@ -199,10 +212,23 @@ AI tools used to write the code: Claude Code helped write code and documents; ev
 
 * **AG Grid** (Community 35.3.1, MIT): the dispute ledger on the local console, on Render and on the public Control Room.
 * **Render**: hosts the live console.
-* **APIMatic**: OpenAPI 3.1 spec of the console API, SDK and portal, Context Plugin review of the PayPal calls.
+* **APIMatic**: OpenAPI 3.1 spec of the console API. Tick it only if Sri has recorded the portal, SDK or Context Plugin result (needs Sri); see 14a.
 * **Postman**: collection of every PayPal call with tests on PayPal's responses, and an environment template with no secrets. (Postman is listed as a partner with no prize; tick it if the form has a box.)
 * **Channel3**: not selected. Its catalog returns real retailers' products, and the buyer agent's order is a PayPal sandbox order at one sandbox merchant, so a Channel3 result could not be bought and would change no outcome (`docs/CHANNEL3.md`).
 * **Bryntum, Elastic, KERNEL, Zapier, Astropods**: not selected, with reasons in `docs/DESIGN_DECISIONS.md`.
+
+## 14a. Which sponsor prize to choose (the lead decides)
+
+Devpost allows one sponsor prize per project, and the sponsor tools a project used must be ticked on the form. Recommendation: choose **AG Grid** as the sponsor prize.
+
+| Sponsor | What is built and verified | Fit |
+| --- | --- | --- |
+| AG Grid | The ledger is the screen the merchant decides from: stage filter, deadline countdown cell, the model's proposal next to the policy's decision, PayPal's raw record in the row detail, CSV export. Community 35.3.1 vendored unchanged, zero CSP violations in Chromium on 31 October, covered by `tests/console.test.cjs` and the site data tests | Best. Built, tested and it changes what a person sees before they approve. Prize: 1st USD 5,000, 2nd USD 2,000, three of USD 1,000 |
+| Render | The console is hosted at https://clearwake-console.onrender.com and its `/healthz` answered on 11 November. It runs on the local provider, calls no PayPal API and holds no key, so it is hosting and not a use of Render's agent features. Prize: credits of USD 1,000, 750 and 500 | Second. Real, but the weakest causal link of the four, and a free instance sleeps unless pinged (docs/RENDER.md) |
+| APIMatic | OpenAPI 3.1 spec checked against the running server. No portal, SDK or Context Plugin result is recorded yet; the log tables in `docs/APIMATIC.md` are empty | Choose it only if Sri records a real before and after catch from the plugin |
+| Postman | Collection of 18 requests checked offline; no sandbox run recorded | Not a choice: the prize table lists no Postman prize |
+
+The weak point to accept with AG Grid: its own announcement calls the prize Best Use of AG Studio and we use Community only. The rules text says "use any AG Grid tools", so we qualify, but a judge reading for Studio will see a thinner fit. If the lead rates that risk above the USD 4,000 difference between the first prizes, choose Render. On the form, tick what was really used: AG Grid and Render. If the form makes one choice, pick AG Grid.
 
 ## 15. Repository URL
 
@@ -210,7 +236,7 @@ https://github.com/Sriharsan/clearwake (public, MIT licence shown in About)
 
 ## 16. Live URLs
 
-* `[RENDER_URL]/console` (hosted on Render, not network isolated)
+* `https://clearwake-console.onrender.com/console` (hosted on Render, not network isolated)
 * https://clearwake-mu.vercel.app (static, recorded sandbox run)
 
 ## 17. Testing instructions for judges (paste as is)
@@ -218,7 +244,7 @@ https://github.com/Sriharsan/clearwake (public, MIT licence shown in About)
 ```text
 Three ways, fastest first. Everything is PayPal sandbox with test money. No account or key is needed for 1 and 2.
 
-1. In a browser, no install: open [RENDER_URL]/console (hosted on Render, not network isolated; the first load can take a moment while the service wakes).
+1. In a browser, no install: open https://clearwake-console.onrender.com/console (hosted on Render, not network isolated; the first load can take a moment while the service wakes).
    a. Press Reset.
    b. Tab "1 Buyer agent": type "a pack of three A5 notebooks" and press Buy. The mandate check and a signed receipt appear.
    c. Tab "2 Merchant control room": run case n (settled in conversation). In the AG Grid dispute ledger the new row shows stage INQUIRY, the model's proposal next to the policy decision, and PayPal's status. Use the stage filter and the CSV export.
@@ -270,7 +296,7 @@ Write only what actually happened, using the two log tables in `docs/APIMATIC.md
 | --- | --- |
 | Team members | Sriharsan B S (sole author) |
 | Repository access / is the repo public | Yes, public, MIT |
-| Which sponsor prizes should this be considered for | AG Grid, Render, APIMatic. Postman if a box exists. Not Channel3, not Bryntum |
+| Which sponsor prizes should this be considered for | AG Grid (one sponsor prize per project, see 14a). Tick Render as a tool used. APIMatic only with Sri's recorded result. Not Channel3, not Bryntum |
 | Which prize categories | Best Use of PayPal + AI, Best Use of Agentic Commerce, Best Demo Delivery, Most Creative, Most Impactful |
 | Did you use AI coding tools | Yes: Claude Code helped write code and documents. Every commit is reviewed and authored by Sri |
 | What was updated during the submission period (for existing projects) | Not applicable, the project is new (see field 12) |

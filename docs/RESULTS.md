@@ -111,6 +111,18 @@ Amounts for c, d and e are the ones set in `scripts/cases.py`. The four case che
 | Batch time, case l | 0.35 s and 0.37 s in total | not measured |
 | Time per dispute, case l | 0.15 s and 0.14 s | not measured |
 
+## Slow and lost answers
+
+Sandbox answers vary in time, and Clearwake is built so that a slow or lost answer never moves money twice. These are the measured facts.
+
+* **Reads retry.** A read waits 30 s and retries up to 3 times.
+* **Writes wait once.** A write waits 45 s and is never repeated.
+* **A lost or slow write answer is recorded as UNKNOWN.** Clearwake then reconciles from PayPal's record, using the stable `PayPal-Request-Id` the action carried, and states the outcome only after that record agrees.
+* **Waits seen in the real sandbox ten case batch, before these timeouts were set:** case 1 waited 672 s and case 4 waited 28 s.
+* **Postman request times** against the sandbox, 447 to 1735 ms, are in [POSTMAN.md](POSTMAN.md).
+
+A lost response never pays twice.
+
 ## Model calls and cost
 
 Model calls in the recorded runs: **85** (42 on qwen2.5-coder:3b and 42 on qwen3.5:4b in local runs on the local provider, plus 1 on PayPal's real sandbox record, read only). Every call was a real call to a model running on this machine through Ollama on loopback (CPU only, 14 cores, `num_thread` 6, reasoning off). Each call is a signed `clearwake.model.call` receipt with the model, the SHA-256 of the prompt, latency in ms, token counts, the model's proposal, what the policy decided and whether it overrode the model. The policy decides; the model only proposes and writes the text.

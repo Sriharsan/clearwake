@@ -4,7 +4,7 @@ Repository: https://github.com/Sriharsan/clearwake (MIT)
 
 Public site: https://clearwake-mu.vercel.app (static, recorded sandbox run, browser receipt verifier; not network isolated, runs no agents)
 
-Live console, hosted on Render, not network isolated: [RENDER_URL]
+Live console, hosted on Render, not network isolated: https://clearwake-console.onrender.com
 
 Video: [VIDEO_URL]
 
@@ -49,7 +49,7 @@ Dispatch proof (case o): at packing, the merchant photographs the open parcel an
 
 On the buyer side, a buyer agent shops inside an owner's mandate (budget, per item cap, allowed merchants and categories; the cap in the recorded run is USD 102) and signs a mandate receipt linked to the PayPal order id, a cart mandate in AP2 terms. When an agent order is disputed as unauthorised, the merchant attaches it as evidence (case j). The same buyer agent then handles what went wrong: it opens the dispute, reads the merchant's message and offer, and accepts, counters or escalates within the dispute rule in its mandate. Every buyer step is receipted.
 
-The batch: [BATCH_TOTAL] agent bought item not received cases on the sandbox, opened by the buyer agent (delivered with proof, in transit, not shipped, lost in transit, 2 of 3 items arrived, an injected instruction in the buyer's message, a buyer agent claiming outside its mandate, a lost PayPal response), negotiated by the two agents and read back from PayPal: [BATCH_SETTLED] settled at INQUIRY with no fee, [BATCH_EVIDENCE] evidence sent, [BATCH_ESCALATED] escalated to an owner, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_SECONDS_PER_CASE] s per case, [MODEL_CALLS] model calls. A bracket means the run is not recorded yet. If the sandbox shows a CAPTCHA or blocks the browser, the buyer step stops and the owner does that step by hand; it is never bypassed.
+The batch: 10 agent bought item not received cases on the sandbox, opened by the buyer agent (delivered with proof, in transit, not shipped, lost in transit, 2 of 3 items arrived, an injected instruction in the buyer's message, a buyer agent claiming outside its mandate, a lost PayPal response), negotiated by the two agents and read back from PayPal: 4 settled at INQUIRY with no fee, 0 evidence sent, 3 escalated to an owner, 4 refunds confirmed by PayPal's record, 42 model calls. A bracket means the run is not recorded yet. If the sandbox shows a CAPTCHA or blocks the browser, the buyer step stops and the owner does that step by hand; it is never bypassed.
 
 The baseline: 200 episodes of the same cases under injected faults, an agent using PayPal's Agent Toolkit directly against Clearwake, on the local PayPal layer (`data/runs/baseline-20261110-172506.json`). The unguarded agent overpaid USD 2,633.25, made 61 double refunds and accepted 160 claims it should not have. Clearwake overpaid USD 0.00, made 0 double refunds, accepted 0 wrong claims, and ended 200 of 200 episodes as the owner intended, against 40 of 200.
 
@@ -73,7 +73,7 @@ The adapter (`clearwake/paypal.py`) refuses any base URL other than `https://api
 
 ## AI tools and how they are used
 
-* **Merchant agent: `[MODEL_NAME]` through Ollama, local.** It reads each dispute and buyer message, proposes settle, fight or escalate, and writes the reply and the offer note. The adapter sends it to a model on loopback or, inside the isolated network, to the `ollama` container. [MODEL_CALLS] recorded model calls, [MODEL_MS_PER_CALL] ms per call (docs/RESULTS.md, "Model calls"). The policy decides; code checks every amount and cited id.
+* **Merchant agent: `qwen3.5:4b` through Ollama, local.** It reads each dispute and buyer message, proposes settle, fight or escalate, and writes the reply and the offer note. The adapter sends it to a model on loopback or, inside the isolated network, to the `ollama` container. 42 recorded model calls, 19,665 ms per call (docs/RESULTS.md, "Model calls"). The policy decides; code checks every amount and cited id.
 * **Buyer agent.** Chooses a product inside the mandate and handles the dispute inside the owner's dispute rule. Every step is receipted and linked to the mandate receipt.
 * **Scripted fallback.** Fixed rules, labelled "scripted, not AI" on screen and in every run file, used when no model is running, so anyone can run it without a model.
 * **Earlier local model use.** `qwen2.5-coder:3b` through Ollama drafted inside the boundary while the network was cut in case m (6.3 to 13.1 s per proposal).
@@ -99,10 +99,10 @@ A model can only propose. It cannot approve, send, change a limit or mark a refu
 | o. Dispatch proof: buyer says 2 of 3 items arrived | real sandbox, SAM 3 on the CPU, CC0 test photo | PASS: 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo. Send 1 refused by PayPal, send 2 lost and held UNKNOWN, send 3 accepted |
 | o. weak proof | local run, scripted count | PASS: not sent, settled by offer |
 | a, b, f, g, h, j | local run or offline | PASS |
-| Agent to agent batch | real sandbox, buyer agent through a local browser, merchant agent with a local model | [BATCH_TOTAL] orders and disputes: [BATCH_SETTLED] settled at INQUIRY with no fee, [BATCH_EVIDENCE] evidence sent, [BATCH_ESCALATED] escalated, [BATCH_REFUNDS] refunds confirmed. A bracket means not recorded yet |
+| Agent to agent batch | real sandbox, buyer agent through a local browser, merchant agent with a local model | 10 orders and disputes: 4 settled at INQUIRY with no fee, 0 evidence sent, 3 escalated, 4 refunds confirmed. A bracket means not recorded yet |
 | k | real sandbox | SKIPPED: no real dispute close to its deadline. PASS as a local run |
 | l (ten in parallel) | local run | PASS (4 evidenced, 4 refunded, 2 escalated). The real batch above replaces it |
-| Console on Render | hosted on Render, not network isolated | [RENDER_URL] |
+| Console on Render | hosted on Render, not network isolated | https://clearwake-console.onrender.com |
 
 Sources: `data/runs/*.json`, `data/airgap/*.json`, [docs/SANDBOX_RUN.md](docs/SANDBOX_RUN.md), [docs/RESULTS.md](docs/RESULTS.md). Sandbox means PayPal's test environment with test money. No live PayPal, no real money, no customers.
 
@@ -125,7 +125,7 @@ Python 3.12 or newer, nothing to install. For the sandbox:
 
 Public site (static, recorded sandbox run, browser receipt verifier): https://clearwake-mu.vercel.app, deployed from `site/` only with no environment variables; served locally with `python scripts/serve_site.py`.
 
-Live console, hosted on Render, not network isolated: [RENDER_URL]/console. Press Reset, buy an item, run case n, and watch the AG Grid ledger. Rate limited per address. Build files: `render.yaml`, `Dockerfile.render`, [docs/RENDER.md](docs/RENDER.md).
+Live console, hosted on Render, not network isolated: https://clearwake-console.onrender.com/console. Press Reset, buy an item, run case n, and watch the AG Grid ledger. Rate limited per address. Build files: `render.yaml`, `Dockerfile.render`, [docs/RENDER.md](docs/RENDER.md).
 
 API: [openapi/clearwake-console.openapi.yaml](openapi/clearwake-console.openapi.yaml) (OpenAPI 3.1) and [postman/clearwake-paypal.postman_collection.json](postman/clearwake-paypal.postman_collection.json) (every PayPal call Clearwake makes, with tests on PayPal's responses).
 

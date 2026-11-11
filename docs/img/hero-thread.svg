@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 500" role="img" aria-labelledby="t d">
+  <title id="t">Two agents settle one PayPal dispute: USD 5.00 offer, RESOLVED at INQUIRY, no fee</title>
+  <desc id="d">Buyer agent and merchant agent share dispute PP-R-ISN-10198775. Two signed receipts, 1c6bed15c803 and fc8f566c85ef, sit in the middle. The timeline reads opened, offer sent, RESOLVED at INQUIRY, no fee.</desc>
+  <style>
+    :root { --bg:#f6f4ee; --card:#ffffff; --line:#d9d4c6; --ink:#14181f; --mute:#566070; --blue:#0b5fd6; --green:#117a4a; --chipbg:#e3f4ea; --ring:#0b5fd6; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#10151c; --card:#1a212b; --line:#2e3846; --ink:#eef1f5; --mute:#9aa6b6; --blue:#6aa7ff; --green:#5fd49a; --chipbg:#16382a; --ring:#6aa7ff; } }
+    .f { font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .m { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace; }
+    .bg { fill: var(--bg); } .card { fill: var(--card); stroke: var(--line); stroke-width: 2; }
+    .ink { fill: var(--ink); } .mute { fill: var(--mute); } .blue { fill: var(--blue); } .green { fill: var(--green); }
+    .ring { fill: none; stroke: var(--ring); stroke-width: 4; } .link { stroke: var(--ring); stroke-width: 3; fill: none; }
+    .chip { fill: var(--chipbg); stroke: var(--green); stroke-width: 2; } .tl { stroke: var(--line); stroke-width: 4; }
+    .dot { fill: var(--blue); } .dotg { fill: var(--green); }
+  </style>
+  <rect class="bg" width="1200" height="500" rx="20"/>
+  <text x="40" y="52" class="f ink" font-size="26" font-weight="700">One PayPal dispute. Two agents. Two signed receipts.</text>
+  <text x="40" y="80" class="f mute" font-size="16">PayPal's own record of dispute PP-R-ISN-10198775, real sandbox, batch case 3, recorded 11 November 2026</text>
+
+  <rect class="card" x="40" y="110" width="320" height="200" rx="16"/>
+  <text x="64" y="146" class="f blue" font-size="14" font-weight="700" letter-spacing="1.5">BUYER AGENT</text>
+  <text x="64" y="180" class="f ink" font-size="20" font-weight="700">Item not received</text>
+  <text x="64" y="208" class="f mute" font-size="15">Opened the case in PayPal's</text>
+  <text x="64" y="230" class="f mute" font-size="15">Resolution Center, inside its</text>
+  <text x="64" y="252" class="f mute" font-size="15">owner's mandate. Read RESOLVED.</text>
+  <text x="64" y="288" class="m ink" font-size="14">mandate signed, claim covered</text>
+
+  <rect class="card" x="840" y="110" width="320" height="200" rx="16"/>
+  <text x="864" y="146" class="f blue" font-size="14" font-weight="700" letter-spacing="1.5">MERCHANT AGENT</text>
+  <text x="864" y="180" class="f ink" font-size="20" font-weight="700">Offer of USD 5.00</text>
+  <text x="864" y="208" class="f mute" font-size="15">Model qwen3.5:4b proposed it.</text>
+  <text x="864" y="230" class="f mute" font-size="15">The signed policy allowed it.</text>
+  <text x="864" y="252" class="f mute" font-size="15">Sent alone, as one offer.</text>
+  <text x="864" y="288" class="m ink" font-size="14">policy hash 4ff70bb8a4df</text>
+
+  <path class="link" d="M360 210 H 452"/><path class="link" d="M748 210 H 840"/>
+  <circle class="ring" cx="600" cy="210" r="148"/>
+  <circle class="ring" cx="600" cy="210" r="132" stroke-width="1.5" opacity="0.5"/>
+  <text x="600" y="118" text-anchor="middle" class="f mute" font-size="13" font-weight="700" letter-spacing="1.5">SHARED DISPUTE ID</text>
+  <text x="600" y="146" text-anchor="middle" class="m ink" font-size="19" font-weight="700">PP-R-ISN-10198775</text>
+  <text x="600" y="190" text-anchor="middle" class="f blue" font-size="12" font-weight="700" letter-spacing="1.2">MERCHANT RECEIPT: OFFER SENT</text>
+  <text x="600" y="212" text-anchor="middle" class="m ink" font-size="17">1c6bed15c803</text>
+  <text x="600" y="246" text-anchor="middle" class="f blue" font-size="12" font-weight="700" letter-spacing="1.2">BUYER RECEIPT: SETTLED</text>
+  <text x="600" y="268" text-anchor="middle" class="m ink" font-size="17">fc8f566c85ef</text>
+  <text x="600" y="296" text-anchor="middle" class="f mute" font-size="12">SHA-256 of each signed line, chained</text>
+
+  <text x="40" y="378" class="f mute" font-size="13" font-weight="700" letter-spacing="1.5">TIMELINE IN PAYPAL'S RECORD</text>
+  <line class="tl" x1="90" y1="418" x2="1110" y2="418"/>
+  <circle class="dot" cx="90" cy="418" r="11"/><circle class="dot" cx="400" cy="418" r="11"/><circle class="dotg" cx="740" cy="418" r="11"/><circle class="dotg" cx="1110" cy="418" r="11"/>
+  <text x="90" y="456" text-anchor="start" class="f ink" font-size="17" font-weight="700">Opened</text>
+  <text x="400" y="456" text-anchor="middle" class="f ink" font-size="17" font-weight="700">Offer sent: USD 5.00</text>
+  <text x="740" y="456" text-anchor="middle" class="f green" font-size="17" font-weight="700">RESOLVED at INQUIRY</text>
+  <rect class="chip" x="968" y="436" width="142" height="32" rx="16"/>
+  <text x="1039" y="458" text-anchor="middle" class="f green" font-size="16" font-weight="700">No fee</text>
+  <text x="1160" y="486" text-anchor="end" class="f mute" font-size="12">Verify offline: python scripts/verify_pair.py, or the receipt verifier on the site</text>
+</svg>

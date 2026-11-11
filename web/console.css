@@ -497,3 +497,13 @@ h1{font-weight:700;font-size:clamp(2.4rem,5.4vw,4.6rem);line-height:.98;max-widt
 .rules-readback,.rules-diff{margin:0 0 8px;padding-left:20px;font-size:15px;color:var(--cw-text)}
 .rules-diff li.same{color:var(--cw-muted)}
 .rules-question{margin:12px 0;padding:10px 12px;border-left:3px solid var(--cw-accent);color:var(--cw-text)}
+/* on a phone the Run a case button comes first: a large link on the first screen, and the negotiation card leads the merchant screen */
+.phone-go{display:none}
+@media(max-width:640px){
+  .phone-go{display:flex;align-items:center;justify-content:center;width:100%;min-height:3.75rem;margin:0 0 1.25rem;font-size:1.25rem;font-weight:700;text-decoration:none}
+  body:has(#screen-merchant:not([hidden])) .phone-go{display:none}
+  #screen-merchant:not([hidden]){display:flex;flex-direction:column}
+  #screen-merchant .negotiate{order:-3}
+  #screen-merchant .negotiate .runner-head{flex-direction:column;align-items:stretch;gap:.75rem}
+  #screen-merchant .negotiate #neg-run{width:100%;min-height:3.75rem;font-size:1.25rem;font-weight:700}
+}

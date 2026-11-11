@@ -21,6 +21,12 @@
       "script": {
         "type": "text/javascript",
         "exec": [
+          "// Folder 4 (local console) never touches PayPal and may only go to this machine.",
+          "const target = pm.variables.replaceIn(pm.request.url.toString());",
+          "if (pm.request.url.getPath().indexOf('/console') === 0 || pm.request.url.getPath() === '/healthz') {",
+          "  if (!/^http:\\/\\/(127\\.0\\.0\\.1|localhost)(:[0-9]+)?\\//.test(target)) { throw new Error('console_url must be http://127.0.0.1:8810 (the local console). The attack suite is never run against a hosted site.'); }",
+          "  return;",
+          "}",
           "// Sandbox only. Refuse any other host, then make sure a token exists.",
           "const base = pm.environment.get('base_url') || '';",
           "if (base !== 'https://api-m.sandbox.paypal.com') { throw new Error('base_url must be https://api-m.sandbox.paypal.com. Clearwake never calls production.'); }",
@@ -271,7 +277,7 @@
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "pm.test('id equals the requested order', () => pm.expect(body().id).to.eql(pm.environment.get('order_id')));",
                   "pm.test('status is a known order status', () => pm.expect(body().status).to.be.oneOf(['CREATED', 'SAVED', 'APPROVED', 'VOIDED', 'COMPLETED', 'PAYER_ACTION_REQUIRED']));",
-                  "pm.test('has one purchase unit with a USD amount in two decimals', () => { const u = body().purchase_units; pm.expect(u).to.be.an('array').with.lengthOf.at.least(1); pm.expect(u[0].amount.currency_code).to.eql('USD'); pm.expect(u[0].amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });"
+                  "pm.test('has one purchase unit with a USD amount in two decimals', () => { const u = body().purchase_units; pm.expect(u).to.be.an('array').with.lengthOf.at.least(1); pm.expect(u[0].amount.currency_code).to.eql('USD'); pm.expect(u[0].amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\.[0-9]{2}$/); });"
                 ]
               }
             }
@@ -458,7 +464,7 @@
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "pm.test('id equals the capture', () => pm.expect(body().id).to.eql(pm.environment.get('capture_id')));",
                   "pm.test('capture is COMPLETED (a PENDING capture blocks refunds in Clearwake)', () => pm.expect(body().status).to.eql('COMPLETED'));",
-                  "pm.test('amount is USD with two decimals', () => { pm.expect(body().amount.currency_code).to.eql('USD'); pm.expect(body().amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });"
+                  "pm.test('amount is USD with two decimals', () => { pm.expect(body().amount.currency_code).to.eql('USD'); pm.expect(body().amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\.[0-9]{2}$/); });"
                 ]
               }
             }
@@ -577,7 +583,7 @@
                   "pm.test('status is 200', () => pm.response.to.have.status(200));",
                   "pm.test('id equals the refund', () => pm.expect(body().id).to.eql(pm.environment.get('refund_id')));",
                   "pm.test('status is COMPLETED (anything else stays PENDING or UNKNOWN in Clearwake)', () => pm.expect(body().status).to.eql('COMPLETED'));",
-                  "pm.test('amount is USD with two decimals', () => { pm.expect(body().amount.currency_code).to.eql('USD'); pm.expect(body().amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });",
+                  "pm.test('amount is USD with two decimals', () => { pm.expect(body().amount.currency_code).to.eql('USD'); pm.expect(body().amount.value).to.match(/^(0|[1-9][0-9]{0,8})\\.[0-9]{2}$/); });",
                   "pm.test('an up link points at the sandbox capture', () => { const up = (body().links || []).find(l => l.rel === 'up'); pm.expect(up, 'up link').to.exist; pm.expect(up.href).to.include('api-m.sandbox.paypal.com/v2/payments/captures/'); });"
                 ]
               }
@@ -667,7 +673,7 @@
                   "pm.test('dispute_id equals the request', () => pm.expect(body().dispute_id).to.eql(pm.environment.get('dispute_id')));",
                   "pm.test('life cycle stage is INQUIRY, CHARGEBACK or PRE_ARBITRATION', () => pm.expect(body().dispute_life_cycle_stage).to.be.oneOf(['INQUIRY', 'CHARGEBACK', 'PRE_ARBITRATION', 'ARBITRATION']));",
                   "pm.test('status is a known dispute status', () => pm.expect(body().status).to.be.oneOf(['OPEN', 'WAITING_FOR_BUYER_RESPONSE', 'WAITING_FOR_SELLER_RESPONSE', 'UNDER_REVIEW', 'RESOLVED', 'OTHER']));",
-                  "pm.test('dispute amount is USD with two decimals', () => { const a = body().dispute_amount; pm.expect(a.currency_code).to.eql('USD'); pm.expect(a.value).to.match(/^(0|[1-9][0-9]{0,8})\\\\.[0-9]{2}$/); });",
+                  "pm.test('dispute amount is USD with two decimals', () => { const a = body().dispute_amount; pm.expect(a.currency_code).to.eql('USD'); pm.expect(a.value).to.match(/^(0|[1-9][0-9]{0,8})\\.[0-9]{2}$/); });",
                   "pm.test('a disputed transaction names the seller transaction', () => pm.expect(body().disputed_transactions[0].seller_transaction_id).to.be.a('string'));",
                   "pm.test('links list the actions PayPal offers', () => pm.expect(body().links).to.be.an('array'));",
                   "const offered = (body().links || []).map(l => l.rel); console.log('PayPal offers: ' + offered.join(', '));"
@@ -1146,6 +1152,598 @@
           }
         }
       ]
+    },
+    {
+      "name": "4 Attack suite (local console)",
+      "description": "Replays the Break it attacks against the local Clearwake console only (http://127.0.0.1:8810). Start it with: python -m clearwake --port 8810. Needs no PayPal keys. Never point console_url at a hosted site.",
+      "item": [
+        {
+          "name": "Health check (no data, no cookie)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('body is exactly {\"ok\":true}', () => pm.expect(body()).to.eql({ok: true}));",
+                  "pm.test('no session cookie is issued by the health check', () => pm.expect(pm.response.headers.get('Set-Cookie')).to.be.oneOf([undefined, null]));",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/healthz",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "healthz"
+              ]
+            },
+            "description": "Break it attack 1. The keep-warm route returns no data."
+          }
+        },
+        {
+          "name": "Session: cookie and CSRF token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('csrf token is 64 hex characters', () => pm.expect(body().csrf).to.match(/^[0-9a-f]{64}$/));",
+                  "pm.test('label says local run data', () => pm.expect(body().label).to.eql('local run data'));",
+                  "pm.test('session cookie is HttpOnly, SameSite=Strict and scoped to /console', () => { const c = (pm.response.headers.get('Set-Cookie') || ''); pm.expect(c).to.include('clearwake_console='); pm.expect(c).to.include('HttpOnly'); pm.expect(c).to.include('SameSite=Strict'); pm.expect(c).to.include('Path=/console'); });",
+                  "pm.test('the token is not in the cookie', () => pm.expect(pm.response.headers.get('Set-Cookie') || '').to.not.include(body().csrf));",
+                  "pm.collectionVariables.set('attack_csrf', body().csrf);",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/session",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "session"
+              ]
+            },
+            "description": "Break it attack 2. Opens a console session. The CSRF token is kept in the collection variable attack_csrf; the cookie is kept by the runner's cookie jar."
+          }
+        },
+        {
+          "name": "Attack: negotiate with the cookie but no CSRF token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('answer is a JSON error with a plain sentence', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); pm.expect(body().error).to.be.a('string').and.not.empty; });",
+                  "pm.test('error text names the reason (session)', () => pm.expect(String(body().error).toLowerCase()).to.include('session'));",
+                  "pm.test('nothing was started: no started flag and no case id', () => { pm.expect(body().started).to.be.undefined; pm.expect(body().case).to.be.undefined; });",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/negotiate",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "negotiate"
+              ]
+            },
+            "description": "A script that holds the cookie but not the token is refused.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Attack: negotiate with a forged CSRF token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('answer is a JSON error with a plain sentence', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); pm.expect(body().error).to.be.a('string').and.not.empty; });",
+                  "pm.test('error text names the reason (session)', () => pm.expect(String(body().error).toLowerCase()).to.include('session'));",
+                  "pm.test('nothing was started: no started flag and no case id', () => { pm.expect(body().started).to.be.undefined; pm.expect(body().case).to.be.undefined; });",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Clearwake-CSRF",
+                "value": "0000000000000000000000000000000000000000000000000000000000000000"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/negotiate",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "negotiate"
+              ]
+            },
+            "description": "A well formed but wrong token is refused (HMAC compare).",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Attack: negotiate from another origin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('answer is a JSON error with a plain sentence', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); pm.expect(body().error).to.be.a('string').and.not.empty; });",
+                  "pm.test('error text names the reason (same-origin)', () => pm.expect(String(body().error).toLowerCase()).to.include('same-origin'));",
+                  "pm.test('nothing was started: no started flag and no case id', () => { pm.expect(body().started).to.be.undefined; pm.expect(body().case).to.be.undefined; });",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Clearwake-CSRF",
+                "value": "{{attack_csrf}}"
+              },
+              {
+                "key": "Origin",
+                "value": "http://evil.example"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/negotiate",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "negotiate"
+              ]
+            },
+            "description": "A valid cookie and token sent from a foreign Origin is refused before the token is read.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Attack: negotiate flagged cross-site by the browser",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 403', () => pm.response.to.have.status(403));",
+                  "pm.test('answer is a JSON error with a plain sentence', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'); pm.expect(body().error).to.be.a('string').and.not.empty; });",
+                  "pm.test('error text names the reason (same-origin)', () => pm.expect(String(body().error).toLowerCase()).to.include('same-origin'));",
+                  "pm.test('nothing was started: no started flag and no case id', () => { pm.expect(body().started).to.be.undefined; pm.expect(body().case).to.be.undefined; });",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Clearwake-CSRF",
+                "value": "{{attack_csrf}}"
+              },
+              {
+                "key": "Sec-Fetch-Site",
+                "value": "cross-site"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/negotiate",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "negotiate"
+              ]
+            },
+            "description": "Sec-Fetch-Site cross-site on a mutation is refused.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Attack: unknown console action",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 404', () => pm.response.to.have.status(404));",
+                  "pm.test('answer is the plain unknown action error', () => pm.expect(body().error).to.eql('Unknown action.'));",
+                  "pm.test('nothing in the answer reveals a path or a stack', () => pm.expect(pm.response.text()).to.not.match(/Traceback|File \"|\\.py/));",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Clearwake-CSRF",
+                "value": "{{attack_csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/delete-everything",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "delete-everything"
+              ]
+            },
+            "description": "A valid token cannot reach an action that does not exist.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Attack: read a file outside the site (path traversal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is a refusal (400, 403 or 404)', () => pm.expect(pm.response.code).to.be.oneOf([400, 403, 404]));",
+                  "pm.test('answer holds no key name', () => pm.expect(pm.response.text()).to.not.match(/PAYPAL_CLIENT|HF_TOKEN|API_KEY/));",
+                  "pm.test('answer is short', () => pm.expect(pm.response.text().length).to.be.below(2000));",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/..%2f..%2f.env",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "..%2f..%2f.env"
+              ]
+            },
+            "description": "Percent encoded dot dot to the repo's .env. The answer must be a refusal with no file content."
+          }
+        },
+        {
+          "name": "Negotiate with the cookie and CSRF token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 200 (started) or 409 (one already running)', () => pm.expect(pm.response.code).to.be.oneOf([200, 409]));",
+                  "pm.test('a start reports the receipt line it begins at', () => { if (pm.response.code === 200) { pm.expect(body().started).to.be.true; pm.expect(Number.isInteger(body().from)).to.be.true; } else { pm.expect(body().error).to.include('already running'); } });",
+                  "pm.test('the answer carries no secret', () => pm.expect(pm.response.text()).to.not.match(/client_secret|Bearer |PAYPAL_/));",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Clearwake-CSRF",
+                "value": "{{attack_csrf}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/negotiate",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "negotiate"
+              ]
+            },
+            "description": "Break it attack 3. Starts one local negotiation (offer, buyer accepts, a PayPal shaped record read back). Local provider only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Read the negotiation steps (after a short wait)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Give the background negotiation time to write its receipts (local run, a few seconds at most).",
+                  "setTimeout(function () {}, 6000);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('shape: running, error, case, steps', () => { pm.expect(body().running).to.be.a('boolean'); pm.expect(body()).to.have.property('error'); pm.expect(body()).to.have.property('case'); pm.expect(body().steps).to.be.an('array'); });",
+                  "pm.test('every step has a number, a step id, an action id, ok and a time', () => body().steps.forEach(s => { pm.expect(s.n).to.be.a('number'); pm.expect(s.step).to.be.a('string').and.not.empty; pm.expect(s.action).to.be.a('string').and.not.empty; pm.expect(s.ok).to.be.a('boolean'); pm.expect(s.at).to.match(/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/); }));",
+                  "pm.test('once finished: no error, decision then offer then settlement, and the last step succeeded', () => { if (!body().running) { pm.expect(body().error).to.be.null; const a = body().steps.map(s => s.action); pm.expect(a[0]).to.eql('clearwake.dispute.decision'); pm.expect(a).to.include('clearwake.dispute.offer_sent'); pm.expect(a).to.include('clearwake.dispute.settlement'); pm.expect(body().steps[body().steps.length - 1].ok).to.be.true; } });",
+                  "pm.test('step numbers go up by one', () => body().steps.forEach((s, i, a) => { if (i) pm.expect(s.n).to.eql(a[i - 1].n + 1); }));",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/negotiation",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "negotiation"
+              ]
+            },
+            "description": "Break it attack 4. The steps are the signed receipt log read as it grows."
+          }
+        },
+        {
+          "name": "Receipts are listed without a secret",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = () => { try { return pm.response.json(); } catch (e) { return {}; } };",
+                  "pm.test('response time under 5 s on the local console', () => pm.expect(pm.response.responseTime).to.be.below(5000));",
+                  "pm.test('status is 200', () => pm.response.to.have.status(200));",
+                  "pm.test('answer is JSON', () => pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json'));",
+                  "pm.test('no private key or token in the receipts', () => pm.expect(pm.response.text()).to.not.match(/private_key|PRIVATE KEY|client_secret|access_token|Bearer /));",
+                  "pm.test('answer is not empty', () => pm.expect(pm.response.text().length).to.be.above(2));",
+                  "pm.test('response has the security headers', () => { pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('X-Frame-Options')).to.eql('DENY'); pm.expect(pm.response.headers.get('Cache-Control')).to.eql('no-store'); });",
+                  "pm.test('content security policy forbids framing and outside scripts', () => { const p = pm.response.headers.get('Content-Security-Policy') || ''; pm.expect(p).to.include(\"default-src 'none'\"); pm.expect(p).to.include(\"frame-ancestors 'none'\"); });"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{console_url}}/console/api/receipts",
+              "host": [
+                "{{console_url}}"
+              ],
+              "path": [
+                "console",
+                "api",
+                "receipts"
+              ]
+            },
+            "description": "Receipts show a public key and signatures only."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "console_url",
+      "value": "http://127.0.0.1:8810",
+      "type": "string"
+    },
+    {
+      "key": "attack_csrf",
+      "value": "",
+      "type": "string"
     }
   ]
 }

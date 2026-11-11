@@ -617,7 +617,7 @@ class Run:
                 break   # wait: nothing more the buyer can do until the merchant acts
             # Every outcome is read back from PayPal's record
             final = self.world.read(api_id)
-            settlement = self.swarm.settlement(api_id) if buyer_end == "accepted" else None
+            settlement = self.swarm.settlement(api_id) if (buyer_end == "accepted" or final.get("status") == "RESOLVED") else None
             settled = bool(settlement and settlement.state == VERIFIED)
             row.update(paypal_status=final.get("status"), paypal_stage=final.get("dispute_life_cycle_stage"),
                        paypal_outcome=(final.get("dispute_outcome") or {}).get("outcome_code", ""), refund_confirmed=money(refund_seen(final)) if settled else "0.00",

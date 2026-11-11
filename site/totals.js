@@ -1,4 +1,4 @@
-// Home: the measured numbers under the hero, read from data/totals.json (built by scripts/build_site_data.py from the run files).
+// Home: the measured numbers, read from data/totals.json (built by scripts/build_site_data.py from the run files).
 // Nothing here is typed by hand: when a new run file lands and the script runs again, the numbers change. No file, no numbers.
 (function () {
   'use strict';
@@ -8,10 +8,10 @@
     var list = (t && t.public) || [];
     if (!list.length) return;
     host.textContent = '';
-    list.slice(0, 4).forEach(function (n) {
+    list.slice(0, 3).forEach(function (n) {
       var d = document.createElement('div'), v = document.createElement('dd'), l = document.createElement('dt'), s = document.createElement('dd');
       v.className = 'num tnum'; v.textContent = String(n.value); l.textContent = String(n.label);
-      s.className = 'src'; s.textContent = String(n.source || '');
+      s.className = 'src'; s.textContent = (n.mode ? String(n.mode) + ' \u00b7 ' : '') + String(n.source || '');
       d.append(v, l, s); host.append(d);
     });
     host.hidden = false;

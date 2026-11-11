@@ -18,7 +18,7 @@ python -m clearwake --phone                  # only for the voice shot; wait for
 python scripts\cases.py --only e,g           # both must print PASS
 ```
 
-Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verifier, 4 Voice); PayPal's sandbox Resolution Center logged in as the sandbox buyer (log in by hand before recording, never show the login or email); `docs/BASELINE.md` and `docs/TOOLKIT_FAILURE_CASES.md` open; the Render link `[RENDER_URL]/console`; a terminal with `python scripts\show_dispute.py [HERO_DISPUTE_ID]` typed. Never show `.env` or the PayPal developer credentials page.
+Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verifier, 4 Voice); PayPal's sandbox Resolution Center logged in as the sandbox buyer (log in by hand before recording, never show the login or email); `docs/BASELINE.md` and `docs/TOOLKIT_FAILURE_CASES.md` open; the Render link `https://clearwake-console.onrender.com/console`; a terminal with `python scripts\show_dispute.py PP-R-ISN-10198775` typed. Never show `.env` or the PayPal developer credentials page.
 
 ## 0:00 to 0:15 The problem, in dollars
 
@@ -60,15 +60,15 @@ Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verif
 
 **SAY:** "The merchant's agent reads the dispute, the order, the tracking on PayPal and the signed dispatch record. The model drafts. The rules decide. Here it offers a refund inside my limit, sent alone through PayPal's own offer call."
 
-**CAPTION:** Real sandbox. Local model `[MODEL_NAME]`; the policy decides
+**CAPTION:** Real sandbox. Local model `qwen3.5:4b`; the policy decides
 
-**[click]** Scroll the ledger to the row where the two columns differ: `[OVERRULED_EXAMPLE]`.
+**[click]** Scroll the ledger to the row where the two columns differ: `case 1 (delivered with proof), dispute PP-R-YYA-10198768`.
 
 **SAY:** "Here the model proposed the wrong move once. The policy stopped it. The model only proposes."
 
-**CAPTION:** `[OVERRULED_CAPTION]`
+**CAPTION:** `The buyer agent's model proposed counter. The owner's rule stopped it and decided wait.`
 
-**[click]** The buyer agent log: the offer is read, its mandate allows it, it accepts. Then the terminal: `python scripts\show_dispute.py [HERO_DISPUTE_ID]`, PayPal's record: status RESOLVED, stage INQUIRY. Then tab 3, **Receipt verifier**: the two receipts, same dispute id, Verify.
+**[click]** The buyer agent log: the offer is read, its mandate allows it, it accepts. Then the terminal: `python scripts\show_dispute.py PP-R-ISN-10198775`, PayPal's record: status RESOLVED, stage INQUIRY. Then tab 3, **Receipt verifier**: the two receipts, same dispute id, Verify.
 
 **SAY:** "The buyer's agent accepts what its mandate allows. PayPal's own record now reads resolved, at the inquiry stage. No claim, no fee. Two signed receipts, one from each side, the same dispute id, verified offline."
 
@@ -78,9 +78,9 @@ Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verif
 
 **[click]** Tab 2, ledger after the batch: filter by stage, point at the countdown cells, press CSV export. For the last 10 seconds, overlay the table below (it comes from `docs/RESULTS.md`).
 
-**SAY:** "Ten agent bought cases on the real sandbox. [BATCH_SETTLED] settled by the two agents with no fee, [BATCH_ESCALATED] correctly handed to a person, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_SECONDS_PER_CASE] seconds a case. Any other dispute reason goes to the owner untouched. That is the honest limit."
+**SAY:** "Ten agent bought cases on the real sandbox. 4 settled by the two agents with no fee, 3 correctly handed to a person, 4 refunds confirmed by PayPal's record. Any other dispute reason goes to the owner untouched. That is the honest limit."
 
-**CAPTION:** Real sandbox batch of `[BATCH_TOTAL]`, read back from PayPal
+**CAPTION:** Real sandbox batch of `10`, read back from PayPal
 
 Overlay table:
 
@@ -90,7 +90,7 @@ Overlay table:
 | Double refunds | 61 | 0 |
 | Wrongly accepted claims | 160 | 0 |
 | Episodes ended as the owner intended | 40 of 200 | 200 of 200 |
-| Real sandbox batch of `[BATCH_TOTAL]` | not run | `[BATCH_SETTLED]` settled at INQUIRY, `[BATCH_REFUNDS]` refunds confirmed, `[BATCH_SECONDS_PER_CASE]` s per case |
+| Real sandbox batch of `10` | not run | `4` settled at INQUIRY, `4` refunds confirmed |
 
 ## 2:20 to 2:45 Who it is for, how to run it
 
@@ -98,7 +98,7 @@ Overlay table:
 
 **SAY:** "Clearwake is for the person whose agent shops for them, and the small merchant on PayPal who sells to agents. Run it yourself with one command, or open the live console, hosted on Render. The code is MIT on GitHub, sandbox only, no real money."
 
-**CAPTION:** `[RENDER_URL]` (hosted on Render, not network isolated). github.com/Sriharsan/clearwake
+**CAPTION:** `https://clearwake-console.onrender.com` (hosted on Render, not network isolated). github.com/Sriharsan/clearwake
 
 ## Notes
 

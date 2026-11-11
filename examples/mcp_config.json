@@ -1,0 +1,21 @@
+{
+  "_comment": "The one line change: the command of the PayPal server becomes the guard command. Put your token in the environment of the client as before (PAYPAL_ACCESS_TOKEN); the guard passes its environment to the server.",
+  "before": {
+    "mcpServers": {
+      "paypal": {
+        "command": "npx",
+        "args": ["-y", "@paypal/mcp", "--tools=all"],
+        "env": {"PAYPAL_ENVIRONMENT": "SANDBOX"}
+      }
+    }
+  },
+  "after": {
+    "mcpServers": {
+      "paypal": {
+        "command": "python",
+        "args": ["-m", "clearwake.mcp_guard", "--", "npx", "-y", "@paypal/mcp", "--tools=all"],
+        "env": {"PAYPAL_ENVIRONMENT": "SANDBOX"}
+      }
+    }
+  }
+}

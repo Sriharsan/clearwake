@@ -9,9 +9,11 @@
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="home.css">
+<link rel="stylesheet" href="hud.css">
 <script src="theme.js"></script>
 <script src="app.js" type="module"></script>
 <script src="totals.js" defer></script>
+<script src="hud.js" defer></script>
 </head>
 <body>
 <header class="bar">
@@ -21,28 +23,143 @@
       <a href="/control-room">Control Room</a>
       <a href="/developers">Developers</a>
       <a href="/break">Break it</a>
-      <button class="theme" type="button" aria-label="Switch theme">Light</button>
+      <button class="theme" type="button" aria-label="Switch to the light theme"><svg class="ico sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg><svg class="ico moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.2A8.5 8.5 0 0 1 9.8 4a8.5 8.5 0 1 0 10.2 10.2z"/></svg></button>
     </nav>
   </div>
 </header>
 
 <main id="top">
   <section class="hero" aria-labelledby="h1">
-    <img class="wave" src="img/hokusai-great-wave.jpg" width="600" height="403" alt="Hokusai's woodblock print The Great Wave: a huge wave with foam like claws curls over three boats, with Mount Fuji small in the distance">
+    <svg class="hero-ring" viewBox="0 0 600 600" aria-hidden="true" focusable="false">
+      <g class="hr-a"><circle class="hr-ticks" cx="300" cy="300" r="286" pathLength="360"/></g>
+      <g class="hr-b"><circle class="hr-arcs" cx="300" cy="300" r="238" pathLength="360"/></g>
+      <g class="hr-c"><circle class="hr-fine" cx="300" cy="300" r="196" pathLength="360"/></g>
+      <circle class="hr-pulse" cx="300" cy="300" r="150"/>
+      <circle class="hr-core" cx="300" cy="300" r="118"/>
+      <circle class="hr-dot" cx="300" cy="300" r="7"/>
+      <path class="hr-cross" d="M300 6v60M300 534v60M6 300h60M534 300h60"/>
+    </svg>
     <div class="hero-in wrap">
       <p class="eyebrow">After an agent buys</p>
       <h1 id="h1" class="line">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</h1>
       <p class="tagline">When an agent's order goes missing, agents fix it.</p>
-      <div class="hero-row">
-        <p class="lede">Built for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.</p>
-        <div class="cta">
-          <a class="btn primary" href="/control-room">Open the Control Room</a>
-          <a class="btn" href="#loop">See the loop</a>
+      <div class="cta">
+        <a class="btn primary" href="/control-room">Open the Control Room</a>
+        <a class="btn" href="#conversation">Watch the conversation</a>
+      </div>
+    </div>
+    <a class="cue" href="#conversation"><span>Scroll</span><i aria-hidden="true"></i></a>
+  </section>
+
+  <section class="conv" id="conversation" aria-labelledby="conv-h">
+    <div class="wrap conv-head">
+      <p class="eyebrow">Two agents, one dispute</p>
+      <h2 id="conv-h">You say your rules once. Two agents settle the case.</h2>
+    </div>
+    <div class="hud" id="hud">
+      <div class="hud-bar">
+        <p class="hud-title">THE CONVERSATION</p>
+        <p class="hud-tag">Recorded real sandbox batch, case 3, 11 Nov 2026</p>
+        <div class="hud-ctl">
+          <button class="hud-btn" type="button" id="hud-play" aria-label="Play the scene"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pause" d="M7.5 5.5v13M16.5 5.5v13"/></svg><span id="hud-play-t">Play</span></button>
+          <button class="hud-btn" type="button" id="hud-replay" aria-label="Replay the scene from the start"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5M4.5 4.5v4h4"/></svg><span>Replay</span></button>
         </div>
       </div>
-      <dl class="lead-numbers" id="lead-numbers" aria-label="Measured numbers from the recorded runs" hidden></dl>
-      <p class="hero-note">Real PayPal sandbox, test money. Every figure comes from a recorded run; a figure from a local run on the local provider says so.</p>
+      <div class="hud-stage" id="hud-stage" aria-hidden="true">
+        <div class="panels" id="panels">
+          <section class="pn pn-owner" id="pn-owner">
+            <div class="pn-h"><span class="mk">OWNER</span><span class="st" id="owner-st">standing by</span></div>
+            <div class="voice" id="wave"></div>
+            <div class="rrow" id="rr-buyer">
+              <svg class="rr" viewBox="0 0 48 48" focusable="false"><circle class="rr-base" cx="24" cy="24" r="19"/><circle class="rr-spin" cx="24" cy="24" r="19" pathLength="100"/><path class="rr-tick" d="M15 24.5l6 6 12-13"/></svg>
+              <div><p class="rl">Buyer rule <span class="sig">signed</span></p><p class="say" id="say-buyer"></p></div>
+            </div>
+            <div class="rrow" id="rr-merch">
+              <svg class="rr" viewBox="0 0 48 48" focusable="false"><circle class="rr-base" cx="24" cy="24" r="19"/><circle class="rr-spin" cx="24" cy="24" r="19" pathLength="100"/><path class="rr-tick" d="M15 24.5l6 6 12-13"/></svg>
+              <div><p class="rl">Merchant rule <span class="sig">signed</span> <span class="hx">policy <span data-f="policy8"></span></span></p><p class="say" id="say-merch"></p></div>
+            </div>
+          </section>
+          <section class="pn pn-buyer" id="pn-buyer">
+            <div class="pn-h"><span class="mk">BUYER AGENT</span><span class="st" id="buyer-st">watching</span></div>
+            <p class="it" id="b1"><span class="k">ORDER</span><b class="mono" data-f="order"></b><br>paid <b data-f="paid"></b>, no tracking on the order</p>
+            <p class="it" id="b2"><span class="k">OPENS DISPUTE</span><b class="mono" data-f="dispute"></b><br>asks <b data-f="ask"></b> back</p>
+            <p class="it" id="b3"><span class="k">CHECKS ITS OWN RULE</span>An order this agent placed, claim inside its amount. <b class="ok">Inside</b></p>
+            <p class="it" id="b4"><span class="k">READS PAYPAL</span><b data-f="status"></b> at <b data-f="stage"></b>, refund <b data-f="refund"></b></p>
+          </section>
+          <section class="pn pn-merch" id="pn-merch">
+            <div class="pn-h"><span class="mk">MERCHANT AGENT</span><span class="st" id="merch-st">waiting</span></div>
+            <div class="tools">
+              <p class="it tool" id="t1"><span class="k">TOOL</span>model.call<i class="tk" aria-hidden="true"></i></p>
+              <p class="it tool" id="t2"><span class="k">TOOL</span>dispute.decision<i class="tk" aria-hidden="true"></i></p>
+              <p class="it tool" id="t3"><span class="k">TOOL</span>dispute.offer_sent<i class="tk" aria-hidden="true"></i></p>
+            </div>
+            <p class="it" id="m1"><span class="k">MODEL PROPOSES</span><b class="mono" data-f="proposed"></b> <span class="dim">(<span data-f="model"></span>)</span></p>
+            <div class="it pol" id="m2">
+              <p><span class="k">POLICY CHECK</span>Offer <b data-f="offer"></b> inside the <b data-f="limit"></b> it may settle alone</p>
+              <svg class="gbar" viewBox="0 0 300 16" focusable="false"><rect class="gb-track" x="0" y="5" width="300" height="6" rx="3"/><rect class="gb-fill" id="gb-fill" x="0" y="5" width="150" height="6" rx="3"/><path class="gb-mark" id="gb-mark" d="M150 0v16"/></svg>
+            </div>
+            <p class="it" id="m3"><span class="k">SENT</span>The offer, alone. <span class="hx">signed receipt</span></p>
+            <p class="it" id="m4"><span class="k">PAYPAL'S RECORD</span><b data-f="status"></b> at <b data-f="stage"></b>, fee <b data-f="fee"></b></p>
+          </section>
+        </div>
+        <div class="core" id="core">
+          <div class="ring-wrap"><svg class="reactor" viewBox="0 0 400 400" focusable="false">
+            <g class="rc-a"><circle class="rc-ticks" cx="200" cy="200" r="188" pathLength="360"/></g>
+            <g class="rc-b"><circle class="rc-arcs" cx="200" cy="200" r="168" pathLength="360"/></g>
+            <circle class="rc-pulse" cx="200" cy="200" r="132"/>
+            <circle class="rc-base" cx="200" cy="200" r="124"/>
+            <g class="rc-c"><circle class="rc-sign" cx="200" cy="200" r="124" pathLength="360"/></g>
+            <circle class="rc-disc" cx="200" cy="200" r="98"/>
+            <text class="rc-micro" x="200" y="158" text-anchor="middle">DISPUTE ID</text>
+            <text class="rc-id" id="rc-id1" x="200" y="196" text-anchor="middle"></text>
+            <text class="rc-id" id="rc-id2" x="200" y="224" text-anchor="middle"></text>
+            <text class="rc-state" id="rc-state" x="200" y="258" text-anchor="middle"></text>
+          </svg></div>
+          <div class="chips" id="chips">
+            <p class="chip chip-l" id="chip3"><span class="k">MERCHANT RECEIPT, OFFER SENT</span><span class="hx" data-f="h3"></span></p>
+            <p class="chip chip-r" id="chip5"><span class="k">BUYER RECEIPT, CASE SETTLED</span><span class="hx" data-f="h5"></span></p>
+          </div>
+        </div>
+      </div>
+      <p class="hud-cap" id="hud-cap">Press Play, or scroll and it starts.</p>
     </div>
+    <div class="wrap">
+      <details class="story-wrap" id="story-wrap">
+        <summary>Read the scene as text</summary>
+        <ol class="story" id="story">
+          <li>The owner says the buyer's rule out loud: <q data-f="ruleBuyer"></q> It becomes a signed policy.</li>
+          <li>The owner says the merchant's rule out loud: <q data-f="ruleMerch"></q> It becomes a signed policy<span class="story-x"> with hash <span class="mono" data-f="policy8"></span></span>.</li>
+          <li>The buyer agent finds order <span class="mono" data-f="order"></span>, paid <span data-f="paid"></span>, with no tracking, and opens dispute <span class="mono" data-f="dispute"></span>, asking <span data-f="ask"></span> back. It writes: <q data-f="message"></q></li>
+          <li>The merchant agent asks its model, and the proposal is <span class="mono" data-f="proposed"></span> (<span data-f="model"></span>).</li>
+          <li>The policy check passes: offer <span data-f="offer"></span> is inside the <span data-f="limit"></span> it may settle alone.</li>
+          <li>The offer is sent alone. The merchant receipt is signed, hash <span class="mono" data-f="h3"></span>.</li>
+          <li>PayPal's record reads <span data-f="status"></span> at <span data-f="stage"></span>, refund <span data-f="refund"></span>, fee <span data-f="fee"></span>. The buyer agent reads the same record and signs its receipt, hash <span class="mono" data-f="h5"></span>. Both receipts name the same dispute id.</li>
+          <li>Done. You were not asked.</li>
+        </ol>
+      </details>
+    </div>
+  </section>
+
+  <section class="band wrap measured" id="measured" aria-labelledby="m-h">
+    <p class="eyebrow">Measured</p>
+    <h2 id="m-h">Numbers from the recorded runs.</h2>
+    <dl class="lead-numbers" id="lead-numbers" aria-label="Measured numbers from the recorded runs" hidden></dl>
+    <p class="hero-note">Real PayPal sandbox, test money. Every figure comes from a recorded run; a figure from a local run on the local provider says so.</p>
+  </section>
+
+  <section class="band wrap focus" id="focus" aria-labelledby="focus-h">
+    <p class="eyebrow">Built for two people</p>
+    <h2 id="focus-h">One problem. Solved end to end.</h2>
+    <p class="lede">Item not received is the whole job. Clearwake owns it from the day the parcel ships to the moment PayPal's record reads RESOLVED, for the person whose agent shops for them and the merchant who sells to agents. Anything outside your rules reaches you with the evidence ready.</p>
+    <ol class="chain" aria-label="The loop, start to finish">
+      <li><b>Shipped</b><span>Tracking added to PayPal</span></li>
+      <li><b>Watched</b><span>The buyer's agent sees it stall</span></li>
+      <li><b>Opened</b><span>Dispute inside the mandate</span></li>
+      <li><b>Read</b><span>Dispute, order, tracking</span></li>
+      <li><b>Offered</b><span>Inside the signed limit</span></li>
+      <li><b>Resolved</b><span>PayPal's record says so</span></li>
+      <li><b>Signed</b><span>Two receipts, one dispute id</span></li>
+    </ol>
   </section>
 
   <section class="band wrap loop" id="loop" aria-labelledby="loop-h">
@@ -58,14 +175,37 @@
       <li class="seq-step"><span class="seq-n" aria-hidden="true">5</span><div><h3>Both sides read PayPal's record</h3><p>Until it says RESOLVED. A lost response is never retried blindly, and nothing is ever paid twice.</p></div></li>
       <li class="seq-step"><span class="seq-n" aria-hidden="true">6</span><div><h3>Two signed receipts</h3><p>One from each side. Both name the same PayPal dispute id, and both verify offline.</p></div></li>
     </ol>
-    <svg class="two-rings" viewBox="0 0 320 130" role="img" aria-labelledby="tr-t tr-d">
-      <title id="tr-t">Two receipts, one dispute id</title>
-      <desc id="tr-d">Two overlapping rings. The left ring is the buyer's signed receipt and the right ring is the merchant's signed receipt. Where they overlap is the same PayPal dispute id, PP-R-OBG-10196144.</desc>
-      <circle class="tr-a" cx="125" cy="65" r="52"/><circle class="tr-b" cx="195" cy="65" r="52"/>
-      <text class="tr-t" x="88" y="62">Buyer</text><text class="tr-t" x="232" y="62">Merchant</text>
-      <text class="tr-m" x="160" y="58">same</text><text class="tr-m" x="160" y="74">dispute id</text>
-      <text class="tr-id" x="160" y="124">PP-R-OBG-10196144</text>
-    </svg>
+    <figure class="venn" id="venn">
+      <svg class="venn-h" viewBox="0 0 760 380" role="img" aria-labelledby="vh-t vh-d">
+        <title id="vh-t">Two receipts, one dispute id</title>
+        <desc id="vh-d">Two circles, the buyer on the left and the merchant on the right. Where they overlap is the same PayPal dispute id, PP-R-ISN-10198775. Two signed receipt hashes sit under the diagram.</desc>
+        <circle class="vc vc-a" cx="290" cy="190" r="165"/>
+        <circle class="vc vc-b" cx="470" cy="190" r="165"/>
+        <path class="vlens" d="M380 51.7 A165 165 0 0 0 380 328.3 A165 165 0 0 0 380 51.7Z"/>
+        <text class="vt vt-a" x="212" y="186">BUYER</text><text class="vs vs-a" x="212" y="212">its agent opens</text>
+        <text class="vt vt-b" x="548" y="186">MERCHANT</text><text class="vs vs-b" x="548" y="212">its agent answers</text>
+        <text class="vk" x="380" y="148">SAME DISPUTE ID</text>
+        <text class="vid" id="vid-h1" x="380" y="190"></text>
+        <text class="vid" id="vid-h2" x="380" y="220"></text>
+      </svg>
+      <svg class="venn-v" viewBox="0 0 400 420" role="img" aria-labelledby="vv-t vv-d">
+        <title id="vv-t">Two receipts, one dispute id</title>
+        <desc id="vv-d">Two circles, the buyer above and the merchant below. Where they overlap is the same PayPal dispute id, PP-R-ISN-10198775. Two signed receipt hashes sit under the diagram.</desc>
+        <circle class="vc vc-a" cx="200" cy="130" r="125"/>
+        <circle class="vc vc-b" cx="200" cy="280" r="125"/>
+        <path class="vlens" d="M100 205 A125 125 0 0 1 300 205 A125 125 0 0 1 100 205Z"/>
+        <text class="vt vt-a" x="200" y="82">BUYER</text><text class="vs vs-a" x="200" y="108">its agent opens</text>
+        <text class="vt vt-b" x="200" y="334">MERCHANT</text><text class="vs vs-b" x="200" y="360">its agent answers</text>
+        <text class="vk" x="200" y="184">SAME DISPUTE ID</text>
+        <text class="vid" id="vid-v1" x="200" y="214"></text>
+        <text class="vid" id="vid-v2" x="200" y="240"></text>
+      </svg>
+      <div class="vchips">
+        <p class="chip chip-l" id="vchip-a"><span class="k">MERCHANT RECEIPT, OFFER SENT</span><span class="hx" data-f="h3"></span></p>
+        <p class="chip chip-r" id="vchip-b"><span class="k">BUYER RECEIPT, CASE SETTLED</span><span class="hx" data-f="h5"></span></p>
+      </div>
+      <figcaption>Batch case 3, 11 Nov 2026. Both receipts name <span class="mono" data-f="dispute"></span> and verify offline.</figcaption>
+    </figure>
   </section>
 
   <section class="band wrap rules" id="rules" aria-labelledby="rules-h">
@@ -73,8 +213,8 @@
       <p class="eyebrow">Step zero</p>
       <h2 id="rules-h">Say the rules once, in plain words.</h2>
       <p class="lede">The merchant says it out loud. Typing works too.</p>
-      <blockquote class="said">Refund anything under $30 that has not arrived in 10 days. Ask me above that. Never refund twice.</blockquote>
-      <blockquote class="said">You can claim for orders you placed, up to the order amount.</blockquote>
+      <blockquote class="said" id="rule-merch">Settle an item that has not arrived on its own up to USD 5.00. Ask me from USD 5.01 up to USD 9.00. Never more. Send evidence when the records answer the claim. Every other dispute reason goes to me untouched.</blockquote>
+      <blockquote class="said" id="rule-buyer">Claim only for an order this agent placed, up to its amount.</blockquote>
     </div>
     <div>
       <ol class="plainsteps">
@@ -87,24 +227,18 @@
     </div>
   </section>
 
-  <section class="band wrap limit" id="limit" aria-labelledby="limit-h">
-    <p class="eyebrow">The honest limit</p>
-    <h2 id="limit-h">One problem, end to end.</h2>
-    <p class="lede">Clearwake settles item not received. Every other dispute reason is escalated to the owner untouched, with the evidence ready and nothing sent. Agents act only inside the limits the people set, and anything outside goes to a person.</p>
-  </section>
-
-  <section class="band wrap runit" id="run-it" aria-labelledby="run-h">
-    <div>
-      <p class="eyebrow">How to run it</p>
-      <h2 id="run-h">Python 3.12 or newer. Nothing to install.</h2>
-      <p class="lede">It starts on local records and makes no network calls.</p>
+  <section class="band wrap phone" id="phone" aria-labelledby="phone-h">
+    <div class="phone-copy">
+      <p class="eyebrow">On your phone</p>
+      <h2 id="phone-h">Scan. Run a case. Watch two agents settle it.</h2>
+      <p class="lede">Point your camera at the code. The console opens on your phone, one large button runs a case, and the buyer agent and the merchant agent settle it in front of you.</p>
+      <p class="phone-url"><a class="mono" href="https://clearwake-console.onrender.com/console">clearwake-console.onrender.com/console</a></p>
+      <p class="note phone-voice">Say your rules out loud: <span class="mono">python -m clearwake --phone</span>, then scan the code it prints.</p>
     </div>
-    <div>
-      <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
-cd clearwake
-python -m clearwake --port 8810</pre>
-      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. Speak to it from a phone with <span class="mono">python -m clearwake --phone</span>. The network isolated run (case m) needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
-    </div>
+    <a class="qr" href="https://clearwake-console.onrender.com/console" aria-label="Open the Clearwake console. The QR code opens the same address.">
+      <img src="img/qr-console.svg" width="264" height="264" alt="QR code for clearwake-console.onrender.com/console">
+      <span class="qr-c qr-tl"></span><span class="qr-c qr-tr"></span><span class="qr-c qr-bl"></span><span class="qr-c qr-br"></span>
+    </a>
   </section>
 
   <section class="wrap lanes-sec" id="cases" aria-label="Recorded cases">
@@ -114,7 +248,7 @@ python -m clearwake --port 8810</pre>
       <div class="lane teal">
         <h2 class="lane-title">Settled before escalation</h2>
         <ul class="marks">
-          <li class="mark c1"><b>Settled in conversation</b><span class="mono">Case n, USD 2.50 offer</span><span class="mono dim">PP-R-OBG-10196144, RESOLVED at INQUIRY</span></li>
+          <li class="mark c1"><b>Settled in conversation</b><span class="mono">Batch case 3, USD 5.00 offer</span><span class="mono dim">PP-R-ISN-10198775, RESOLVED at INQUIRY</span></li>
           <li class="mark c2"><b>Refund under the limit</b><span class="mono">Case c, USD 1.50</span><span class="mono dim">6SN41486G5579815G, VERIFIED</span></li>
         </ul>
       </div>
@@ -130,42 +264,6 @@ python -m clearwake --port 8810</pre>
         <ul class="marks">
           <li class="mark c5"><b>Refund above the approval line</b><span class="mono">Case d, USD 3.50</span><span class="mono dim">2NB27940EC188891M, after approval</span></li>
         </ul>
-      </div>
-    </div>
-  </section>
-
-  <section class="band wrap gauge" id="gauge" aria-labelledby="gauge-h">
-    <div class="gauge-copy">
-      <p class="eyebrow">The 1.5% line</p>
-      <h2 id="gauge-h">Drag the mercury. Watch the fee double.</h2>
-      <p class="lede">A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays the High Volume Dispute Fee on every dispute: USD 30.00 instead of USD 15.00. PayPal Merchant Fees, US, updated 1 Oct 2026. The rule and both fees are the ones in <span class="mono">clearwake/fees.py</span>.</p>
-      <p class="note">The recorded sandbox has a handful of test orders, far under 100 sales, so the rule does not apply to it. The figures here are example values for you to change. They are not Clearwake results.</p>
-      <form class="inputs" id="g-form">
-        <label>Sales, 3 months<input id="g-sales" type="number" inputmode="numeric" min="0" value="500"></label>
-        <label>Net sales, USD<input id="g-net" type="number" inputmode="decimal" min="1" value="25000"></label>
-        <label>Counted disputes now<input id="g-count" type="number" inputmode="numeric" min="0" value="3"></label>
-        <label>Average disputed, USD<input id="g-avg" type="number" inputmode="decimal" min="0" value="40"></label>
-      </form>
-    </div>
-    <div class="gauge-scene">
-      <svg class="thermo" id="thermo" viewBox="0 0 200 380" role="img" aria-labelledby="gt gd">
-        <title id="gt">Dispute rate against the 1.5% line</title>
-        <desc id="gd">A vertical gauge from 0 to 3 percent. The fill is the dispute rate. A dashed amber line marks 1.5 percent. Drag the handle to change how many more disputes escalate.</desc>
-        <rect class="g-track" x="60" y="30" width="44" height="320" rx="22"/>
-        <rect id="g-fill" class="g-fill" x="60" y="350" width="44" height="0"/>
-        <line class="g-line" x1="30" y1="190" x2="190" y2="190"/>
-        <text class="g-label" x="112" y="182">1.5% PayPal line</text>
-        <text class="g-end" x="14" y="354">0%</text><text class="g-end" x="14" y="38">3%</text>
-        <g id="g-handle" class="g-handle" tabindex="0" role="slider" aria-label="More disputes that escalate" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
-          <circle cx="82" cy="350" r="22" class="g-hit"/><circle cx="82" cy="350" r="12" class="g-knob"/>
-        </g>
-      </svg>
-      <div class="gauge-read">
-        <p class="rate"><span id="g-rate" class="num tnum">0.48%</span></p>
-        <p><span id="g-state" class="pill">Under the line</span></p>
-        <label class="slider" for="g-n">What if <b id="g-n-out" class="tnum">0</b> more disputes escalate</label>
-        <input id="g-n" type="range" min="0" max="20" value="0">
-        <p class="result-box" id="g-msg" aria-live="polite"></p>
       </div>
     </div>
   </section>
@@ -212,8 +310,8 @@ python -m clearwake --port 8810</pre>
         </li>
         <li class="step" data-i="3">
           <p class="eyebrow">Receipt 4, PayPal read</p>
-          <h3>Not yet.</h3>
-          <p>PayPal's record reads UNDER_REVIEW at INQUIRY. Clearwake receipts this as not successful, and counts nothing as settled.</p>
+          <h3>PayPal's record is the judge.</h3>
+          <p>PayPal reads UNDER_REVIEW at INQUIRY. Nothing is counted as settled until PayPal's own record says RESOLVED, so the receipt waits.</p>
           <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
         </li>
         <li class="step" data-i="4">
@@ -325,6 +423,56 @@ python -m clearwake --port 8810</pre>
       </form>
       <p class="note">All recorded logs: <a href="receipts/case-m-merchant.ndjson">case m merchant</a>, <a href="receipts/egress-gateway.ndjson">egress gateway</a>, <a href="receipts/case-o-dispatch.ndjson">case o dispatch</a>, <a href="receipts/case-n-settle.ndjson">case n settle</a>, and <a href="receipts/manifest.json">the manifest with public keys</a>.</p>
     </details>
+  </section>
+
+  <section class="band wrap gauge" id="gauge" aria-labelledby="gauge-h">
+    <div class="gauge-copy">
+      <p class="eyebrow">The 1.5% line</p>
+      <h2 id="gauge-h">Drag the mercury. Watch the fee double.</h2>
+      <p class="lede">A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays the High Volume Dispute Fee on every dispute: USD 30.00 instead of USD 15.00. PayPal Merchant Fees, US, updated 1 Oct 2026. The rule and both fees are the ones in <span class="mono">clearwake/fees.py</span>.</p>
+      <p class="note">The recorded sandbox has a handful of test orders, far under 100 sales, so the rule does not apply to it. The figures here are example values for you to change. They are not Clearwake results.</p>
+      <form class="inputs" id="g-form">
+        <label>Sales, 3 months<input id="g-sales" type="number" inputmode="numeric" min="0" value="500"></label>
+        <label>Net sales, USD<input id="g-net" type="number" inputmode="decimal" min="1" value="25000"></label>
+        <label>Counted disputes now<input id="g-count" type="number" inputmode="numeric" min="0" value="3"></label>
+        <label>Average disputed, USD<input id="g-avg" type="number" inputmode="decimal" min="0" value="40"></label>
+      </form>
+    </div>
+    <div class="gauge-scene">
+      <svg class="thermo" id="thermo" viewBox="0 0 200 380" role="img" aria-labelledby="gt gd">
+        <title id="gt">Dispute rate against the 1.5% line</title>
+        <desc id="gd">A vertical gauge from 0 to 3 percent. The fill is the dispute rate. A dashed amber line marks 1.5 percent. Drag the handle to change how many more disputes escalate.</desc>
+        <rect class="g-track" x="60" y="30" width="44" height="320" rx="22"/>
+        <rect id="g-fill" class="g-fill" x="60" y="350" width="44" height="0"/>
+        <line class="g-line" x1="30" y1="190" x2="190" y2="190"/>
+        <text class="g-label" x="112" y="182">1.5% PayPal line</text>
+        <text class="g-end" x="14" y="354">0%</text><text class="g-end" x="14" y="38">3%</text>
+        <g id="g-handle" class="g-handle" tabindex="0" role="slider" aria-label="More disputes that escalate" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
+          <circle cx="82" cy="350" r="22" class="g-hit"/><circle cx="82" cy="350" r="12" class="g-knob"/>
+        </g>
+      </svg>
+      <div class="gauge-read">
+        <p class="rate"><span id="g-rate" class="num tnum">0.48%</span></p>
+        <p><span id="g-state" class="pill">Under the line</span></p>
+        <label class="slider" for="g-n">What if <b id="g-n-out" class="tnum">0</b> more disputes escalate</label>
+        <input id="g-n" type="range" min="0" max="20" value="0">
+        <p class="result-box" id="g-msg" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="band wrap runit" id="run-it" aria-labelledby="run-h">
+    <div>
+      <p class="eyebrow">How to run it</p>
+      <h2 id="run-h">Python 3.12 or newer. Nothing to install.</h2>
+      <p class="lede">It starts on local records and makes no network calls.</p>
+    </div>
+    <div>
+      <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
+cd clearwake
+python -m clearwake --port 8810</pre>
+      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. Speak to it from a phone with <span class="mono">python -m clearwake --phone</span>. The network isolated run (case m) needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
+    </div>
   </section>
 
   <section class="closing" aria-labelledby="close-h">

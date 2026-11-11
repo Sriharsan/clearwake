@@ -274,7 +274,7 @@ class TransportTests(unittest.TestCase):
         calls = []
         def send(request, timeout):
             calls.append(request)
-            self.assertEqual(timeout, 15)
+            self.assertEqual(timeout, 15 if request.full_url.endswith("/token") else (30 if request.data is None else 45))   # a read may be slower and is read again; a write is sent once
             if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
             return {"id": "synthetic-response"}
         gateway = SandboxGateway("synthetic-client", "synthetic-secret", send=send)
@@ -395,3 +395,21 @@ class HTTPTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReadRetryTests(unittest.TestCase):
+    def test_a_slow_read_is_read_again_and_a_write_is_never_repeated(self):
+        calls = {"read": 0, "write": 0}
+        def send(request, timeout):
+            if request.full_url.endswith("/token"): return {"access_token": "token-value", "token_type": "Bearer", "expires_in": 3600}
+            key = "write" if request.data is not None else "read"
+            calls[key] += 1
+            if key == "read" and calls["read"] < 3: raise TimeoutError("slow")
+            if key == "write": raise TimeoutError("lost")
+            return {"id": "ok"}
+        gateway = SandboxGateway("client", "secret", send=send)
+        self.assertEqual(gateway.capture("CAPTURE1"), {"id": "ok"})
+        self.assertEqual(calls["read"], 3)
+        with self.assertRaises(GatewayError):
+            gateway.refund("CAPTURE1", "1.00", "USD", "12345678-1234-4234-8234-123456789abc")
+        self.assertEqual(calls["write"], 1)

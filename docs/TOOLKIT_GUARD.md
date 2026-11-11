@@ -59,3 +59,7 @@ In the lost response and duplicate episodes, 31 of 40 needed an owner approval (
 `site/break.html` replays the recorded episodes in the browser: pick an attack, press Run, see both outcomes and verify the guarded receipts with the same browser verifier as the Developers page. `scripts/build_break_data.py` builds `site/data/break.json` from the newest recorded run and stops if the unguarded replay differs from the record. The page ports the pattern list of `clearwake/guard.py` to JavaScript; `tests/test_toolkit_guard.py` checks that both give the same answers on `tests/fixtures/injection_cases.json`. The JavaScript uses ASCII word boundaries, so Python remains the authority for non ASCII text.
 
 Files: `clearwake/toolkit_guard.py`, `examples/toolkit_agent_guarded.py`, `tests/test_toolkit_guard.py`, `scripts/build_break_data.py`, `site/break.html`, `site/break.js`, `site/break.css`, `site/data/break.json`.
+
+## Note 2026-11-11: the MCP proxy and the TypeScript toolkit
+
+The scope line "the one money returning dispute tool" holds for the Python toolkit that the failure page ran. The published npm package of the toolkit (1.11.0) and the MCP server (`@paypal/mcp` 1.8.1) also define `create_refund`, and offer 28 tools in all (`docs/PAYPAL_MCP_TOOLS.md`). `clearwake/mcp_guard.py` applies the same logic to both `accept_dispute_claim` and `create_refund` for any MCP client: see `docs/MCP_GUARD.md`. The npm tool's `note` allows only letters, digits, underscore and hyphen, so the free text notes of cases e to g could not reach PayPal through the MCP server.

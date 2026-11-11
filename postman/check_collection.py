@@ -48,10 +48,20 @@ info = collection.get("info", {})
 need(info.get("schema") == "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", "info.schema is not the v2.1 schema")
 need(bool(info.get("name")) and bool(info.get("_postman_id")), "info.name and info._postman_id are required")
 found = []
+ATTACK = "4 Attack suite (local console) / "
+attack_count = [0]
 for name, item in requests_of(collection["item"]):
     request = item.get("request", {})
     need(request.get("method") in {"GET", "POST"}, f"{name}: method")
     url = request.get("url", {})
+    if name.startswith(ATTACK):   # the local console folder: {{console_url}} only, no PayPal route, no PayPal-Request-Id
+        need(url.get("raw", "").startswith("{{console_url}}/"), f"{name}: url must start with {{{{console_url}}}}/")
+        need(url.get("host") == ["{{console_url}}"], f"{name}: url.host")
+        tests = [e for e in item.get("event", []) if e["listen"] == "test"]
+        count = len(re.findall(r"pm\.test\(", "\n".join("\n".join(t["script"]["exec"]) for t in tests)))
+        need(count >= 4, f"{name}: needs real tests on the response (found {count})")
+        attack_count[0] += 1
+        continue
     need(url.get("raw", "").startswith("{{base_url}}/"), f"{name}: url must start with {{{{base_url}}}}/")
     need(url.get("host") == ["{{base_url}}"], f"{name}: url.host")
     tests = [e for e in item.get("event", []) if e["listen"] == "test"]
@@ -61,6 +71,10 @@ for name, item in requests_of(collection["item"]):
         need(any(h["key"] == "PayPal-Request-Id" for h in request.get("header", [])), f"{name}: POST without PayPal-Request-Id")
     found.append((request["method"], re.sub(r"\{\{[a-z_]+\}\}", "{}", url["raw"][len("{{base_url}}"):])))
 need(len(found) == len(set(found)) or True, "")
+
+variables = {v["key"]: v["value"] for v in collection.get("variable", [])}
+need(variables.get("console_url") == "http://127.0.0.1:8810", "console_url must default to http://127.0.0.1:8810")
+need(attack_count[0] >= 10, f"the attack suite needs at least 10 requests (found {attack_count[0]})")
 
 # 2. Every route that paypal.py allows is covered
 source = (ROOT / "clearwake" / "paypal.py").read_text(encoding="utf-8")
@@ -108,4 +122,4 @@ if problems:
             print(" -", line)
     sys.exit(1)
 count = sum(1 for _ in requests_of(collection["item"]))
-print(f"OK: {count} requests, {sum(1 for _ in scripts_of(collection))} scripts compile, {len(wanted)} PayPal routes covered, environment holds no secret")
+print(f"OK: {count} requests ({attack_count[0]} in the local attack suite), {sum(1 for _ in scripts_of(collection))} scripts compile, {len(wanted)} PayPal routes covered, environment holds no secret")

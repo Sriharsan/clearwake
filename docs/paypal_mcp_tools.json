@@ -1,0 +1,813 @@
+{
+ "source": "read from the published npm package source, 11 Nov 2026",
+ "packages": {
+  "@paypal/mcp": "1.8.1",
+  "@paypal/agent-toolkit": "1.11.0",
+  "@modelcontextprotocol/sdk": "1.32.2"
+ },
+ "kinds": {
+  "read": "reads PayPal state, changes nothing",
+  "write": "changes PayPal state (drafts, catalogue, tracking, subscriptions) without the call itself moving money",
+  "money": "moves money, or sends a payment request or reminder to a customer"
+ },
+ "counts": {
+  "toolkit_total": 47,
+  "mcp_tools_all": 28,
+  "toolkit_by_kind": {
+   "write": 21,
+   "money": 8,
+   "read": 18
+  },
+  "mcp_tools_all_by_kind": {
+   "write": 9,
+   "read": 14,
+   "money": 5
+  }
+ },
+ "dispute_tools": [
+  "list_disputes",
+  "get_dispute",
+  "accept_dispute_claim"
+ ],
+ "tracking_tools": [
+  "create_shipment_tracking",
+  "get_shipment_tracking",
+  "update_shipment_tracking"
+ ],
+ "tools": [
+  {
+   "name": "create_invoice",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "invoices.create",
+   "description": "Create Invoices on PayPal.",
+   "input_fields": [
+    "currency_code",
+    "invoice_number",
+    "invoice_date",
+    "reference",
+    "note",
+    "invoicer_business_name",
+    "invoicer_given_name",
+    "invoicer_surname",
+    "invoicer_email_address",
+    "invoicer_tax_id",
+    "invoicer_address_line_1",
+    "invoicer_address_line_2",
+    "invoicer_city",
+    "invoicer_state",
+    "invoicer_postal_code",
+    "invoicer_country_code",
+    "primary_recipients",
+    "items",
+    "allow_tip",
+    "theme_color",
+    "shipping_cost",
+    "enable_pay_by_bank",
+    "pay_by_bank_exclusive_above_threshold",
+    "allow_partial_payment",
+    "minimum_partial_payment_amount"
+   ],
+   "required": [
+    "currency_code",
+    "primary_recipients",
+    "items"
+   ]
+  },
+  {
+   "name": "create_recurring_series",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.createRecurringSeries",
+   "description": "Create a recurring invoice series on PayPal.",
+   "input_fields": [
+    "interval_unit",
+    "interval_count",
+    "start_series_date",
+    "total_cycles",
+    "reference",
+    "currency_code",
+    "note",
+    "invoicer_business_name",
+    "invoicer_given_name",
+    "invoicer_surname",
+    "invoicer_email_address",
+    "invoicer_tax_id",
+    "invoicer_address_line_1",
+    "invoicer_address_line_2",
+    "invoicer_city",
+    "invoicer_state",
+    "invoicer_postal_code",
+    "invoicer_country_code",
+    "primary_recipients",
+    "items",
+    "allow_tip",
+    "shipping_cost",
+    "allow_partial_payment",
+    "minimum_partial_payment_amount"
+   ],
+   "required": [
+    "interval_unit",
+    "interval_count",
+    "start_series_date",
+    "currency_code",
+    "primary_recipients"
+   ]
+  },
+  {
+   "name": "activate_recurring_series",
+   "kind": "money",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.activateRecurringSeries",
+   "description": "Activate a recurring invoice series on PayPal.",
+   "input_fields": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "get_recurring_series",
+   "kind": "read",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.getRecurringSeries",
+   "description": "Get a recurring invoice series from PayPal.",
+   "input_fields": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "cancel_recurring_series",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.cancelRecurringSeries",
+   "description": "Cancel a recurring invoice series on PayPal.",
+   "input_fields": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "delete_recurring_series",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.deleteRecurringSeries",
+   "description": "Delete a recurring invoice series on PayPal.",
+   "input_fields": [
+    "recurring_series_id"
+   ],
+   "required": [
+    "recurring_series_id"
+   ]
+  },
+  {
+   "name": "list_invoices",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "invoices.list",
+   "description": "List invoices from PayPal.",
+   "input_fields": [
+    "page",
+    "page_size",
+    "total_required"
+   ],
+   "required": []
+  },
+  {
+   "name": "get_invoice",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "invoices.get",
+   "description": "Get an invoice from PayPal.",
+   "input_fields": [
+    "invoice_id"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "send_invoice",
+   "kind": "money",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "invoices.send",
+   "description": "Send an invoice to the recipient(s).",
+   "input_fields": [
+    "invoice_id",
+    "note",
+    "send_to_recipient",
+    "additional_recipients"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "send_invoice_reminder",
+   "kind": "money",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "invoices.sendReminder",
+   "description": "Send a reminder for an invoice.",
+   "input_fields": [
+    "invoice_id",
+    "subject",
+    "note",
+    "additional_recipients"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "cancel_sent_invoice",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "invoices.cancel",
+   "description": "Cancel a sent invoice.",
+   "input_fields": [
+    "invoice_id",
+    "note",
+    "send_to_recipient",
+    "additional_recipients"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "delete_invoice",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.delete",
+   "description": "Delete a draft or scheduled invoice on PayPal.",
+   "input_fields": [
+    "invoice_id"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "setup_invoice_auto_reminders",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.setupReminders",
+   "description": "Initialize the invoice auto reminder configuration for the merchant's PayPal account.",
+   "input_fields": [
+    "configurations"
+   ],
+   "required": []
+  },
+  {
+   "name": "update_invoice_auto_reminder",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.updateReminder",
+   "description": "Update an existing invoice auto reminder configuration by its configuration ID.",
+   "input_fields": [
+    "reminder_configuration_id",
+    "type",
+    "status",
+    "interval",
+    "repetition",
+    "notification"
+   ],
+   "required": [
+    "reminder_configuration_id",
+    "type",
+    "interval",
+    "repetition"
+   ]
+  },
+  {
+   "name": "search_invoicing",
+   "kind": "read",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.search",
+   "description": "Search for invoices or recurring invoice series on PayPal.",
+   "input_fields": [
+    "resource_type",
+    "page",
+    "page_size",
+    "total_required",
+    "invoice_filters",
+    "recurring_series_filters"
+   ],
+   "required": [
+    "resource_type"
+   ]
+  },
+  {
+   "name": "update_invoicing",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.update",
+   "description": "Update an existing invoice or recurring invoice series on PayPal.",
+   "input_fields": [
+    "resource_type",
+    "invoice_update",
+    "recurring_series_update"
+   ],
+   "required": [
+    "resource_type"
+   ]
+  },
+  {
+   "name": "cancel_invoice_auto_reminder",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.cancelReminders",
+   "description": "Cancel all scheduled automatic reminders for an invoice.",
+   "input_fields": [
+    "invoice_id"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "generate_invoice_qr_code",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "invoices.generateQRC",
+   "description": "Generate a QR code for an invoice.",
+   "input_fields": [
+    "invoice_id",
+    "width",
+    "height"
+   ],
+   "required": [
+    "invoice_id"
+   ]
+  },
+  {
+   "name": "generate_invoice_number",
+   "kind": "read",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.generateInvoiceNumber",
+   "description": "Generate the next invoice number available to the merchant.",
+   "input_fields": [],
+   "required": []
+  },
+  {
+   "name": "record_payment_for_invoice",
+   "kind": "money",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.recordPayment",
+   "description": "Record a payment for an invoice on PayPal.",
+   "input_fields": [
+    "invoice_id",
+    "payment_id",
+    "payment_date",
+    "payment_date_time",
+    "method",
+    "note",
+    "amount",
+    "shipping_info"
+   ],
+   "required": [
+    "invoice_id",
+    "method"
+   ]
+  },
+  {
+   "name": "record_refund_for_invoice",
+   "kind": "money",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.recordRefund",
+   "description": "Record a refund for an invoice on PayPal.",
+   "input_fields": [
+    "invoice_id",
+    "refund_date",
+    "amount",
+    "method"
+   ],
+   "required": [
+    "invoice_id",
+    "method"
+   ]
+  },
+  {
+   "name": "create_conditional_rules_for_invoice",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "invoices.createConditionalRules",
+   "description": "Create conditional rules for an invoice on PayPal.",
+   "input_fields": [
+    "invoice_id",
+    "rules"
+   ],
+   "required": [
+    "invoice_id",
+    "rules"
+   ]
+  },
+  {
+   "name": "create_product",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "products.create",
+   "description": "Create a product in PayPal using product catalog - create products API.",
+   "input_fields": [
+    "name",
+    "type",
+    "description",
+    "category",
+    "image_url",
+    "home_url"
+   ],
+   "required": [
+    "name",
+    "type"
+   ]
+  },
+  {
+   "name": "list_products",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "products.list",
+   "description": "List products from PayPal.",
+   "input_fields": [
+    "page",
+    "page_size",
+    "total_required"
+   ],
+   "required": []
+  },
+  {
+   "name": "update_product",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "products.update",
+   "description": "Update a product in PayPal.",
+   "input_fields": [
+    "product_id",
+    "operations"
+   ],
+   "required": [
+    "product_id",
+    "operations"
+   ]
+  },
+  {
+   "name": "show_product_details",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "products.show",
+   "description": "List products from PayPal.",
+   "input_fields": [
+    "product_id"
+   ],
+   "required": [
+    "product_id"
+   ]
+  },
+  {
+   "name": "create_subscription_plan",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "subscriptionPlans.create",
+   "description": "Create a subsctiption plan in PayPal using subscription - create plan API.",
+   "input_fields": [
+    "product_id",
+    "name",
+    "description",
+    "billing_cycles",
+    "payment_preferences",
+    "taxes"
+   ],
+   "required": [
+    "product_id",
+    "name",
+    "billing_cycles"
+   ]
+  },
+  {
+   "name": "list_subscription_plans",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "subscriptionPlans.list",
+   "description": "List subscription plans from PayPal.",
+   "input_fields": [
+    "product_id",
+    "page",
+    "page_size",
+    "total_required"
+   ],
+   "required": []
+  },
+  {
+   "name": "show_subscription_plan_details",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "subscriptionPlans.show",
+   "description": "Show subscription plan details from PayPal.",
+   "input_fields": [
+    "plan_id"
+   ],
+   "required": [
+    "plan_id"
+   ]
+  },
+  {
+   "name": "create_subscription",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "subscriptions.create",
+   "description": "Create a subscription in PayPal using the subscription - create subscription API.",
+   "input_fields": [
+    "plan_id",
+    "quantity",
+    "shipping_amount",
+    "subscriber",
+    "application_context"
+   ],
+   "required": [
+    "plan_id"
+   ]
+  },
+  {
+   "name": "show_subscription_details",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "subscriptions.show",
+   "description": "Show subscription details from PayPal.",
+   "input_fields": [
+    "subscription_id",
+    "get_additional_details"
+   ],
+   "required": [
+    "subscription_id"
+   ]
+  },
+  {
+   "name": "cancel_subscription",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "subscriptions.cancel",
+   "description": "Cancel a customer subscription in PayPal.",
+   "input_fields": [
+    "subscription_id",
+    "payload"
+   ],
+   "required": [
+    "subscription_id",
+    "payload"
+   ]
+  },
+  {
+   "name": "update_subscription",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "subscriptions.update",
+   "description": "Update a customer subscription in PayPal.",
+   "input_fields": [
+    "subscription_id",
+    "currency_code",
+    "outstanding_balance",
+    "custom_id",
+    "fixed_price",
+    "payment_failure_threshold",
+    "auto_bill_outstanding",
+    "taxes_inclusive",
+    "taxes_percentage",
+    "shipping_amount",
+    "shipping_address"
+   ],
+   "required": [
+    "subscription_id"
+   ]
+  },
+  {
+   "name": "create_shipment_tracking",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "shipment.create",
+   "description": "Create a shipment for a transaction in PayPal.",
+   "input_fields": [
+    "order_id",
+    "tracking_number",
+    "transaction_id",
+    "status",
+    "carrier"
+   ],
+   "required": [
+    "tracking_number",
+    "transaction_id"
+   ]
+  },
+  {
+   "name": "get_shipment_tracking",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "shipment.get",
+   "description": "Get tracking information for a shipment by ID.",
+   "input_fields": [
+    "order_id",
+    "transaction_id"
+   ],
+   "required": []
+  },
+  {
+   "name": "update_shipment_tracking",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "shipment.update",
+   "description": "Update tracking information for a shipment by ID and status.",
+   "input_fields": [
+    "transaction_id",
+    "tracking_number",
+    "new_tracking_number",
+    "status",
+    "carrier"
+   ],
+   "required": [
+    "transaction_id",
+    "tracking_number",
+    "status"
+   ]
+  },
+  {
+   "name": "create_order",
+   "kind": "write",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "orders.create",
+   "description": "Create an order in PayPal.",
+   "input_fields": [
+    "currencyCode",
+    "items",
+    "discount",
+    "shippingCost",
+    "shippingAddress",
+    "notes",
+    "returnUrl",
+    "cancelUrl"
+   ],
+   "required": [
+    "currencyCode",
+    "items"
+   ]
+  },
+  {
+   "name": "get_order",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "orders.get",
+   "description": "Retrieves the order details from PayPal for a given order ID.",
+   "input_fields": [
+    "id"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  {
+   "name": "pay_order",
+   "kind": "money",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "orders.capture",
+   "description": "Capture a payment for an order.",
+   "input_fields": [
+    "id"
+   ],
+   "required": [
+    "id"
+   ]
+  },
+  {
+   "name": "list_disputes",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "disputes.list",
+   "description": "List disputes from PayPal.",
+   "input_fields": [
+    "disputed_transaction_id",
+    "dispute_state",
+    "page_size",
+    "page"
+   ],
+   "required": []
+  },
+  {
+   "name": "get_dispute",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "disputes.get",
+   "description": "Get details for a specific dispute from PayPal.",
+   "input_fields": [
+    "dispute_id"
+   ],
+   "required": [
+    "dispute_id"
+   ]
+  },
+  {
+   "name": "accept_dispute_claim",
+   "kind": "money",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "disputes.create",
+   "description": "Accept liability for a dispute claim.",
+   "input_fields": [
+    "dispute_id",
+    "note"
+   ],
+   "required": [
+    "dispute_id",
+    "note"
+   ]
+  },
+  {
+   "name": "list_transactions",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "transactions.list",
+   "description": "List transactions from PayPal.",
+   "input_fields": [
+    "transaction_id",
+    "transaction_status",
+    "start_date",
+    "end_date",
+    "search_months",
+    "page_size",
+    "page"
+   ],
+   "required": []
+  },
+  {
+   "name": "update_plan",
+   "kind": "write",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "plan.update",
+   "description": "Update a billing plan in PayPal using the Plans API (PATCH).",
+   "input_fields": [
+    "plan_id",
+    "description",
+    "auto_bill_outstanding",
+    "percentage",
+    "payment_failure_threshold",
+    "setup_fee",
+    "setup_fee_failure_action",
+    "name",
+    "operations"
+   ],
+   "required": [
+    "plan_id",
+    "operations"
+   ]
+  },
+  {
+   "name": "create_refund",
+   "kind": "money",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "payments.createRefund",
+   "description": "Initiate a refund for a PayPal payment capture.",
+   "input_fields": [
+    "capture_id",
+    "amount",
+    "invoice_id",
+    "note_to_payer"
+   ],
+   "required": [
+    "capture_id"
+   ]
+  },
+  {
+   "name": "get_refund",
+   "kind": "read",
+   "in_mcp_tools_all": true,
+   "toolkit_action": "payments.getRefunds",
+   "description": "Retrieve detailed information about a PayPal payment refund.",
+   "input_fields": [
+    "refund_id"
+   ],
+   "required": [
+    "refund_id"
+   ]
+  },
+  {
+   "name": "get_merchant_insights",
+   "kind": "read",
+   "in_mcp_tools_all": false,
+   "toolkit_action": "insights.get",
+   "description": "Retrieve business intelligence metrics and analytics for a merchant, filtered by start date, end date, insight type, and time interval.",
+   "input_fields": [
+    "start_date",
+    "end_date",
+    "insight_type",
+    "time_interval"
+   ],
+   "required": [
+    "start_date",
+    "end_date",
+    "insight_type",
+    "time_interval"
+   ]
+  }
+ ]
+}

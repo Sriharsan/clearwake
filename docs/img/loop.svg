@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" role="img" aria-labelledby="t d">
+  <title id="t">The Clearwake loop for item not received</title>
+  <desc id="d">Six steps: rules signed once, tracking added at dispatch, buyer agent opens the dispute, merchant agent reads PayPal's record, the model drafts and the signed policy decides, both sides read PayPal until RESOLVED and sign a receipt each.</desc>
+  <style>
+    :root { --bg:#f6f4ee; --card:#ffffff; --line:#d9d4c6; --ink:#14181f; --mute:#566070; --blue:#0b5fd6; --green:#117a4a; --band:#14181f; --bandink:#f6f4ee; }
+    @media (prefers-color-scheme: dark) { :root { --bg:#10151c; --card:#1a212b; --line:#2e3846; --ink:#eef1f5; --mute:#9aa6b6; --blue:#6aa7ff; --green:#5fd49a; --band:#0a0e13; --bandink:#eef1f5; } }
+    .f { font-family: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .bg { fill: var(--bg); } .card { fill: var(--card); stroke: var(--line); stroke-width: 2; }
+    .ink { fill: var(--ink); } .mute { fill: var(--mute); } .blue { fill: var(--blue); } .green { fill: var(--green); }
+    .arrow { stroke: var(--blue); stroke-width: 3; fill: none; } .head { fill: var(--blue); }
+    .band { fill: var(--band); } .bandt { fill: var(--bandink); }
+  </style>
+  <rect class="bg" width="1200" height="420" rx="20"/>
+  <text x="40" y="48" class="f ink" font-size="24" font-weight="700">The loop: item not received, end to end</text>
+
+  <rect class="card" x="40" y="80" width="170" height="190" rx="14"/>
+  <text x="58" y="112" class="f blue" font-size="13" font-weight="700" letter-spacing="1.4">1  RULES</text>
+  <text x="58" y="140" class="f ink" font-size="16" font-weight="700">Said once</text>
+  <text x="58" y="166" class="f mute" font-size="13.5">Owner and merchant set</text><text x="58" y="186" class="f mute" font-size="13.5">limits in plain words.</text>
+  <text x="58" y="206" class="f mute" font-size="13.5">Read back, signed.</text>
+
+  <rect class="card" x="236" y="80" width="170" height="190" rx="14"/>
+  <text x="254" y="112" class="f blue" font-size="13" font-weight="700" letter-spacing="1.4">2  DISPATCH</text>
+  <text x="254" y="140" class="f ink" font-size="16" font-weight="700">Tracking added</text>
+  <text x="254" y="166" class="f mute" font-size="13.5">Add Tracking at ship,</text><text x="254" y="186" class="f mute" font-size="13.5">so the order is ready</text>
+  <text x="254" y="206" class="f mute" font-size="13.5">before any dispute.</text>
+
+  <rect class="card" x="432" y="80" width="170" height="190" rx="14"/>
+  <text x="450" y="112" class="f blue" font-size="13" font-weight="700" letter-spacing="1.4">3  BUYER AGENT</text>
+  <text x="450" y="140" class="f ink" font-size="16" font-weight="700">Opens the case</text>
+  <text x="450" y="166" class="f mute" font-size="13.5">Tracking stalls past the</text><text x="450" y="186" class="f mute" font-size="13.5">date: claims only inside</text>
+  <text x="450" y="206" class="f mute" font-size="13.5">its signed mandate.</text>
+
+  <rect class="card" x="628" y="80" width="170" height="190" rx="14"/>
+  <text x="646" y="112" class="f blue" font-size="13" font-weight="700" letter-spacing="1.4">4  MERCHANT AGENT</text>
+  <text x="646" y="140" class="f ink" font-size="16" font-weight="700">Reads PayPal</text>
+  <text x="646" y="166" class="f mute" font-size="13.5">Dispute, order, tracking,</text><text x="646" y="186" class="f mute" font-size="13.5">signed dispatch record,</text>
+  <text x="646" y="206" class="f mute" font-size="13.5">photo count.</text>
+
+  <rect class="card" x="824" y="80" width="170" height="190" rx="14"/>
+  <text x="842" y="112" class="f blue" font-size="13" font-weight="700" letter-spacing="1.4">5  DECIDE</text>
+  <text x="842" y="140" class="f ink" font-size="16" font-weight="700">Model drafts</text>
+  <text x="842" y="164" class="f ink" font-size="16" font-weight="700">Policy decides</text>
+  <text x="842" y="190" class="f mute" font-size="13.5">Evidence, message, or</text><text x="842" y="210" class="f mute" font-size="13.5">make-offer, alone.</text>
+
+  <rect class="card" x="1020" y="80" width="140" height="190" rx="14"/>
+  <text x="1038" y="112" class="f green" font-size="13" font-weight="700" letter-spacing="1.4">6  PROOF</text>
+  <text x="1038" y="140" class="f ink" font-size="16" font-weight="700">RESOLVED</text>
+  <text x="1038" y="166" class="f mute" font-size="13.5">PayPal's record,</text><text x="1038" y="186" class="f mute" font-size="13.5">two signed receipts,</text>
+  <text x="1038" y="206" class="f mute" font-size="13.5">same dispute id.</text>
+
+  <path class="arrow" d="M210 175 H 230"/><polygon class="head" points="236,175 226,169 226,181"/>
+  <path class="arrow" d="M406 175 H 426"/><polygon class="head" points="432,175 422,169 422,181"/>
+  <path class="arrow" d="M602 175 H 622"/><polygon class="head" points="628,175 618,169 618,181"/>
+  <path class="arrow" d="M798 175 H 818"/><polygon class="head" points="824,175 814,169 814,181"/>
+  <path class="arrow" d="M994 175 H 1014"/><polygon class="head" points="1020,175 1010,169 1010,181"/>
+
+  <text x="40" y="306" class="f mute" font-size="14">A lost response is held as UNKNOWN and checked against PayPal's record. It is never retried blindly.</text>
+  <rect class="band" x="40" y="330" width="1120" height="58" rx="12"/>
+  <text x="600" y="365" text-anchor="middle" class="f bandt" font-size="17" font-weight="700">Never: money moves without a signed policy, an amount taken from text, a second refund, or a RESOLVED claim without PayPal's record.</text>
+</svg>

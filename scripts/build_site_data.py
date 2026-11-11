@@ -34,6 +34,7 @@ ROW (same keys as the local console's dispute ledger, so a console row can be dr
 """
 import json
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = ROOT / "site"
@@ -76,6 +77,15 @@ def from_batch(body, name):
             "fee_avoided": "0.00", "settled_before_escalation": result == "settled", "result": result, "refunded": refund != "0.00",
             "dispatch": "", "message": c.get("message") or "", "record": record, "mode": "real sandbox", "recorded": str(body.get("finished", ""))[:10]})
     return {"source": f"Buyer and merchant agent batch, {name}", "recorded": str(body.get("finished", ""))[:10], "rows": rows}
+
+
+def policy_limits():
+    """The make_offer limits of policy/merchant.yaml as USD strings, for the scene on the Home page. Nothing is typed twice."""
+    text = (ROOT / "policy" / "merchant.yaml").read_text(encoding="utf-8")
+    m = re.search(r"make_offer:\n(?:[ \t]+.*\n)*?[ \t]+max_amount_minor:\s*(\d+)\n(?:[ \t]+.*\n)*?[ \t]+approval_above_minor:\s*(\d+)", text)
+    if not m:
+        return {}
+    return {"make_offer_max": f"{int(m.group(1)) / 100:.2f}", "approval_above": f"{int(m.group(2)) / 100:.2f}", "source": "policy/merchant.yaml"}
 
 
 def build():
@@ -123,7 +133,7 @@ def build():
          "dispatch": "", "message": "", "receipts": "receipts/case-n-settle.ndjson", "mode": "real sandbox", "recorded": "2026-11-03",
          "record": {"dispute_id": "PP-R-OBG-10196144", "status": "RESOLVED", "dispute_life_cycle_stage": "INQUIRY",
                     "dispute_outcome": {"outcome_code": "RESOLVED_BUYER_FAVOUR"}, "offer": {"offer_type": "REFUND", "seller_offered_amount": {"currency_code": "USD", "value": "2.50"}},
-                    "refund_id": "0TB11858A85953644", "status_before_acceptance": "UNDER_REVIEW"}},
+                    "refund_id": "0TB11858A85953644", "status_before_acceptance": "UNDER_REVIEW", "policy_limit": policy_limits()}},
         {"dispute": "PP-R-UKF-10195772", "case": "o", "kind": "dispute", "reason": "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "amount": "5.00", "stage": "INQUIRY",
          "paypal_status": "WAITING_FOR_BUYER_RESPONSE", "state": "VERIFIED", "due": "", "proposed": o[0], "model": o[1], "decided": "fight_with_evidence",
          "outcome": "PROOF_OF_FULFILLMENT on PayPal's record, waiting for the buyer", "result": "evidence", "fee_avoided": "0.00", "settled_before_escalation": False,
@@ -194,7 +204,94 @@ def totals(ledger_rows):
         if base and isinstance(base.get("headline"), list):
             out[key] += [{"value": str(h["value"]), "label": str(h["label"]), "source": f"data/runs/{path.name}"} for h in base["headline"][:2] if "value" in h and "label" in h]
         out[key] = out[key][:3]
+    out["public"] = public_numbers(out["public"])
     return out
+
+
+def public_numbers(found):
+    """The three strongest sourced numbers for the Home page, in this order: the baseline against PayPal's Agent Toolkit,
+    the policy decisions across the model calls, and the real sandbox batch when one exists. A weak line is never filled in."""
+    base = [n for n in found if "/baseline-" in n["source"]][:1]
+    batch = [n for n in found if "/batch-" in n["source"] and n["label"].startswith("disputes settled")][:1]
+    calls = []
+    path, ev = newest("ai-eval-*.json")
+    if ev and ev.get("totals"):
+        model, t = next(iter(ev["totals"].items()))
+        if t.get("calls") and t.get("policy_correct") is not None:
+            calls = [{"value": f"{t['policy_correct']} of {t['calls']}", "label": f"policy decisions correct across {t['calls']} model calls to {model}, median {t['median_ms'] / 1000:.1f} s each",
+                      "source": f"data/runs/{path.name}"}]
+    for n in base + calls:
+        n["mode"] = "local run on the local provider"
+    for n in batch:
+        n["mode"] = "real PayPal sandbox"
+    return base + calls + batch
+
+
+HUD_CASE = 3
+
+
+def clean_sandbox_batch():
+    """(path, body) of the newest real sandbox batch run with no error row, or (None, None)."""
+    for path in sorted((ROOT / "data" / "runs").glob("batch-sandbox-*.json"), reverse=True):
+        try:
+            body = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            continue
+        if isinstance(body, dict) and "sandbox" in str(body.get("mode", "")).lower() and not any(c.get("outcome") == "error" for c in body.get("cases", [])):
+            return path, body
+    return None, None
+
+
+def hud_case():
+    """The one settled case the Home page scene plays, from the newest clean real sandbox batch. Copies its two signed logs into
+    site/receipts, lists them in the receipts manifest, and writes site/data/hud-case.json. Every value is read, none typed."""
+    path, body = clean_sandbox_batch()
+    case = next((c for c in (body or {}).get("cases", []) if c.get("n") == HUD_CASE and c.get("outcome") == "settled_inquiry_no_fee"), None)
+    if not case:
+        print(f"no settled case {HUD_CASE} in a clean real sandbox batch: hud-case.json not written")
+        return
+    did, order = case["dispute_id"], case["order_id"]
+    logs, keys = {}, {}
+    for side in ("merchant", "buyer"):
+        src = path.parent / body["logs"][side]
+        raw = src.read_bytes()
+        (SITE / "receipts" / f"batch-{side}.ndjson").write_bytes(raw)
+        text = raw.decode("utf-8")
+        logs[side] = [json.loads(line) for line in text.splitlines()]
+        keys[side] = body["logs"][side + "_key"]
+    find = lambda rows, test: [i + 1 for i, r in enumerate(rows) if test(r)]
+    m, b = logs["merchant"], logs["buyer"]
+    offer = find(m, lambda r: r["step_id"] == f"{did}:offer")[-1]
+    call = find(m, lambda r: r["step_id"] == f"{did}:model-call")[-1]
+    read = find(m, lambda r: r["step_id"] == f"{did}:settlement" and r["params"].get("status") == "RESOLVED")[0]
+    closed = find(b, lambda r: r["step_id"].startswith(f"{order}:case_closed") and r["params"].get("outcome") == "settled_inquiry_no_fee")[-1]
+    draft = find(b, lambda r: r["step_id"].startswith(f"{order}:model_draft"))[-1]
+    mc, bc = m[call - 1]["params"], b[draft - 1]["params"]
+    mandate = next(r["params"] for r in b if r["step_id"] == f"mandate:{order}")
+    pol = (ROOT / "data" / "buyer" / "manual-batch" / "merchant-batch-policy.yaml").read_text(encoding="utf-8")
+    mo = re.search(r"make_offer:\n(?:[ \t]+.*\n)*?[ \t]+max_amount_minor:\s*(\d+)\n(?:[ \t]+.*\n)*?[ \t]+approval_above_minor:\s*(\d+)", pol)
+    usd = lambda minor: f"{int(minor) / 100:.2f}"
+    out = {
+        "source": f"data/runs/{path.name}", "case": case["n"], "scenario": case["scenario"], "recorded": str(body.get("finished", ""))[:10],
+        "dispute": did, "order": order, "paid": case["paid"], "ask": case["ask_on_paypal"], "trackers": 0,
+        "buyer_message": case["draft"]["message"], "buyer_model": case["draft"]["model"], "buyer_draft_ms": bc.get("latency_ms"),
+        "rule_buyer": body["buyer_claim_rule"], "rule_merchant": body["merchant_rule"],
+        "proposed": mc["proposed"], "decided": mc["decided"], "model": mc["model"], "model_backend": mc["backend"], "model_ms": mc["latency_ms"],
+        "overridden": mc["overridden"], "offer": usd(mc["offer_minor"]), "limit_alone": usd(mo.group(2)), "ceiling": usd(mo.group(1)),
+        "policy_hash": mc["policy_hash"], "status": case["paypal_status"], "stage": case["paypal_stage"], "outcome": case["paypal_outcome"],
+        "refund": case["refund_confirmed"], "fee": "0.00", "settlement": case["outcome"],
+        "merchant": {"file": "receipts/batch-merchant.ndjson", "key": keys["merchant"], "offer_line": offer, "read_line": read, "call_line": call},
+        "buyer": {"file": "receipts/batch-buyer.ndjson", "key": keys["buyer"], "closed_line": closed},
+    }
+    (SITE / "data" / "hud-case.json").write_text(json.dumps(out, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
+    mpath = SITE / "receipts" / "manifest.json"
+    man = json.loads(mpath.read_text(encoding="utf-8"))
+    man["logs"] = [l for l in man["logs"] if not l["file"].startswith("receipts/batch-")]
+    for side, title in (("merchant", "merchant agent"), ("buyer", "buyer agent")):
+        man["logs"].append({"file": f"receipts/batch-{side}.ndjson", "title": f"Ten case batch, {title}: real sandbox, case {HUD_CASE} settled at INQUIRY",
+                            "public_key": keys[side], "lines": len(logs[side]), "ok_in_python": True, "recorded": out["recorded"]})
+    mpath.write_text(json.dumps(man, indent=1) + "\n", encoding="utf-8")
+    print("hud-case.json written from", path.name, "case", HUD_CASE, did)
 
 
 def main():
@@ -219,8 +316,9 @@ def main():
             print("copied", source.name, "with", len(body["rows"]), "rows")
         else:
             print("skipped", source.name, "(not in the site row format, see the top of this file)")
+    hud_case()
     (data / "totals.json").write_text(json.dumps(totals(build()["rows"]), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json"))
+    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json", "hud-case.json"))
     files.remove("ledger.json"); files.insert(0, "ledger.json")
     (data / "manifest.json").write_text(json.dumps({"files": files}, indent=1) + "\n", encoding="utf-8")
     print("site/data/manifest.json lists:", ", ".join(files))

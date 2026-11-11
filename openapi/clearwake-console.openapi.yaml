@@ -21,29 +21,30 @@ info:
     name: Sriharsan B S
     url: https://github.com/Sriharsan/clearwake
 servers:
-  - url: http://127.0.0.1:8810
-    description: Local run, `python -m clearwake --port 8810`. Loopback only.
-  - url: https://{renderHost}
-    description: Hosted on Render, not network isolated. Fill in the host after the deploy (docs/RENDER.md).
-    variables:
-      renderHost:
-        default: clearwake-console.onrender.com
-        description: The onrender.com host Render gives the service.
+- url: http://127.0.0.1:8810
+  description: Local run, `python -m clearwake --port 8810`. Loopback only.
+- url: https://{renderHost}
+  description: Hosted on Render, not network isolated. Fill in the host after the deploy (docs/RENDER.md).
+  variables:
+    renderHost:
+      default: clearwake-console.onrender.com
+      description: The onrender.com host Render gives the service.
 tags:
-  - name: Session
-    description: Cookie and CSRF token. Call first.
-  - name: Buyer agent
-    description: The shopper's agent, limited by its owner's signed mandate.
-  - name: Merchant agent
-    description: Run a dispute or refund case, approve a held action, reconcile an uncertain refund.
-  - name: Ledger and receipts
-    description: What happened and the proof of it.
-  - name: Run
-    description: Start over.
+- name: Session
+  description: Cookie and CSRF token. Call first.
+- name: Buyer agent
+  description: The shopper's agent, limited by its owner's signed mandate.
+- name: Merchant agent
+  description: Run a dispute or refund case, approve a held action, reconcile an uncertain refund.
+- name: Ledger and receipts
+  description: What happened and the proof of it.
+- name: Run
+  description: Start over.
 paths:
   /console/api/session:
     get:
-      tags: [Session]
+      tags:
+      - Session
       operationId: getSession
       summary: Start a session and get the CSRF token
       description: Sets the HttpOnly `clearwake_console` cookie when the request has none and returns the token to send as `X-Clearwake-CSRF` on every POST.
@@ -52,9 +53,10 @@ paths:
           description: Session ready.
           headers:
             Set-Cookie:
-              description: "`clearwake_console=<64 hex>; Path=/console; HttpOnly; SameSite=Strict; Max-Age=28800`"
+              description: '`clearwake_console=<64 hex>; Path=/console; HttpOnly; SameSite=Strict; Max-Age=28800`'
               schema:
                 type: string
+              example: clearwake_console=<64 hex>; Path=/console; HttpOnly; SameSite=Strict; Max-Age=28800
           content:
             application/json:
               schema:
@@ -68,7 +70,8 @@ paths:
           $ref: '#/components/responses/RateLimited'
   /console/api/state:
     get:
-      tags: [Ledger and receipts]
+      tags:
+      - Ledger and receipts
       operationId: getState
       summary: Everything the console shows
       description: The mandate, the product catalog, purchases, every case entry with its history, the approval inbox, the money ledger, the dispute ledger (PayPal stage and status next to the policy decision and the model proposal), the fee gauge and the policy limits.
@@ -79,13 +82,311 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/State'
+              example:
+                label: local run data
+                mode: rehearsal
+                hosted: false
+                folder: run-20261111-104352-aecb
+                model: scripted, not AI
+                network: 'none: local provider, no provider calls'
+                mandate:
+                  owner: Local run shopper
+                  budget: '102.00'
+                  per_item_cap: '102.00'
+                  merchants: &id004
+                  - clearwake-demo-store
+                  categories: &id005
+                  - home
+                  - stationery
+                  currency: USD
+                  spent: '9.00'
+                  remaining: '93.00'
+                merchant:
+                  id: clearwake-demo-store
+                  name: Northwind Goods (demo store)
+                catalog:
+                - id: mug-stone
+                  name: Stoneware mug
+                  category: home
+                  price_minor: 1200
+                  price: '12.00'
+                - id: notebook-a5
+                  name: A5 dot grid notebook
+                  category: stationery
+                  price_minor: 900
+                  price: '9.00'
+                - id: pen-brass
+                  name: Brass pen
+                  category: stationery
+                  price_minor: 1800
+                  price: '18.00'
+                - id: lamp-desk
+                  name: Desk lamp
+                  category: home
+                  price_minor: 4500
+                  price: '45.00'
+                - id: headphones
+                  name: Wireless headphones
+                  category: electronics
+                  price_minor: 8900
+                  price: '89.00'
+                - id: socks-wool
+                  name: Wool socks
+                  category: apparel
+                  price_minor: 1500
+                  price: '15.00'
+                purchases:
+                - at: '2026-11-11T07:17:29Z'
+                  request: a pack of three A5 notebooks
+                  model: scripted, not AI
+                  proposed: notebook-a5
+                  note: ''
+                  allowed: true
+                  reason: Inside the mandate.
+                  checks:
+                    merchant allowed: true
+                    category allowed: true
+                    currency matches: true
+                    under per item cap: true
+                    inside remaining budget: true
+                  product:
+                    id: notebook-a5
+                    name: A5 dot grid notebook
+                    category: stationery
+                    price_minor: 900
+                  price_minor: 900
+                  spent_before_minor: 0
+                  receipt:
+                    order_id: ORDER-REH-F25B12B6
+                    digest: 99b3f61426ac58d69e87918393a71e55121e34a9dc9959e578a6dda247d6d108
+                    public_key: 080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a
+                    line: '{"step_id":"mandate:ORDER-REH-F25B12B6","action_id":"clearwake.buyer.mandate","params":{"order_id":"ORDER-REH-F25B12B6","merchant":"clearwake-demo-store","item":"notebook-a5","price_minor":900,"currency":"USD","budget_minor":10200,"per_item_cap_minor":10200,"allowed_categories":["home","stationery"],"dispute_rule":"none","max_over_market_percent":-1,"price_reference":"none"},"success":true,"ts_ms":1794381449742,"actor":{"agent":"clearwake-buyer","user":"Local run shopper"},"public_key":"080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a","signature":"cd249dd7c01fb71413b28e7e07921e917b67bec824250f88dc5e0d03e8433f8dba7f34aacdbe9ad09ca9a5e750099ede5e780bf46b0b72d43ede434f25f8ae07"}'
+                    log_ok: true
+                    log_lines: 1
+                  label: local run data
+                policy:
+                  refund_max: '5.00'
+                  approval_above: '2.00'
+                  per_customer_per_day: '6.00'
+                  hash: 396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271
+                cases:
+                - key: c
+                  title: Refund under the limit, checked against the provider record
+                  dispute: false
+                  scope: product
+                - key: d
+                  title: 'Above the approval threshold: approval inbox, then refund'
+                  dispute: false
+                  scope: product
+                - key: e
+                  title: 'Lost response: held as UNKNOWN, no blind retry, reconciled from the record'
+                  dispute: false
+                  scope: product
+                - key: f
+                  title: Three agents split refunds on one capture; the one over the capture is stopped
+                  dispute: false
+                  scope: product
+                - key: g
+                  title: Prompt injection cannot move a limit; the receipt shows the refusal
+                  dispute: false
+                  scope: product
+                - key: i
+                  title: 'Item not received: tracking submitted before the deadline'
+                  dispute: true
+                  scope: product
+                - key: j
+                  title: 'Agent order disputed as unauthorised: mandate receipt attached'
+                  dispute: true
+                  scope: outside
+                - key: k
+                  title: 'Near deadline: escalated with the countdown'
+                  dispute: true
+                  scope: product
+                - key: l
+                  title: Batch of ten disputes in parallel
+                  dispute: true
+                  scope: outside
+                - key: n
+                  title: 'Settle in conversation before escalation: offer inside the limit, PayPal record checked'
+                  dispute: true
+                  scope: outside
+                - key: m
+                  title: 'Network cut mid batch: held, offline, then PayPal read first and no duplicate'
+                  dispute: false
+                  scope: product
+                - key: o
+                  title: 'Buyer says 2 of 3 items arrived: dispatch proof counted 3, sealed; evidence sent'
+                  dispute: true
+                  scope: product
+                entries:
+                - id: PP-D-REH-94816C42B4
+                  key: n
+                  run: b38ce4
+                  title: 'Settle in conversation before escalation: offer inside the limit, PayPal record checked'
+                  at: '2026-11-11T07:17:29Z'
+                  kind: PayPal dispute
+                  label: local run data
+                  state: VERIFIED
+                  action: settle_by_offer
+                  detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                  refund_id: null
+                  approval_id: null
+                  proposed: settle_by_offer
+                  model: scripted, not AI
+                  decided: settle_by_offer
+                  offer: '2.50'
+                  dispatch: null
+                  claim: null
+                  gateway: completed
+                  adapter: console
+                  history:
+                  - at: '2026-11-11T07:17:29Z'
+                    state: PENDING
+                    action: settle_by_offer
+                    detail: Offer sent. PayPal shows WAITING_FOR_BUYER_RESPONSE; waiting for the buyer.
+                    note: ''
+                  - at: '2026-11-11T07:17:29Z'
+                    state: VERIFIED
+                    action: settle_by_offer
+                    detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                    note: The buyer accepted the offer (the local provider records it; in the sandbox the buyer accepts in PayPal's Resolution Center).
+                  dispute_id: PP-D-REH-94816C42B4
+                  reason: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
+                  amount_minor: 250
+                  capture: CAP-N-b38ce4
+                  capture_minor: 900
+                  customer: buyer-n-b38ce4
+                  order: ORDER-N-b38ce4
+                  due: '2026-11-21T07:17:29.805243Z'
+                  message: The colour is wrong.
+                  use_trackers: false
+                  receipt_digest: null
+                  deadline:
+                    seconds_left: 863999
+                    state: ok
+                  sources: []
+                  policy:
+                    allowed: false
+                    needs_approval: false
+                    reason: no money action proposed
+                    limit: null
+                runs:
+                - key: n
+                  run: b38ce4
+                  at: '2026-11-11T07:17:29Z'
+                  title: 'Settle in conversation before escalation: offer inside the limit, PayPal record checked'
+                  states:
+                  - VERIFIED
+                  seconds: 0.084
+                inbox: []
+                ledger:
+                  rows:
+                  - at: '2026-11-11T07:17:29Z'
+                    case: ORDER-REH-F25B12B6
+                    movement: buyer to merchant (mandate only, no checkout)
+                    amount: '9.00'
+                    currency: USD
+                    record: 99b3f61426ac58d6
+                    state: mandate signed
+                    source: local run data
+                  provider_refunds: 1
+                gauge:
+                  amount_minor: 0
+                  cap: '5.00'
+                  case: null
+                  state: null
+                disputes:
+                - dispute: PP-D-REH-94816C42B4
+                  case: n
+                  reason: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
+                  amount: '2.50'
+                  stage: INQUIRY
+                  paypal_status: RESOLVED
+                  decided: settle_by_offer
+                  proposed: settle_by_offer
+                  model: scripted, not AI
+                  state: VERIFIED
+                  due: '2026-11-21T07:17:29.805243Z'
+                  dispatch: none
+                  message: The colour is wrong.
+                  policy_reason: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                  record:
+                    dispute_id: PP-D-REH-94816C42B4
+                    status: RESOLVED
+                    reason: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
+                    dispute_life_cycle_stage: INQUIRY
+                    links:
+                    - rel: send_message
+                      method: POST
+                    - rel: make_offer
+                      method: POST
+                    - rel: accept_claim
+                      method: POST
+                    dispute_amount:
+                      currency_code: USD
+                      value: '2.50'
+                    seller_response_due_date: '2026-11-21T07:17:29.805243Z'
+                    disputed_transactions:
+                    - seller_transaction_id: CAP-N-b38ce4
+                    messages:
+                    - posted_by: BUYER
+                      content: The colour is wrong.
+                    - posted_by: SELLER
+                      content: We are sorry about this order. To settle it now, we offer a refund of 2.50 USD (full amount).
+                      request_id: 944355a7-4c89-4520-9218-25ca366e7f95
+                    offer:
+                      offer_type: REFUND
+                      request_id: 944355a7-4c89-4520-9218-25ca366e7f95
+                      buyer_requested_amount:
+                        currency_code: USD
+                        value: '2.50'
+                      seller_offered_amount:
+                        currency_code: USD
+                        value: '2.50'
+                    dispute_outcome:
+                      outcome_code: RESOLVED_WITH_PAYOUT
+                      amount_refunded:
+                        currency_code: USD
+                        value: '2.50'
+                  settled_before_escalation: true
+                  fee_avoided: '0.00'
+                  source: local run data
+                fees:
+                  sales: 1
+                  net_sales: '9.00'
+                  counted_disputes: 1
+                  disputed: '2.50'
+                  rate_percent: '27.78'
+                  rate_line_percent: '1.50'
+                  sales_line: 100
+                  high_volume: false
+                  settled_before_escalation: 1
+                  escalated: 0
+                  fee_avoided: '0.00'
+                  currency: USD
+                  window:
+                  - '2026-08-01'
+                  - '2026-11-11'
+                  rule_source:
+                  - PayPal Help Center, help350 (UK edition; the US edition was not reachable on 31 Oct 2026)
+                  - https://history.paypal.com/uk/cshelp/article/how-is-the-dispute-rate-calculated-and-how-do-i-avoid-being-charged-a-dispute-fee-help350
+                  fee_source:
+                  - PayPal Merchant Fees, United States, last updated 1 Oct 2026
+                  - https://www.paypal.com/us/business/paypal-business-fees
+                  label: local run data
+                now: '2026-11-11T07:17:29Z'
+                rules:
+                  last: {}
+                  ceiling: '100.00'
+                  label: rule parser, not AI
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
   /console/api/receipts:
     get:
-      tags: [Ledger and receipts]
+      tags:
+      - Ledger and receipts
       operationId: getReceipts
       summary: Both signed receipt logs
       description: The merchant log and the buyer log as written, with their public keys. Each is verifiable offline, in the browser or with the verdock-core verifier. Editing one line breaks the chain.
@@ -96,19 +397,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Receipts'
+              example:
+                label: local run data
+                logs:
+                - name: merchant
+                  title: Merchant swarm receipts
+                  public_key: 6309eda9ad3863db68c6e157dbae09f5405362be19c3e01879a8867d37609c65
+                  text: |
+                    {"step_id":"PP-D-REH-94816C42B4:decision","action_id":"clearwake.dispute.decision","params":{"dispute":"PP-D-REH-94816C42B4","stage":"INQUIRY","proposed":"settle_by_offer","decided":"settle_by_offer","offer_minor":250,"model":"scripted","policy_hash":"396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271"},"success":true,"ts_ms":1794381449821,"actor":{"agent":"clearwake-merchant","user":"merchant"},"public_key":"6309eda9ad3863db68c6e157dbae09f5405362be19c3e01879a8867d37609c65","signature":"551695e1fd4b23acf0276f4c5bcd899f71e5407cdad11b1333ddd5174cb2d48db2e3c3cb449413b439054a5f893e343d3fd506a52e549ca9bd8a5eba28b2850a"}
+                    {"step_id":"PP-D-REH-94816C42B4:offer","action_id":"clearwake.dispute.offer_sent","params":{"dispute":"PP-D-REH-94816C42B4","offer_minor":250,"currency":"USD","policy_hash":"396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271"},"success":true,"ts_ms":1794381449843,"actor":{"agent":"clearwake-merchant","user":"merchant"},"prev_hash":"bda81e018ccbb09b4fbab5ec5fedec17a8da828b0fb0db7601ef853856ee5db6","public_key":"6309eda9ad3863db68c6e157dbae09f5405362be19c3e01879a8867d37609c65","signature":"45fa3fbf0d095f66f51e4d62799df76a16a05b4cf050540076368eb88c06e9fbe84e6f7e859d05d483c26ddbe8d88545cfb5201fbd9aa59e12e8dcfc1079f60d"}
+                    {"step_id":"PP-D-REH-94816C42B4:settlement","action_id":"clearwake.dispute.settlement","params":{"dispute":"PP-D-REH-94816C42B4","status":"WAITING_FOR_BUYER_RESPONSE","stage":"INQUIRY","outcome":"","state":"PENDING","policy_hash":"396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271"},"success":false,"ts_ms":1794381449850,"actor":{"agent":"clearwake-merchant","user":"merchant"},"prev_hash":"7ec7d5eb03b9dc308fec94710d40e2d346640e91410de52299e83af19ab4477c","public_key":"6309eda9ad3863db68c6e157dbae09f5405362be19c3e01879a8867d37609c65","signature":"fcc7f2307f1aa60c7c75d11921d50edc2e6b43bfe1cf5f4b98ca9a1b58ab29c623762bba93576d6ac1252619345904d33bfe1876e18893ed265a3b31db77e90f"}
+                    {"step_id":"PP-D-REH-94816C42B4:settlement","action_id":"clearwake.dispute.settlement","params":{"dispute":"PP-D-REH-94816C42B4","status":"RESOLVED","stage":"INQUIRY","outcome":"RESOLVED_WITH_PAYOUT","state":"VERIFIED","policy_hash":"396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271"},"success":true,"ts_ms":1794381449874,"actor":{"agent":"clearwake-merchant","user":"merchant"},"prev_hash":"91243484afb6bab287c9ab2075088b0942a0792d3ba6f2d26efef507283b5e7e","public_key":"6309eda9ad3863db68c6e157dbae09f5405362be19c3e01879a8867d37609c65","signature":"65926070afe166010dbf54b5082a796e54584b99911b7c17376789c4d2bb0388ad484249fe29c92c37518ab0956d33583d4ccec6afad7ab95c1376c3db21cf0e"}
+                - name: buyer
+                  title: Buyer agent mandate receipts
+                  public_key: 080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a
+                  text: |
+                    {"step_id":"mandate:ORDER-REH-F25B12B6","action_id":"clearwake.buyer.mandate","params":{"order_id":"ORDER-REH-F25B12B6","merchant":"clearwake-demo-store","item":"notebook-a5","price_minor":900,"currency":"USD","budget_minor":10200,"per_item_cap_minor":10200,"allowed_categories":["home","stationery"],"dispute_rule":"none","max_over_market_percent":-1,"price_reference":"none"},"success":true,"ts_ms":1794381449742,"actor":{"agent":"clearwake-buyer","user":"Local run shopper"},"public_key":"080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a","signature":"cd249dd7c01fb71413b28e7e07921e917b67bec824250f88dc5e0d03e8433f8dba7f34aacdbe9ad09ca9a5e750099ede5e780bf46b0b72d43ede434f25f8ae07"}
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
   /console/api/buy:
     post:
-      tags: [Buyer agent]
+      tags:
+      - Buyer agent
       operationId: buy
       summary: Ask the buyer agent to buy something
       description: The agent proposes a product from the catalog; the mandate check (budget, per item cap, store, category) decides. An allowed purchase writes a signed mandate receipt linked to the order id.
       security:
-        - consoleSession: []
-          csrfToken: []
+      - consoleSession: []
+        csrfToken: []
       requestBody:
         required: true
         content:
@@ -117,6 +435,7 @@ paths:
               $ref: '#/components/schemas/BuyRequest'
             example:
               request: a pack of three A5 notebooks
+        description: What the owner asked the buyer agent to buy.
       responses:
         '200':
           description: The purchase decision, allowed or refused, with the checks that decided it.
@@ -124,6 +443,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Purchase'
+              example:
+                at: '2026-11-11T05:13:51Z'
+                request: a pack of three A5 notebooks
+                model: scripted, not AI
+                proposed: notebook-a5
+                note: ''
+                allowed: true
+                reason: Inside the mandate.
+                checks:
+                  merchant allowed: true
+                  category allowed: true
+                  currency matches: true
+                  under per item cap: true
+                  inside remaining budget: true
+                product:
+                  id: notebook-a5
+                  name: A5 dot grid notebook
+                  category: stationery
+                  price_minor: 900
+                price_minor: 900
+                spent_before_minor: 1800
+                label: local run data
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -132,15 +473,16 @@ paths:
           $ref: '#/components/responses/RateLimited'
   /console/api/case:
     post:
-      tags: [Merchant agent]
+      tags:
+      - Merchant agent
       operationId: runCase
       summary: Run one case through the merchant agent
       description: |
         Runs case `c`, `d`, `e`, `f`, `g`, `i`, `j`, `k`, `l`, `m`, `n` or `o` (titles in `State.cases`). The agent proposes, the policy
         file decides, code checks every amount and cited id, and a separate checker reads the provider record afterwards.
       security:
-        - consoleSession: []
-          csrfToken: []
+      - consoleSession: []
+        csrfToken: []
       requestBody:
         required: true
         content:
@@ -149,6 +491,7 @@ paths:
               $ref: '#/components/schemas/CaseRequest'
             example:
               case: n
+        description: The key of the case to run.
       responses:
         '200':
           description: The entries the case produced.
@@ -156,6 +499,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CaseRun'
+              example:
+                key: n
+                run: b38ce4
+                label: local run data
+                entries:
+                - &id001
+                  id: PP-D-REH-94816C42B4
+                  key: n
+                  run: b38ce4
+                  title: 'Settle in conversation before escalation: offer inside the limit, PayPal record checked'
+                  at: '2026-11-11T07:17:29Z'
+                  kind: PayPal dispute
+                  label: local run data
+                  state: VERIFIED
+                  action: settle_by_offer
+                  detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                  refund_id: null
+                  approval_id: null
+                  proposed: settle_by_offer
+                  model: scripted, not AI
+                  decided: settle_by_offer
+                  offer: '2.50'
+                  dispatch: null
+                  claim: null
+                  gateway: completed
+                  adapter: console
+                  history: &id003
+                  - at: '2026-11-11T07:17:29Z'
+                    state: PENDING
+                    action: settle_by_offer
+                    detail: Offer sent. PayPal shows WAITING_FOR_BUYER_RESPONSE; waiting for the buyer.
+                    note: ''
+                  - at: '2026-11-11T07:17:29Z'
+                    state: VERIFIED
+                    action: settle_by_offer
+                    detail: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
+                    note: The buyer accepted the offer (the local provider records it; in the sandbox the buyer accepts in PayPal's Resolution Center).
+                  dispute_id: PP-D-REH-94816C42B4
+                  reason: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
+                  amount_minor: 250
+                  capture: CAP-N-b38ce4
+                  capture_minor: 900
+                  customer: buyer-n-b38ce4
+                  order: ORDER-N-b38ce4
+                  due: '2026-11-21T07:17:29.805243Z'
+                  message: The colour is wrong.
+                  use_trackers: false
+                  receipt_digest: null
+                  deadline: &id002
+                    seconds_left: 863999
+                    state: ok
+                  sources: []
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -164,19 +559,24 @@ paths:
           $ref: '#/components/responses/RateLimited'
   /console/api/approve:
     post:
-      tags: [Merchant agent]
+      tags:
+      - Merchant agent
       operationId: approve
       summary: Approve a held action
       description: Records a named person's approval for the approval id in the inbox, then runs the case again so the agent takes only the step the approval names. The approval store refuses a decided, expired or self approval.
       security:
-        - consoleSession: []
-          csrfToken: []
+      - consoleSession: []
+        csrfToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ApproveRequest'
+            example:
+              approval_id: 00000000-0000-0000-0000-000000000000
+              approver: Sri B
+        description: The approval id and the approver's name.
       responses:
         '200':
           description: The updated case entry.
@@ -184,6 +584,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Entry'
+              example: *id001
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -196,19 +597,23 @@ paths:
           $ref: '#/components/responses/RateLimited'
   /console/api/reconcile:
     post:
-      tags: [Merchant agent]
+      tags:
+      - Merchant agent
       operationId: reconcile
       summary: Reconcile an UNKNOWN refund from the provider record
       description: Reads the provider's refund for the case's stable request id and checks amount, currency and status. Nothing is sent again. Only a refund in state UNKNOWN is reconciled.
       security:
-        - consoleSession: []
-          csrfToken: []
+      - consoleSession: []
+        csrfToken: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/ReconcileRequest'
+            example:
+              case_id: PP-D-REH-BE1428B853
+        description: The case id whose UNKNOWN refund is read back from the provider.
       responses:
         '200':
           description: The updated case entry.
@@ -216,6 +621,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Entry'
+              example: *id001
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -226,13 +632,14 @@ paths:
           $ref: '#/components/responses/RateLimited'
   /console/api/reset:
     post:
-      tags: [Run]
+      tags:
+      - Run
       operationId: reset
       summary: Start a fresh run
       description: Opens a new data folder. Locally earlier folders are kept; in hosted mode they are deleted (`wiped`, `removed_folders`).
       security:
-        - consoleSession: []
-          csrfToken: []
+      - consoleSession: []
+        csrfToken: []
       requestBody:
         required: true
         content:
@@ -240,7 +647,9 @@ paths:
             schema:
               type: object
               additionalProperties: false
+              description: An empty JSON object. The route takes no fields.
             example: {}
+        description: An empty JSON object.
       responses:
         '200':
           description: A new run folder is open.
@@ -248,13 +657,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResetResult'
+              example:
+                ok: true
+                folder: run-20261111-104352-aecb
+                wiped: false
+                removed_folders: 0
         '403':
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/RateLimited'
   /console/api/negotiation:
     get:
-      tags: [Merchant agent]
+      tags:
+      - Merchant agent
       operationId: getNegotiation
       summary: Steps of the running or last negotiation
       description: The steps of the negotiation started by `negotiate`, read from the merchant's signed receipt log as it grows. Each step is a receipt that was really written.
@@ -265,13 +680,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Negotiation'
+              example:
+                running: false
+                error: null
+                case: PP-D-REH-49D4D35C16
+                steps:
+                - n: 1
+                  step: PP-D-REH-49D4D35C16:decision
+                  action: clearwake.dispute.decision
+                  ok: true
+                  at: 05:05:48
+                - n: 2
+                  step: PP-D-REH-49D4D35C16:offer
+                  action: clearwake.dispute.offer_sent
+                  ok: true
+                  at: 05:05:48
+                - n: 3
+                  step: PP-D-REH-49D4D35C16:settlement
+                  action: clearwake.dispute.settlement
+                  ok: false
+                  at: 05:05:48
+                - n: 4
+                  step: PP-D-REH-49D4D35C16:settlement
+                  action: clearwake.dispute.settlement
+                  ok: true
+                  at: 05:05:48
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
   /console/api/totals:
     get:
-      tags: [Ledger and receipts]
+      tags:
+      - Ledger and receipts
       operationId: getTotals
       summary: Measured numbers for the console header
       description: The few measured numbers built from the run files in data/runs/, each with the file it came from. An empty list when site/data/totals.json is absent.
@@ -284,19 +725,25 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Total'
+                description: The list of measured numbers.
+              example:
+              - value: 5 of 10
+                label: disputes settled at INQUIRY, no fee
+                source: data/runs/batch-rehearsal-20261110-223520.json
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
           $ref: '#/components/responses/RateLimited'
   /console/api/negotiate:
     post:
-      tags: [Merchant agent]
+      tags:
+      - Merchant agent
       operationId: negotiate
       summary: Start one negotiation in the background
       description: Runs case n (offer, buyer accepts, PayPal shaped record read back) on the local provider in the background. Read progress with `getNegotiation`. Only one runs at a time.
       security:
-        - consoleSession: []
-          csrfToken: []
+      - consoleSession: []
+        csrfToken: []
       requestBody:
         required: true
         content:
@@ -304,7 +751,9 @@ paths:
             schema:
               type: object
               additionalProperties: false
+              description: An empty JSON object. The route takes no fields.
             example: {}
+        description: An empty JSON object.
       responses:
         '200':
           description: The negotiation started.
@@ -312,13 +761,22 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [started, from]
+                required:
+                - started
+                - from
                 properties:
                   started:
                     type: boolean
+                    description: True when the negotiation was started.
+                    example: true
                   from:
                     type: integer
                     description: Line count of the merchant receipt log when the negotiation began.
+                    example: 52
+                example:
+                  started: true
+                  from: 52
+                description: Whether the negotiation started, and the receipt log line count when it began.
         '403':
           $ref: '#/components/responses/Forbidden'
         '409':
@@ -344,18 +802,24 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: Choose one of the cases c, d, e, f, g, i, j, k, l, m, n or o.
     Forbidden:
       description: The origin is not the server's own, or the session or CSRF token is missing or stale. Reload the session.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: This console session is missing or stale. Reload the page.
     NotFound:
       description: Unknown route, unknown reference, or the console is not configured on this server.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+          example:
+            error: No case in this local run matches that reference.
     RateLimited:
       description: Hosted mode only (`CLEARWAKE_HOSTED=1`). Too many requests from this address in the last minute (reads 120, writes 20 by default, set by `CLEARWAKE_RATE_READ` and `CLEARWAKE_RATE_WRITE`). Wait the number of seconds in `Retry-After`.
       headers:
@@ -364,6 +828,7 @@ components:
           schema:
             type: integer
             minimum: 1
+          example: 12
       content:
         application/json:
           schema:
@@ -377,242 +842,435 @@ components:
   schemas:
     Negotiation:
       type: object
-      required: [running, error, case, steps]
+      required:
+      - running
+      - error
+      - case
+      - steps
       properties:
         running:
           type: boolean
+          description: True while a negotiation is in progress.
+          example: false
         error:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
+          description: The failure text when the negotiation failed, otherwise null.
         case:
-          type: [string, 'null']
+          type:
+          - string
+          - 'null'
           description: Dispute id of the finished case, when there is one.
+          example: PP-D-REH-49D4D35C16
         steps:
           type: array
           items:
             type: object
-            required: [n, step, action, ok, at]
+            required:
+            - n
+            - step
+            - action
+            - ok
+            - at
             properties:
               n:
                 type: integer
+                description: Step number, starting at 1.
+                example: 1
               step:
                 type: string
+                description: The receipt step id, made of the dispute id and the step name.
+                example: PP-D-REH-49D4D35C16:decision
               action:
                 type: string
+                description: The action id written on the receipt, or the action the agent took.
+                example: clearwake.dispute.decision
               ok:
                 type: boolean
+                description: True when the step succeeded.
+                example: true
               at:
                 type: string
                 description: UTC time of day, HH:MM:SS.
+                example: 05:05:48
+            description: One item of the list.
+          description: The receipt steps of the negotiation, in the order they were written.
+          example:
+          - n: 1
+            step: PP-D-REH-49D4D35C16:decision
+            action: clearwake.dispute.decision
+            ok: true
+            at: 05:05:48
+      description: State of the negotiation started by negotiate, with the receipt steps written so far.
     Total:
       type: object
-      required: [value, label, source]
+      required:
+      - value
+      - label
+      - source
       properties:
         value:
           type: string
+          description: The measured number as text, with its unit.
+          example: 5 of 10
         label:
           type: string
+          description: How the data behind this response runs, for example local run data.
+          example: local run data
         source:
           type: string
           description: The run file the number was built from.
-    Error:
-      type: object
-      required: [error]
-      properties:
-        error:
-          type: string
-          description: The refusal as shown in the console.
+      description: One measured number for the console header with the run file it came from.
     Session:
       type: object
-      required: [csrf, label]
+      required:
+      - csrf
+      - label
       properties:
         csrf:
           type: string
-          pattern: '^[0-9a-f]{64}$'
+          pattern: ^[0-9a-f]{64}$
+          description: 'The CSRF token: 64 lowercase hex characters. Send it as X-Clearwake-CSRF on every POST.'
+          example: 4f1d0c2f9a7b6e8d3c5a1b0e9f8d7c6b5a4938271605f4e3d2c1b0a998877665
         label:
           type: string
           description: How the data behind the console runs, for example `local run data`.
+          example: local run data
+      description: The CSRF token and the data label returned when a session starts.
     Money:
       type: string
-      pattern: '^(0|[1-9][0-9]{0,8})\.[0-9]{2}$'
+      pattern: ^(0|[1-9][0-9]{0,8})\.[0-9]{2}$
       description: A USD amount with two decimals.
     BuyRequest:
       type: object
-      required: [request]
+      required:
+      - request
       additionalProperties: false
       properties:
         request:
           type: string
           minLength: 1
           maxLength: 200
-          pattern: '^[\x20-\x7e]+$'
+          pattern: ^[\x20-\x7e]+$
           description: What the owner asked the buyer agent for, in plain printable characters.
+          example: a pack of three A5 notebooks
+      description: 'The body of buy: what the owner asked the buyer agent for.'
     CaseRequest:
       type: object
-      required: [case]
+      required:
+      - case
       additionalProperties: false
       properties:
         case:
           type: string
-          enum: [c, d, e, f, g, i, j, k, l, m, n, o]
+          enum:
+          - c
+          - d
+          - e
+          - f
+          - g
+          - i
+          - j
+          - k
+          - l
+          - m
+          - n
+          - o
+          description: The case key (c to o) or the dispute id the row belongs to.
+          example: n
+      description: 'The body of runCase: the key of the case to run.'
     ApproveRequest:
       type: object
-      required: [approval_id, approver]
+      required:
+      - approval_id
+      - approver
       additionalProperties: false
       properties:
         approval_id:
           type: string
-          pattern: '^[0-9a-f-]{36}$'
+          pattern: ^[0-9a-f-]{36}$
+          description: The approval id from the inbox, a UUID.
+          example: 00000000-0000-0000-0000-000000000000
         approver:
           type: string
-          pattern: "^[A-Za-z][A-Za-z .'()-]{1,59}$"
+          pattern: ^[A-Za-z][A-Za-z .'()-]{1,59}$
           description: The approver's name, 2 to 60 letters.
+      description: 'The body of approve: which approval, and who approves.'
     ReconcileRequest:
       type: object
-      required: [case_id]
+      required:
+      - case_id
       additionalProperties: false
       properties:
         case_id:
           type: string
-          pattern: '^[A-Za-z0-9_-]{1,64}$'
+          pattern: ^[A-Za-z0-9_-]{1,64}$
+          description: The case id as shown in the console, for example PP-D-REH-BE1428B853.
+          example: PP-D-REH-BE1428B853
+      description: 'The body of reconcile: the case whose UNKNOWN refund is read back from the provider.'
     ResetResult:
       type: object
-      required: [ok, folder]
+      required:
+      - ok
+      - folder
       properties:
         ok:
           type: boolean
+          description: True when the step succeeded.
+          example: true
         wiped:
           type: boolean
           description: True in hosted mode, where a reset deletes the earlier run folders.
+          example: false
         removed_folders:
           type: integer
           minimum: 0
+          description: How many earlier run folders were deleted (hosted mode only, otherwise 0).
+          example: 0
         folder:
           type: string
-          pattern: '^run-[0-9]{8}-[0-9]{6}-[0-9a-f]{4}$'
+          pattern: ^run-[0-9]{8}-[0-9]{6}-[0-9a-f]{4}$
+          description: The data folder of the run.
+          example: run-20261111-104352-aecb
+      description: 'The result of reset: the new run folder and what was deleted in hosted mode.'
     Purchase:
       type: object
-      required: [at, request, allowed, reason, checks, price_minor]
+      required:
+      - at
+      - request
+      - allowed
+      - reason
+      - checks
+      - price_minor
       properties:
         at:
           type: string
           format: date-time
+          description: Time the record was written, UTC.
+          example: '2026-11-11T07:17:29Z'
         request:
           type: string
+          description: The request text as the owner sent it.
+          example: a pack of three A5 notebooks
         model:
           type: string
           description: Which agent proposed it, for example `scripted, not AI` or a model label.
+          example: scripted, not AI
         proposed:
           type: string
           description: The product id the agent proposed.
+          example: notebook-a5
         note:
           type: string
+          description: A short note from the agent or the checker, empty when there is none.
+          example: ''
         allowed:
           type: boolean
+          description: True when the check or policy allows the action.
+          example: true
         reason:
           type: string
+          description: Why it was allowed or refused, or the dispute reason code.
+          example: Inside the mandate.
         checks:
           type: object
           description: Each mandate check by name, true when it passed.
           additionalProperties:
             type: boolean
+            description: True when that check passed.
+          example:
+            merchant allowed: true
+            category allowed: true
         product:
           type:
-            - object
-            - 'null'
+          - object
+          - 'null'
           additionalProperties: true
+          description: The catalog product the agent proposed, or null when none matched.
+          example:
+            id: notebook-a5
+            name: A5 dot grid notebook
+            category: stationery
+            price_minor: 900
         price_minor:
           type: integer
           minimum: 0
+          description: Price in minor units (cents).
+          example: 900
         spent_before_minor:
           type: integer
           minimum: 0
+          description: Amount already spent under the mandate before this purchase, in minor units.
+          example: 1800
         receipt:
           oneOf:
-            - $ref: '#/components/schemas/MandateReceipt'
-            - type: 'null'
+          - $ref: '#/components/schemas/MandateReceipt'
+          - type: 'null'
+            description: No value.
+          description: The signed mandate receipt of an allowed purchase, or null.
         label:
           type: string
+          description: How the data behind this response runs, for example local run data.
+          example: local run data
+      description: One purchase decision of the buyer agent with the mandate checks that decided it.
     MandateReceipt:
       type: object
-      required: [order_id, digest, public_key, line, log_ok, log_lines]
+      required:
+      - order_id
+      - digest
+      - public_key
+      - line
+      - log_ok
+      - log_lines
       properties:
         order_id:
           type: string
+          description: The order id the receipt is linked to.
+          example: ORDER-REH-5DA9909B
         digest:
           type: string
+          description: SHA-256 digest of the receipt, 64 hex characters.
+          example: 462b5031185079e4848005e9b01cf7ce5f26bbf71e448c5d27fabb2d0f1da084
         public_key:
           type: string
+          description: The public key that verifies the signature, 64 hex characters.
+          example: 38609034951b7475294bdfdf08e75f637d8bd34d0af36f4a85bb227dee94478a
         line:
           type: string
           description: The receipt exactly as written to the log.
         log_ok:
           type: boolean
+          description: True when the whole receipt log still verifies.
+          example: true
         log_lines:
           type: integer
           minimum: 1
+          description: Number of receipts in the log.
+          example: 3
+      description: The signed mandate receipt written for an allowed purchase, with the log state.
     HistoryStep:
       type: object
       properties:
         at:
           type: string
           format: date-time
+          description: Time the record was written, UTC.
+          example: '2026-11-11T07:17:29Z'
         state:
           type: string
+          description: The state of the case or row, for example VERIFIED, UNKNOWN or PENDING.
+          example: PENDING
         action:
           type: string
+          description: The action id written on the receipt, or the action the agent took.
+          example: settle_by_offer
         detail:
           type: string
+          description: A plain sentence saying what happened.
+          example: Offer sent. PayPal shows WAITING_FOR_BUYER_RESPONSE; waiting for the buyer.
         note:
           type: string
+          description: A short note from the agent or the checker, empty when there is none.
+          example: ''
+      description: One step in the history of a case entry.
     Entry:
       type: object
       description: One case as the console shows it. Dispute entries add the dispute fields.
-      required: [id, key, run, title, kind, state, action, detail, history]
+      required:
+      - id
+      - key
+      - run
+      - title
+      - kind
+      - state
+      - action
+      - detail
+      - history
       properties:
         id:
           type: string
+          description: The case entry id, for dispute cases the dispute id.
+          example: PP-D-REH-94816C42B4
         key:
           type: string
-          enum: [c, d, e, f, g, i, j, k, l, m, n, o]
+          enum:
+          - c
+          - d
+          - e
+          - f
+          - g
+          - i
+          - j
+          - k
+          - l
+          - m
+          - n
+          - o
+          description: The case key, c to o.
+          example: n
         run:
           type: string
+          description: The run id of the case run, 6 characters.
+          example: 38d215
         title:
           type: string
+          description: The case title.
+          example: 'Settle in conversation before escalation: offer inside the limit, PayPal record checked'
         at:
           type: string
           format: date-time
+          description: Time the record was written, UTC.
+          example: '2026-11-11T05:13:51Z'
         kind:
           type: string
-          enum: ['PayPal dispute', 'buyer complaint']
+          enum:
+          - PayPal dispute
+          - buyer complaint
+          description: Whether the case is a PayPal dispute or a buyer complaint.
+          example: PayPal dispute
         label:
           type: string
+          description: How the data behind this response runs, for example local run data.
+          example: local run data
         state:
           type: string
-          description: "VERIFIED, UNKNOWN, PENDING, MISMATCH, done, awaiting approval, refused, busy or held, offline."
+          description: VERIFIED, UNKNOWN, PENDING, MISMATCH, done, awaiting approval, refused, busy or held, offline.
+          example: VERIFIED
         action:
           type: string
+          description: The action id written on the receipt, or the action the agent took.
+          example: settle_by_offer
         detail:
           type: string
+          description: A plain sentence saying what happened.
+          example: 'Settled, no fee: PayPal shows RESOLVED (RESOLVED_WITH_PAYOUT) at the INQUIRY stage, never a claim.'
         refund_id:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
+          description: The provider refund id, or null when no refund was made.
         approval_id:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
+          description: The approval id from the inbox, a UUID.
         proposed:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
           description: What the model proposed. The policy decides, not the model.
+          example: settle_by_offer
         model:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
+          description: Which agent proposed the action, for example scripted, not AI, or a model label.
+          example: scripted, not AI
         decided:
           type: string
           description: What the policy decided.
+          example: settle_by_offer
         offer:
           description: The settlement offer, when the policy chose one.
         dispatch:
@@ -621,131 +1279,227 @@ components:
           description: The buyer's claim as checked against the record.
         dispute_id:
           type: string
+          description: The dispute id.
+          example: PP-D-REH-94816C42B4
         amount_minor:
           type: integer
+          description: The disputed amount in minor units (cents).
+          example: 250
         reason:
           type: string
+          description: Why it was allowed or refused, or the dispute reason code.
+          example: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
         deadline:
           description: The seller response deadline and its state.
+          example: *id002
         policy:
           $ref: '#/components/schemas/PolicyView'
         history:
           type: array
           items:
             $ref: '#/components/schemas/HistoryStep'
+          description: The steps of the case in the order they happened.
+          example: *id003
       additionalProperties: true
     PolicyView:
       type: object
-      required: [allowed, needs_approval, reason]
+      required:
+      - allowed
+      - needs_approval
+      - reason
       properties:
         allowed:
           type: boolean
+          description: True when the check or policy allows the action.
+          example: true
         needs_approval:
           type: boolean
+          description: True when a named person must approve before the agent acts.
+          example: false
         reason:
           type: string
+          description: Why it was allowed or refused, or the dispute reason code.
+          example: Inside the mandate.
         limit:
           oneOf:
-            - $ref: '#/components/schemas/Money'
-            - type: 'null'
+          - $ref: '#/components/schemas/Money'
+          - type: 'null'
+            description: No value.
+          description: The policy limit that applied, in USD, or null.
+      description: 'What the policy file decided for a case: allowed, needs approval, and why.'
     CaseRun:
       type: object
-      required: [key, run, label, entries]
+      required:
+      - key
+      - run
+      - label
+      - entries
       properties:
         key:
           type: string
+          description: The case key, c to o.
+          example: n
         run:
           type: string
+          description: The run id of the case run, 6 characters.
+          example: 38d215
         label:
           type: string
+          description: How the data behind this response runs, for example local run data.
+          example: local run data
         entries:
           type: array
           items:
             $ref: '#/components/schemas/Entry'
+          description: The case entries.
+      description: The entries one case run produced, with the run id.
     DisputeRow:
       type: object
       description: One row of the AG Grid dispute ledger. `stage` and `paypal_status` are read from the provider record now.
-      required: [dispute, case, reason, amount, stage, paypal_status, decided, state, settled_before_escalation, fee_avoided]
+      required:
+      - dispute
+      - case
+      - reason
+      - amount
+      - stage
+      - paypal_status
+      - decided
+      - state
+      - settled_before_escalation
+      - fee_avoided
       properties:
         dispute:
           type: string
+          description: The dispute id.
+          example: PP-D-REH-94816C42B4
         case:
           type: string
+          description: The case key (c to o) or the dispute id the row belongs to.
+          example: n
         reason:
           type: string
+          description: Why it was allowed or refused, or the dispute reason code.
+          example: MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED
         amount:
           $ref: '#/components/schemas/Money'
         stage:
           type: string
           description: INQUIRY, CHARGEBACK and so on, or `not given`.
+          example: INQUIRY
         paypal_status:
           type: string
           description: The provider's status, or `unreadable`.
+          example: RESOLVED
         decided:
           type: string
+          description: What the policy decided.
+          example: settle_by_offer
         proposed:
           type: string
+          description: What the agent proposed. The policy decides, not the agent.
+          example: settle_by_offer
         model:
           type: string
+          description: Which agent proposed the action, for example scripted, not AI, or a model label.
+          example: scripted, not AI
         state:
           type: string
+          description: The state of the case or row, for example VERIFIED, UNKNOWN or PENDING.
+          example: VERIFIED
         due:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
+          description: The seller response deadline, or null.
         dispatch:
           description: The dispatch proof summary, or `none`.
         settled_before_escalation:
           type: boolean
           description: True only when the provider record reads RESOLVED at the INQUIRY stage.
+          example: true
         fee_avoided:
           $ref: '#/components/schemas/Money'
         source:
           type: string
+          description: Where the row was read from.
     LedgerRow:
       type: object
-      required: [at, case, movement, amount, currency, state]
+      required:
+      - at
+      - case
+      - movement
+      - amount
+      - currency
+      - state
       properties:
         at:
           type: string
           format: date-time
+          description: Time the record was written, UTC.
+          example: '2026-11-11T05:13:51Z'
         case:
           type: string
+          description: The case key (c to o) or the dispute id the row belongs to.
+          example: n
         movement:
           type: string
+          description: The kind of money movement, for example a refund.
         amount:
           $ref: '#/components/schemas/Money'
         currency:
           type: string
-          enum: [USD]
+          enum:
+          - USD
+          description: The currency code. Only USD is used.
+          example: USD
         record:
           type: string
+          description: The provider record id the movement was read from.
         state:
           type: string
+          description: The state of the case or row, for example VERIFIED, UNKNOWN or PENDING.
+          example: VERIFIED
         source:
           type: string
+          description: Where the row was read from.
+      description: 'One row of the money ledger: a movement tied to a case and a provider record.'
     InboxRow:
       type: object
-      required: [id, operation, action, amount, currency, status]
+      required:
+      - id
+      - operation
+      - action
+      - amount
+      - currency
+      - status
       properties:
         id:
           type: string
+          description: The approval id, a UUID.
         operation:
           type: string
+          description: The operation the approval is for.
         action:
           type: string
+          description: The action id written on the receipt, or the action the agent took.
         subject:
           type: string
+          description: What the approval is about, for example a capture id.
         amount:
           $ref: '#/components/schemas/Money'
         currency:
           type: string
+          description: The currency code. Only USD is used.
+          example: USD
         limit:
           oneOf:
-            - $ref: '#/components/schemas/Money'
-            - type: 'null'
+          - $ref: '#/components/schemas/Money'
+          - type: 'null'
+            description: No value.
+          description: The policy limit that applied, in USD, or null.
         requested_by:
           type: string
+          description: Who or what asked for the approval.
         requested_at:
           type: number
           description: Unix time in seconds.
@@ -757,38 +1511,71 @@ components:
           description: PENDING, APPROVED or another store state, upper case.
         expired:
           type: boolean
+          description: True when the approval has passed its expiry time.
+          example: false
         approver:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
+          description: The name of the person who approved, or null.
         case:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
+          description: The case key (c to o) or the dispute id the row belongs to.
         key:
           type:
-            - string
-            - 'null'
+          - string
+          - 'null'
+          description: The case key, c to o.
+      description: One approval in the approval inbox with its status and expiry.
     State:
       type: object
-      required: [label, mode, folder, model, mandate, catalog, purchases, policy, cases, entries, runs, inbox, ledger, disputes, fees, now]
+      required:
+      - label
+      - mode
+      - folder
+      - model
+      - mandate
+      - catalog
+      - purchases
+      - policy
+      - cases
+      - entries
+      - runs
+      - inbox
+      - ledger
+      - disputes
+      - fees
+      - now
       properties:
         label:
           type: string
+          description: How the data behind this response runs, for example local run data.
+          example: local run data
         mode:
           type: string
+          description: The run mode line shown on the console.
+          example: rehearsal
         folder:
           type: string
+          description: The data folder of the run.
+          example: run-20261111-104352-aecb
         model:
           type: string
           description: Which agents run, for example `scripted, not AI`.
+          example: scripted, not AI
         network:
           type: string
+          description: The network statement shown on the console.
+          example: 'none: local provider, no provider calls'
         mandate:
           type: object
           properties:
             owner:
               type: string
+              description: The mandate owner's name.
+              example: Local run shopper
             budget:
               $ref: '#/components/schemas/Money'
             per_item_cap:
@@ -797,28 +1584,41 @@ components:
               type: array
               items:
                 type: string
+                description: One item of the list.
+              description: The stores the mandate allows.
+              example: *id004
             categories:
               type: array
               items:
                 type: string
+                description: One item of the list.
+              description: The product categories the mandate allows.
+              example: *id005
             currency:
               type: string
+              description: The currency code. Only USD is used.
+              example: USD
             spent:
               $ref: '#/components/schemas/Money'
             remaining:
               $ref: '#/components/schemas/Money'
+          description: The buyer's signed mandate with what is spent and what remains.
         merchant:
           type: object
           additionalProperties: true
+          description: The merchant's settings as the console shows them.
         catalog:
           type: array
           items:
             type: object
             additionalProperties: true
+            description: One item of the list.
+          description: The product catalog the buyer agent chooses from.
         purchases:
           type: array
           items:
             $ref: '#/components/schemas/Purchase'
+          description: The purchase decisions of this run.
         policy:
           type: object
           properties:
@@ -830,22 +1630,37 @@ components:
               $ref: '#/components/schemas/Money'
             hash:
               type: string
+              description: Hash of the policy file the agent was held to.
+              example: 396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271
+          description: The refund policy limits in force, with the hash of the policy file.
         cases:
           type: array
           items:
             type: object
-            required: [key, title, dispute]
+            required:
+            - key
+            - title
+            - dispute
             properties:
               key:
                 type: string
+                description: The case key, c to o.
+                example: c
               title:
                 type: string
+                description: The case title.
+                example: Refund under the limit, checked against the provider record
               dispute:
                 type: boolean
+                description: True when the case is a PayPal dispute.
+                example: true
+            description: One item of the list.
+          description: The cases the console can run.
         entries:
           type: array
           items:
             $ref: '#/components/schemas/Entry'
+          description: The case entries.
         runs:
           type: array
           items:
@@ -853,22 +1668,37 @@ components:
             properties:
               key:
                 type: string
+                description: The case key, c to o.
+                example: n
               run:
                 type: string
+                description: The run id of the case run, 6 characters.
+                example: 38d215
               at:
                 type: string
+                description: Time the record was written, UTC.
+                example: '2026-11-11T05:13:51Z'
               title:
                 type: string
+                description: The case title.
+                example: Settle in conversation before escalation
               states:
                 type: array
                 items:
                   type: string
+                  description: One item of the list.
+                description: The states each run reached.
               seconds:
                 type: number
+                description: Seconds the run took.
+                example: 9.5
+            description: One item of the list.
+          description: The earlier runs of each case with their states and durations.
         inbox:
           type: array
           items:
             $ref: '#/components/schemas/InboxRow'
+          description: The approval inbox.
         ledger:
           type: object
           properties:
@@ -876,15 +1706,21 @@ components:
               type: array
               items:
                 $ref: '#/components/schemas/LedgerRow'
+              description: The ledger rows.
             provider_refunds:
               type: integer
+              description: The number of refunds the provider holds for this run.
+              example: 0
+          description: The money ledger.
         gauge:
           type: object
           additionalProperties: true
+          description: The fee gauge values.
         disputes:
           type: array
           items:
             $ref: '#/components/schemas/DisputeRow'
+          description: The dispute ledger rows.
         fees:
           type: object
           additionalProperties: true
@@ -892,27 +1728,59 @@ components:
         now:
           type: string
           format: date-time
+          description: Server time, UTC.
+          example: '2026-11-11T05:13:51Z'
+      description: Everything the console shows for the current run.
     LogFile:
       type: object
-      required: [name, title, public_key, text]
+      required:
+      - name
+      - title
+      - public_key
+      - text
       properties:
         name:
           type: string
-          enum: [merchant, buyer]
+          enum:
+          - merchant
+          - buyer
+          description: 'Which log: merchant or buyer.'
+          example: merchant
         title:
           type: string
+          description: The case title.
+          example: Merchant swarm receipts
         public_key:
           type: string
+          description: The public key that verifies the signature, 64 hex characters.
+          example: 38609034951b7475294bdfdf08e75f637d8bd34d0af36f4a85bb227dee94478a
         text:
           type: string
           description: The receipt log as written, one JSON receipt per line.
+          example: '{"step_id":"PP-D-REH-94816C42B4:decision","action_id":"clearwake.dispute.decision","params":{"dispute":"PP-D-REH-94816C42B4","stage":"INQUIRY","proposed":"settle_by_offer","decided":"settle_by_offer","offer_minor":250,"model":"scripted","policy_hash":"396af6170103c7e2570b7c4f159e18543160e14127a05f873135a366bd7af271"},"success":true,"ts_ms":1794381449821,"actor":{"agent":"clearwake-merchant","user":"merchant"},"public_key":"6309eda9ad3863db68c6e157dbae09f5405362be19c3e01879a8867d37609c65","signature":"551695e1fd4b23acf0276f4c5bcd899f71e5407cdad11b1333ddd5174cb2d48db2e3c3cb449413b439054a5f893e343d3fd506a52e549ca9bd8a5eba28b2850a"}'
+      description: One signed receipt log with the public key that verifies it.
     Receipts:
       type: object
-      required: [label, logs]
+      required:
+      - label
+      - logs
       properties:
         label:
           type: string
+          description: How the data behind this response runs, for example local run data.
+          example: local run data
         logs:
           type: array
           items:
             $ref: '#/components/schemas/LogFile'
+          description: The signed receipt logs.
+      description: Both signed receipt logs, merchant and buyer.
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: string
+          description: The refusal as shown in the console.
+      description: 'The body of every refusal: one line of plain text.'
