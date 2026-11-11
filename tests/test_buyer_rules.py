@@ -169,8 +169,8 @@ class PriceRuleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
             seed = Path(folder) / "b.seed"; create_seed(str(seed))
             log = ReceiptLog(str(Path(folder) / "b.ndjson"), load_seed(str(seed)))
-            mandate = Mandate("Owner", 10200, 10200, ("clearwake-demo-store",), ("stationery",), max_over_market_percent=25)
-            receipt = mandate_receipt(log, mandate, products["notebook-a5"], "clearwake-demo-store", "ORDER-P-1", price=self.check(900, True))
+            mandate = Mandate("Owner", 10200, 10200, ("clearwake-sandbox-store",), ("stationery",), max_over_market_percent=25)
+            receipt = mandate_receipt(log, mandate, products["notebook-a5"], "clearwake-sandbox-store", "ORDER-P-1", price=self.check(900, True))
             params = json.loads(receipt["line"])["params"]
             self.assertEqual((params["max_over_market_percent"], params["price_reference"]["reference_minor"], params["price_reference"]["within_tolerance"]), (25, 900, True))
             self.assertTrue(verify_log([receipt["line"]], receipt["public_key"])["ok"])
@@ -182,8 +182,8 @@ class SignedRuleTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
             seed = Path(folder) / "b.seed"; create_seed(str(seed))
             log = ReceiptLog(str(Path(folder) / "b.ndjson"), load_seed(str(seed)))
-            mandate = Mandate("Owner", 10200, 10200, ("clearwake-demo-store",), ("stationery",), dispute_rule=RULE)
-            receipt = mandate_receipt(log, mandate, products["notebook-a5"], "clearwake-demo-store", "ORDER-RULE-1")
+            mandate = Mandate("Owner", 10200, 10200, ("clearwake-sandbox-store",), ("stationery",), dispute_rule=RULE)
+            receipt = mandate_receipt(log, mandate, products["notebook-a5"], "clearwake-sandbox-store", "ORDER-RULE-1")
             body = json.loads(receipt["line"])
             self.assertEqual(body["params"]["dispute_rule"]["accept_min_percent"], 80)
             self.assertEqual(body["params"]["dispute_rule"]["max_counters"], 1)

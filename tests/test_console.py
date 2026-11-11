@@ -1,4 +1,4 @@
-"""Console endpoints over real loopback HTTP: CSRF, the rehearsal cases, the inbox, reconcile and the verifier assets."""
+"""Console endpoints over real loopback HTTP: CSRF, the local cases, the inbox, reconcile and the verifier assets."""
 import http.client
 import json
 from pathlib import Path
@@ -14,7 +14,7 @@ from verdock_core.receipts import verify_log
 
 
 def no_network(*args, **kwargs):
-    raise AssertionError("The console made a network call in rehearsal.")
+    raise AssertionError("The console made a network call in local.")
 
 
 class ConsoleHTTPTests(unittest.TestCase):
@@ -232,7 +232,7 @@ class ConsoleHTTPTests(unittest.TestCase):
 
 
 class HostedTests(unittest.TestCase):
-    """CLEARWAKE_HOSTED=1: reset wipes the demo folder only, and each address has a rate limit."""
+    """CLEARWAKE_HOSTED=1: reset wipes the local run folder only, and each address has a rate limit."""
 
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
@@ -265,7 +265,7 @@ class HostedTests(unittest.TestCase):
         status, headers, raw = self.request("POST", path, body, {"Cookie": cookie, "X-Clearwake-CSRF": csrf, "X-Forwarded-For": ip})
         return status, headers, json.loads(raw)
 
-    def test_reset_wipes_every_run_folder_of_the_demo_and_nothing_outside_it(self):
+    def test_reset_wipes_every_run_folder_of_the_local_run_and_nothing_outside_it(self):
         cookie, csrf = self.session()
         first = self.console.data
         self.assertEqual(self.post(cookie, csrf, "/console/api/case", {"case": "c"})[0], 200)
@@ -300,12 +300,12 @@ class HostedTests(unittest.TestCase):
             local.server_close()
 
     def test_other_hosts_are_refused_unless_named(self):
-        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test"})[0], 403)  # no allowed host configured: loopback only
-        self.server.allowed_hosts = {"demo.example.test"}
-        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test"})[0], 200)
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "console.example.test"})[0], 403)  # no allowed host configured: loopback only
+        self.server.allowed_hosts = {"console.example.test"}
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "console.example.test"})[0], 200)
         self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "evil.test"})[0], 403)
-        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test", "Origin": "https://evil.test"})[0], 403)
-        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "demo.example.test", "Origin": "https://demo.example.test"})[0], 200)
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "console.example.test", "Origin": "https://evil.test"})[0], 403)
+        self.assertEqual(self.request("GET", "/console/api/state", headers={"Host": "console.example.test", "Origin": "https://console.example.test"})[0], 200)
 
 
 class BindTests(unittest.TestCase):

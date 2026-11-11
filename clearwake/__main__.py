@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .console import Console
 from .controller import RefundCase, RefundController
-from .paypal import RehearsalGateway, SandboxGateway
+from .paypal import LocalGateway, SandboxGateway
 from .server import ClearwakeServer
 
 
@@ -28,11 +28,11 @@ def main():
     parser.add_argument("--port", type=int, default=None, help="Default 8810; in hosted mode the PORT variable the host provides")
     parser.add_argument("--database", type=Path, default=Path("data/clearwake.sqlite3"))
     parser.add_argument("--enable-paypal-sandbox", action="store_true", help="Explicitly enable sandbox-only network requests; never production")
-    parser.add_argument("--enable-meta-synthetic", action="store_true", help="Separate opt-in for the upstream fixed synthetic AI fixture; may consume provider credits")
-    parser.add_argument("--enable-local-ai", action="store_true", help="Explicitly use the reviewed local model for the fixed synthetic fixture")
+    parser.add_argument("--enable-meta-test-data", action="store_true", help="Separate opt-in for the upstream fixed test AI fixture; may consume provider credits")
+    parser.add_argument("--enable-local-ai", action="store_true", help="Explicitly use the reviewed local model for the fixed test fixture")
     parser.add_argument("--console-model", choices=("scripted", "ollama"), default="scripted",
-                        help="Agents in the /console rehearsal: scripted rules (default, no model calls) or a local Ollama model on loopback")
-    parser.add_argument("--rehearsal-outcome", choices=("completed", "pending", "lost-response"), default="completed")
+                        help="Agents in the /console local: scripted rules (default, no model calls) or a local Ollama model on loopback")
+    parser.add_argument("--local-outcome", choices=("completed", "pending", "lost-response"), default="completed")
     args = parser.parse_args()
     hosted = os.environ.get("CLEARWAKE_HOSTED") == "1"
     if args.port is None:
@@ -41,7 +41,7 @@ def main():
         parser.error("--host beyond loopback needs CLEARWAKE_HOSTED=1 (hosted mode). Local runs stay on loopback.")
     if hosted and os.environ.get("CLEARWAKE_CONSOLE_MODEL") in ("scripted", "ollama") and args.console_model == "scripted":
         args.console_model = os.environ["CLEARWAKE_CONSOLE_MODEL"]  # real local-model calls only where the host has a model
-    if args.enable_meta_synthetic and args.enable_local_ai:
+    if args.enable_meta_test_data and args.enable_local_ai:
         parser.error("Choose local AI or Meta, not both.")
     if not 1 <= args.port <= 65535:
         parser.error("port must be between 1 and65535")
@@ -50,10 +50,10 @@ def main():
             gateway = SandboxGateway.from_environment()
             case = RefundCase(capture=os.environ.get("PAYPAL_SANDBOX_CAPTURE_ID", ""), amount=os.environ.get("CLEARWAKE_REFUND_AMOUNT", "1.00"))
         else:
-            gateway = RehearsalGateway(args.database.resolve().with_name("rehearsal-provider.sqlite3"), args.rehearsal_outcome)
+            gateway = LocalGateway(args.database.resolve().with_name("local-provider.sqlite3"), args.local_outcome)
             case = RefundCase()
         worker = None
-        if args.enable_meta_synthetic:
+        if args.enable_meta_test_data:
             from relayloom.meta import MetaWorker
             worker = MetaWorker.from_environment()
         elif args.enable_local_ai:
@@ -67,7 +67,7 @@ def main():
     print(f"Clearwake: http://127.0.0.1:{args.port}")
     print(f"Console:   http://127.0.0.1:{args.port}/console (local run on the local provider; agents: {console.adapter.label()})")
     print(f"Payments: {gateway.mode}. Specialists: {controller.mode}. No calls occur just by opening the page.")
-    print("Loopback only. Use synthetic data. One immutable bounded capture per database.")
+    print("Loopback only. Use test data. One immutable bounded capture per database.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

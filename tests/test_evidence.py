@@ -15,7 +15,7 @@ def dispute(reason, value="9.00", due_in_hours=72):
 
 
 TRACKER = [{"number": "SYNTH1Z999AA10123456", "carrier": "UPS", "status": "SHIPPED"}]
-MANDATE = {"order_id": "ORDER1", "owner": "Synthetic shopper", "item": "notebook-a5", "price": "USD 9.00", "cap": "USD 102.00", "digest": "ab" * 32}
+MANDATE = {"order_id": "ORDER1", "owner": "Test shopper", "item": "notebook-a5", "price": "USD 9.00", "cap": "USD 102.00", "digest": "ab" * 32}
 
 
 class EvidenceTests(unittest.TestCase):

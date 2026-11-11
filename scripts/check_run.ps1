@@ -1,5 +1,5 @@
-# Runs the four demo cases against the rehearsal gateway and prints PASS or FAIL for each.
-# Rehearsal only: fake provider, synthetic records, no network or model calls.
+# Runs the four local cases against the local gateway and prints PASS or FAIL for each.
+# Local only: local provider, local records, no network or model calls.
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $python = Join-Path $root ".venv\Scripts\python.exe"

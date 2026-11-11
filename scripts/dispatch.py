@@ -6,7 +6,7 @@
 --item is sku=ordered quantity:what to count (a short noun phrase). Use several --photo for several angles: the largest count wins.
 --counter sam         SAM 3 on this machine (needs tools/sam/setup.ps1 once; runs offline afterwards)
 --counter recorded    the saved result of a real SAM run next to the photo (<photo>.count.json)
---counter scripted    rehearsal only: a fixed table, labelled "scripted count, not SAM"
+--counter scripted    local only: a fixed table, labelled "scripted count, not SAM"
 --data DIR            the merchant's data folder (default data/dispatch). Run this when no server is writing to it.
 Photos are copied under DIR/dispatch/ORDER_ID/ and never sent anywhere until a dispute needs them.
 """
@@ -21,13 +21,13 @@ sys.path.insert(0, str(ROOT))
 from clearwake import dispatch  # noqa: E402
 from clearwake.counter import Counter, CounterError  # noqa: E402
 from clearwake.models import Adapter  # noqa: E402
-from clearwake.paypal import RehearsalGateway  # noqa: E402
+from clearwake.paypal import LocalGateway  # noqa: E402
 from clearwake.swarm import MerchantSwarm  # noqa: E402
 
 
 def swarm_for(data):
     data = Path(data)
-    return MerchantSwarm(RehearsalGateway(data / "unused-provider.sqlite3"), data, Adapter("scripted"))
+    return MerchantSwarm(LocalGateway(data / "unused-provider.sqlite3"), data, Adapter("scripted"))
 
 
 def main():

@@ -6,7 +6,7 @@ Every number on this page comes from the run files in `data/runs/*.json` or from
 
 | Run file | Mode | PASS | FAIL | SKIPPED |
 | --- | --- | --- | --- | --- |
-| `cases-rehearsal-20261031-225445.json` | local run | 14 | 0 | 0 |
+| `cases-local-20261031-225445.json` | local run | 14 | 0 | 0 |
 | `cases-sandbox-20261031-225507.json` | sandbox run | 9 | 0 | 5 |
 | `data/airgap/airgap-20261031-223749.json` | case m, network isolated containers, real sandbox | 1 | 0 | 0 |
 
@@ -56,8 +56,8 @@ Sandbox dispute creation by API was retried on 31 October: HTTP 400 "No permissi
 
 | Run file | Mode | PASS | FAIL | SKIPPED |
 | --- | --- | --- | --- | --- |
-| `cases-rehearsal-20261031-115247.json` | local run | 12 | 0 | 0 |
-| `cases-rehearsal-20261031-153547.json` | local run | 12 | 0 | 0 |
+| `cases-local-20261031-115247.json` | local run | 12 | 0 | 0 |
+| `cases-local-20261031-153547.json` | local run | 12 | 0 | 0 |
 | `cases-sandbox-20261031-115302.json` | sandbox run, first run | 6 | 3 | 3 |
 | `cases-sandbox-20261031-115349.json` | sandbox run | 9 | 0 | 3 |
 

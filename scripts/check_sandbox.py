@@ -49,7 +49,7 @@ class CountingGateway:
 def local_ai_worker():
     from clearwake.local_ai import LocalWorker, MODEL
     tags = json.load(urllib.request.urlopen("http://127.0.0.1:11434/api/tags", timeout=5))
-    os.environ.setdefault("CLEARWAKE_LOCAL_AI_ACK", "I_CONFIRM_LOCAL_SYNTHETIC")
+    os.environ.setdefault("CLEARWAKE_LOCAL_AI_ACK", "I_CONFIRM_LOCAL_TEST_DATA")
     os.environ.setdefault("CLEARWAKE_LOCAL_MODEL_DIGEST", next(m["digest"] for m in tags["models"] if m["name"] == MODEL))
     os.environ.setdefault("CLEARWAKE_LOCAL_LEDGER", str(ROOT / "data" / "sandbox" / "local-ai-ledger.sqlite3"))
     return LocalWorker.from_environment()

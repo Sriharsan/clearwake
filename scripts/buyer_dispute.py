@@ -2,7 +2,7 @@
 
   python scripts/buyer_dispute.py --login        Sri logs in by hand, once. Opens sandbox.paypal.com in a headed window
                                                  (profile folder data/buyer-profile/, git ignored) and waits until it shows signed in.
-  python scripts/buyer_dispute.py --rehearsal    One full negotiation offline (fake provider and the local stand-in page).
+  python scripts/buyer_dispute.py --local    One full negotiation offline (local provider and the local stand-in page).
   python scripts/buyer_dispute.py --sandbox      One real negotiation against the PayPal sandbox. Needs the login above.
   python scripts/buyer_dispute.py --sandbox --manual-buyer [--resume]
                                                  Same, with no browser here: buyer browser actions are printed as JSON lines and
@@ -55,8 +55,8 @@ def negotiate(argv):
     adapter = Adapter(backend)
     buyer_adapter = Adapter(argv[argv.index("--buyer-model") + 1] if "--buyer-model" in argv else backend)
     try:
-        if "--rehearsal" in argv:
-            report = batch.run_rehearsal(adapter, cases, buyer_adapter=buyer_adapter)
+        if "--local" in argv:
+            report = batch.run_local(adapter, cases, buyer_adapter=buyer_adapter)
         else:
             timeout = int(argv[argv.index("--manual-timeout") + 1]) if "--manual-timeout" in argv else 900
             report = batch.run_sandbox(adapter, cases, manual="--manual-buyer" in argv, resume="--resume" in argv, timeout_s=timeout, buyer_adapter=buyer_adapter)
@@ -73,7 +73,7 @@ def negotiate(argv):
 
 
 def main(argv):
-    if "--rehearsal" in argv or "--sandbox" in argv:
+    if "--local" in argv or "--sandbox" in argv:
         return negotiate(argv)
     if "--login" in argv:
         timeout = int(argv[argv.index("--login-timeout") + 1]) if "--login-timeout" in argv else 900

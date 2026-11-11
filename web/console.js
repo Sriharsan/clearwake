@@ -206,9 +206,9 @@ function lightAgents(entry) {
 }
 
 function caseItem(e) {
-  const rehearsal = data.mode === 'rehearsal';
-  const o = L.outcome(e.state, rehearsal);
-  const nodes = L.track(e, rehearsal);
+  const local = data.mode === 'local';
+  const o = L.outcome(e.state, local);
+  const nodes = L.track(e, local);
   const p = e.policy || {};
   const policyText = p.reason === 'escalated to a person' ? 'Escalated to a person'
     : `${p.allowed ? 'Allowed' : 'Not allowed'}: ${p.reason}${p.limit ? `, cap USD ${p.limit}` : ''}`;
@@ -249,7 +249,7 @@ function inboxItem(a) {
 }
 
 function disputeItem(e) {
-  const o = L.outcome(e.state, data.mode === 'rehearsal');
+  const o = L.outcome(e.state, data.mode === 'local');
   const c = L.countdown(e.due, Date.now());
   return el('li', { class: 'dispute-item' },
     el('div', { class: 'case-top' }, el('span', { class: 'case-id', text: e.dispute_id }), el('span', { class: 'status-chip ' + (o.cls === 'settled' ? 'ok' : o.cls === 'reversed' ? 'bad' : 'wait'), text: o.label })),
@@ -283,7 +283,7 @@ function renderMerchant() {
   lightAgents(latest);
   $('side-buyer').replaceChildren(...(latest ? [el('div', { class: 'bubble appear' }, el('span', { class: 'who', text: latest.kind }),
     latest.message || L.readable(latest.reason) || '', ' ', el('span', { class: 'amount', text: `USD ${L.money(latest.amount_minor)}` }))] : [el('p', { class: 'card-sub', text: 'Waiting for a case.' })]));
-  grids.ledger.set(data.ledger.rows.map(r => ({ ...r, state: r.state === 'VERIFIED' ? L.outcome('VERIFIED', data.mode === 'rehearsal').label.toLowerCase() : r.state })));
+  grids.ledger.set(data.ledger.rows.map(r => ({ ...r, state: r.state === 'VERIFIED' ? L.outcome('VERIFIED', data.mode === 'local').label.toLowerCase() : r.state })));
   renderFees();
 }
 
@@ -467,7 +467,7 @@ async function loadTotals() {
       const ok = reports.filter(r => r.ok).length;
       tiles.push(el('div', {}, el('dd', { class: 'num', text: `${ok} of ${held.length}` }), el('dt', { text: 'signed logs in this console verify in your browser' }), el('dd', { class: 'src', text: 'Verified in your browser, the logs held by this console' })));
     }
-  } catch (e) { /* no number rather than an invented one */ }
+  } catch (e) { /* no number rather than an unsourced one */ }
   if (!tiles.length) return;
   $('lead-numbers').replaceChildren(...tiles);
   $('lead-numbers').hidden = false;

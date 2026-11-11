@@ -248,7 +248,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     from .console import Console
     from .controller import RefundController
-    from .paypal import RehearsalGateway
+    from .paypal import LocalGateway
     from .server import ClearwakeServer
     ip = lan_address(args.lan_ip)
     tls = None
@@ -257,7 +257,7 @@ def main(argv=None):
         tls = (cert, key)
     database = args.database.resolve()
     database.parent.mkdir(parents=True, exist_ok=True)
-    controller = RefundController(database, gateway=RehearsalGateway(database.with_name("rehearsal-provider.sqlite3"), "completed"))
+    controller = RefundController(database, gateway=LocalGateway(database.with_name("local-provider.sqlite3"), "completed"))
     console = Console(database.parent / "console", args.console_model)
     main_server = ClearwakeServer(("127.0.0.1", args.port), controller, console, hosted=False)   # the main console stays on loopback
     phone = PhoneServer((ip, args.phone_port), console, tls=tls)

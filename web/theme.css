@@ -63,7 +63,7 @@ input:focus,textarea:focus,select:focus{outline:2px solid var(--cw-accent);outli
 .empty-glyph{color:var(--cw-line-strong)}
 .page-footer{border-color:var(--cw-line)}
 .notice{background:var(--cw-warn-soft);border-color:color-mix(in oklab,var(--cw-warn) 40%,transparent);color:var(--cw-warn-text)}
-.welcome-flow{border-color:var(--cw-line)}.welcome-flow div>span,.rehearsal-note,.rehearsal-note span{color:var(--cw-dim)}
+.welcome-flow{border-color:var(--cw-line)}.welcome-flow div>span,.local-note,.local-note span{color:var(--cw-dim)}
 
 /* Controls */
 .button{background:var(--cw-raised);border-color:var(--cw-line-strong);color:var(--cw-text)}

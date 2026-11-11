@@ -5,7 +5,7 @@ each other directly. They talk through the dispute: the buyer through the Resolu
 Disputes API (send-message, make-offer). Every outcome is read back from the dispute record, never from what either agent says.
 
 Two worlds share one negotiation loop:
-  Rehearsal: RehearsalGateway (a local fake provider) plus the local stand-in page in tests/fixtures/resolution_center. Runs offline.
+  Local: LocalGateway (a local provider) plus the local stand-in page in tests/fixtures/resolution_center. Runs offline.
   Sandbox:   the real PayPal sandbox. Needs Sri's one time login in the persistent browser profile.
 """
 from dataclasses import dataclass, field, replace
@@ -29,7 +29,7 @@ from .buyer import BuyerAgent, DisputeRule, Mandate, check, check_draft, decide_
 from .buyer_browser import NeedsHuman, Recorder, ResolutionCenter, StepFailed, blocked, fixture_site, open_buyer_log, sandbox_site, visible
 from .counter import Counter
 from .models import Adapter
-from .paypal import GatewayError, Offline, ProviderRefused, RehearsalGateway
+from .paypal import GatewayError, Offline, ProviderRefused, LocalGateway
 from .swarm import MerchantSwarm
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -113,11 +113,11 @@ def money(minor):
 
 
 def buyer_mandate(owner="Buyer owner"):
-    return Mandate(owner, 100000, 10000, ("clearwake-demo-store",), ("home", "stationery"), dispute_rule=RULE, max_over_market_percent=25)
+    return Mandate(owner, 100000, 10000, ("clearwake-sandbox-store",), ("home", "stationery"), dispute_rule=RULE, max_over_market_percent=25)
 
 
 def recorded_price(product, tolerance):
-    """Rehearsal price reference: a recorded fixture (the catalogue price itself). No credits are used and nothing is called."""
+    """Local price reference: a recorded fixture (the catalogue price itself). No credits are used and nothing is called."""
     from .market import MarketCheck, _within
     return MarketCheck(product["price_minor"], "recorded.fixture", product["name"], None, _within(product["price_minor"], product["price_minor"], tolerance),
                        0, "recorded fixture", int(time.time() * 1000))
@@ -222,15 +222,15 @@ def classify(final, merchant_result, buyer_end, settled):
 
 # Worlds -----------------------------------------------------------------------------------------------------------------------
 
-class Rehearsal:
-    """Fake provider plus the local stand-in page. Offline. Every record is invented; nothing here is PayPal."""
-    mode, label = "rehearsal", "local run on the local provider: no PayPal call, the buyer page is a local stand-in"
+class LocalRun:
+    """Local provider plus the local stand-in page. Offline. Every record is local; nothing here is PayPal."""
+    mode, label = "local", "local run on the local provider: no PayPal call, the buyer page is a local stand-in"
     price = staticmethod(recorded_price)
     price_source = "recorded fixture"
 
     def __init__(self, work, page, now=None):
         self.work, self.page, self.site = Path(work), page, fixture_site()
-        self.gateway = RehearsalGateway(self.work / "provider.sqlite3")
+        self.gateway = LocalGateway(self.work / "provider.sqlite3")
         self.orders = {}
 
     def buy(self, spec, product, total_minor, run):
@@ -240,7 +240,7 @@ class Rehearsal:
             self.trackers = {order_id: [{"number": f"SYNTH1Z{run.upper()}{spec.n:04d}", **TRACKER}]}
         self.page.evaluate("(t) => RC.transactions.push(t)", capture_id)
         return {"order_id": order_id, "capture_id": capture_id, "trackers": [{"number": f"SYNTH1Z{run.upper()}{spec.n:04d}", **TRACKER}] if spec.tracked else [],
-                "how": "rehearsal order, no PayPal call"}
+                "how": "local order, no PayPal call"}
 
     def ship(self, spec, bought):
         """The merchant ships and the tracking is added before any dispute exists (the local provider keeps it in its own record)."""
@@ -262,7 +262,7 @@ class Rehearsal:
         self.page.evaluate("([id, patch]) => RC.merchantSync(id, patch)", [page_id, patch])
 
     def after_buyer(self, api_id, page_id, action):
-        """Carry what the buyer pressed on the page into the fake provider's record."""
+        """Carry what the buyer pressed on the page into the local provider's record."""
         if action == "accept":
             self.gateway.buyer_accepts_offer(api_id)
         elif action == "claim":
@@ -278,7 +278,7 @@ class Rehearsal:
 
     def approve(self, swarm, result, spec):
         if spec.owner_approves and result.approval_id:
-            swarm.approvals.approve(result.approval_id, "rehearsal owner")
+            swarm.approvals.approve(result.approval_id, "local owner")
             return result.approval_id
         return None
 
@@ -579,7 +579,7 @@ class Run:
                 if merchant_result.state == "awaiting approval":
                     approval_id = self.world.approve(self.swarm, merchant_result, spec)
                     if approval_id:
-                        row["steps"].append("merchant owner approved the offer (rehearsal)")
+                        row["steps"].append("merchant owner approved the offer (local)")
                         continue
                 if merchant_result.state == UNKNOWN and "reconciled" not in row:   # a lost response: read PayPal, never send again
                     seen = self.world.read(api_id)
@@ -698,7 +698,7 @@ def table(rows):
 
 
 MANUAL = {
-    "rehearsal": ["Local run on the local provider: no PayPal call was made and the buyer page is a local stand-in.",
+    "local": ["Local run on the local provider: no PayPal call was made and the buyer page is a local stand-in.",
                   "Cases handed to a person stay open until that person decides."],
     "sandbox": ["Sri logs in to the sandbox buyer account once, by hand, in the persistent browser window (python scripts/buyer_dispute.py --login).",
                 "The merchant owner's approval of any offer above the approval threshold stays manual: those cases are reported as escalated to the merchant owner.",
@@ -745,8 +745,8 @@ def run_batch(world, work, page, adapter, cases=CASES, mandate=None, clock=time.
             "work_dir": str(work)}
 
 
-def run_rehearsal(adapter=None, cases=CASES, work=None, headless=True, buyer_adapter=None, scope_item_not_received=True):
-    """All cases end to end offline: fake provider plus the local stand-in page. Used by scripts/batch.py and the tests."""
+def run_local(adapter=None, cases=CASES, work=None, headless=True, buyer_adapter=None, scope_item_not_received=True):
+    """All cases end to end offline: local provider plus the local stand-in page. Used by scripts/batch.py and the tests."""
     from playwright.sync_api import sync_playwright
     adapter = adapter or Adapter("scripted")
     work = Path(work or tempfile.mkdtemp(prefix="clearwake-batch-"))
@@ -755,7 +755,7 @@ def run_rehearsal(adapter=None, cases=CASES, work=None, headless=True, buyer_ada
         try:
             page = browser.new_page()
             page.goto(fixture_site().home_url)
-            return run_batch(Rehearsal(work, page), work, page, adapter, cases, buyer_adapter=buyer_adapter, scope_item_not_received=scope_item_not_received)
+            return run_batch(LocalRun(work, page), work, page, adapter, cases, buyer_adapter=buyer_adapter, scope_item_not_received=scope_item_not_received)
         finally:
             browser.close()
 

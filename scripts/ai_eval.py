@@ -1,11 +1,11 @@
 """Run the merchant agent's real model on dispute cases and print what it proposed, what the policy decided and how long it took.
 
-  python scripts/ai_eval.py                                  rehearsal disputes, model from CLEARWAKE_MODEL or qwen2.5-coder:3b
+  python scripts/ai_eval.py                                  local disputes, model from CLEARWAKE_MODEL or qwen2.5-coder:3b
   python scripts/ai_eval.py --model qwen3.5:4b,qwen2.5-coder:3b --only n,o,u
   python scripts/ai_eval.py --real-record PP-R-OBG-10196144  read PayPal's sandbox record, ask the model, send NOTHING
 
 Every row is a real call to the model on this machine (Ollama on loopback). The policy decides; the model only proposes.
-The rehearsal provider is Clearwake's own stand-in for PayPal's Disputes API. --real-record reads one real sandbox dispute and
+The local provider is Clearwake's own stand-in for PayPal's Disputes API. --real-record reads one real sandbox dispute and
 runs the model on it with every write blocked, so the row says "real sandbox record, read only". Results are saved to data/runs/.
 """
 from datetime import datetime, timedelta, timezone
@@ -25,7 +25,7 @@ from clearwake import dispatch, envfile  # noqa: E402
 from clearwake.buyer import Mandate, load_catalog, mandate_receipt  # noqa: E402
 from clearwake.counter import Counter  # noqa: E402
 from clearwake.models import Adapter  # noqa: E402
-from clearwake.paypal import Offline, RehearsalGateway, SandboxGateway  # noqa: E402
+from clearwake.paypal import Offline, LocalGateway, SandboxGateway  # noqa: E402
 from clearwake.swarm import MerchantSwarm  # noqa: E402
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed, verify_log  # noqa: E402
 
@@ -34,7 +34,7 @@ DEFAULT_MODEL = os.environ.get("CLEARWAKE_MODEL", "qwen2.5-coder:3b")
 MODELS = ARGS[ARGS.index("--model") + 1].split(",") if "--model" in ARGS else [DEFAULT_MODEL]
 ONLY = set(ARGS[ARGS.index("--only") + 1].split(",")) if "--only" in ARGS else None
 REAL = ARGS[ARGS.index("--real-record") + 1] if "--real-record" in ARGS else None
-MANDATE = Mandate("Synthetic shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))
+MANDATE = Mandate("Test shopper", 10200, 10200, ("clearwake-sandbox-store",), ("home", "stationery"))
 NOT_RECEIVED, NOT_AS_DESCRIBED, UNAUTHORISED = "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "UNAUTHORISED"
 TRACKERS = [{"number": "SYNTH1Z999AA10123456", "carrier": "UPS", "status": "SHIPPED"}]
 
@@ -44,7 +44,7 @@ def due(hours):
 
 
 def scenarios(work):
-    """(key, title, expected policy decision, builder). Each builder opens a rehearsal dispute and returns the arguments for handle_dispute."""
+    """(key, title, expected policy decision, builder). Each builder opens a local dispute and returns the arguments for handle_dispute."""
     fixtures = ROOT / "fixtures" / "dispatch"
 
     def missing(g, s, msg):  # n: a small missing item, no strong proof: settle inside the limit
@@ -60,7 +60,7 @@ def scenarios(work):
     def agent_order(g, s, msg):  # u: unauthorised claim on an agent order with a signed mandate receipt: fight with the receipt
         tag = uuid.uuid4().hex[:8]; seed = work / f"buyer-{tag}.seed"; create_seed(str(seed))
         log = ReceiptLog(str(work / f"buyer-{tag}.ndjson"), load_seed(str(seed)))
-        receipt = mandate_receipt(log, MANDATE, load_catalog()[2]["notebook-a5"], "clearwake-demo-store", "ORDER-U")
+        receipt = mandate_receipt(log, MANDATE, load_catalog()[2]["notebook-a5"], "clearwake-sandbox-store", "ORDER-U")
         d = g.open_dispute("CAP-U", UNAUTHORISED, "9.00", due(240), msg, stage="INQUIRY")
         return d["dispute_id"], 900, "buyer-u", {"id": "ORDER-U"}, (), receipt
 
@@ -183,12 +183,12 @@ def run():
             if ONLY and key not in ONLY:
                 continue
             folder = work / model.replace(":", "_") / f"{key}{variant}"
-            gateway = RehearsalGateway(folder / "provider.sqlite3")
+            gateway = LocalGateway(folder / "provider.sqlite3")
             swarm = MerchantSwarm(gateway, folder / "merchant", Adapter("ollama", model, timeout=300))
             dispute_id, capture_minor, customer, order, trackers, mandate = build(gateway, swarm, VARIANTS[key][variant])
             started = time.perf_counter()
             result = swarm.handle_dispute(dispute_id, capture_minor, customer, order, trackers, mandate)
-            rows.append(row_for(f"{key}{variant}", title, expected, model, "rehearsal", result, swarm, dispute_id, time.perf_counter() - started))
+            rows.append(row_for(f"{key}{variant}", title, expected, model, "local", result, swarm, dispute_id, time.perf_counter() - started))
             rows[-1]["scenario"], rows[-1]["buyer_message"] = key, VARIANTS[key][variant]
             print(f"  {key} {rows[-1]['latency_ms']} ms proposed {rows[-1]['proposed']} decided {rows[-1]['decided']}", flush=True)
     return rows, loads
@@ -246,8 +246,8 @@ def main():
     summary = totals(rows)
     for model, t in summary.items():
         print(model, json.dumps(t, indent=1))
-    out = ROOT / "data" / "runs" / f"ai-eval-{'real-record' if REAL else 'rehearsal'}-{started.strftime('%Y%m%d-%H%M%S')}.json"
-    out.write_text(json.dumps({"mode": "real sandbox record, read only" if REAL else "rehearsal", "started": started.isoformat(), "load_ms": loads,
+    out = ROOT / "data" / "runs" / f"ai-eval-{'real-record' if REAL else 'local'}-{started.strftime('%Y%m%d-%H%M%S')}.json"
+    out.write_text(json.dumps({"mode": "real sandbox record, read only" if REAL else "local", "started": started.isoformat(), "load_ms": loads,
                                "rows": rows, "totals": summary}, indent=2), encoding="utf-8")
     print("saved", out.relative_to(ROOT))
 

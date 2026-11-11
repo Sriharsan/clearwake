@@ -8,7 +8,7 @@ import tempfile
 import unittest
 
 from clearwake.models import Adapter
-from clearwake.paypal import RehearsalGateway
+from clearwake.paypal import LocalGateway
 from clearwake.swarm import Case, MerchantSwarm
 from verdock_core.receipts import verify_log
 from verdock_core.outcome import UNKNOWN, VERIFIED
@@ -25,7 +25,7 @@ def model_says(action):
 class SwarmTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); root = Path(self.folder.name)
-        self.gateway = RehearsalGateway(root / "provider.sqlite3")
+        self.gateway = LocalGateway(root / "provider.sqlite3")
         self.swarm = MerchantSwarm(self.gateway, root / "merchant", Adapter("scripted"))
 
     def tearDown(self):
@@ -64,7 +64,7 @@ class SwarmTests(unittest.TestCase):
 
     def test_unknown_is_never_retried_and_never_shown_verified_until_reconciled(self):
         root = Path(self.folder.name)
-        lost = RehearsalGateway(root / "lost.sqlite3", "lost-response")
+        lost = LocalGateway(root / "lost.sqlite3", "lost-response")
         swarm = MerchantSwarm(lost, root / "lost-merchant", Adapter("scripted"))
         self.assertEqual(swarm.handle(case("C5", 150)).state, UNKNOWN)
         again = swarm.handle(case("C5", 150))

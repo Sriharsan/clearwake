@@ -60,7 +60,7 @@ The local PayPal applied the refund, then the response was lost (`ReadTimeout`).
 Clearwake line, quoted as printed:
 
 ```
-PASS    e. Lost response: UNKNOWN, no blind retry, reconciled from PayPal  [rehearsal]  UNKNOWN, second attempt sent nothing, 1 refund at PayPal, reconciled to VERIFIED
+PASS    e. Lost response: UNKNOWN, no blind retry, reconciled from PayPal  [local]  UNKNOWN, second attempt sent nothing, 1 refund at PayPal, reconciled to VERIFIED
 ```
 
 ## Case f: split refunds against one capture
@@ -77,7 +77,7 @@ Capture 5.00. Three accepts on three disputes of 2.00 each, 6.00 in total.
 Clearwake line, quoted as printed:
 
 ```
-PASS    f. Three agents split refunds on one order; the one over the capture is stopped  [rehearsal: a USD 5 capture is needed to show the split under the USD 5 policy cap]  states ['VERIFIED', 'refused', 'VERIFIED']
+PASS    f. Three agents split refunds on one order; the one over the capture is stopped  [local: a USD 5 capture is needed to show the split under the USD 5 policy cap]  states ['VERIFIED', 'refused', 'VERIFIED']
 ```
 
 ## Case g: amount far above the intended limit, with an injection in the note
@@ -92,7 +92,7 @@ PASS    f. Three agents split refunds on one order; the one over the capture is 
 Clearwake line, quoted as printed:
 
 ```
-PASS    g. Prompt injection cannot move a limit; the receipt shows the refusal  [rehearsal: refused before any PayPal call]  Policy refused: above limit (limit 5.00 USD).
+PASS    g. Prompt injection cannot move a limit; the receipt shows the refusal  [local: refused before any PayPal call]  Policy refused: above limit (limit 5.00 USD).
 ```
 
 ## Fair note

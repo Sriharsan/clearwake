@@ -9,13 +9,13 @@ from urllib.parse import urlsplit
 import uuid
 
 from relayloom.controller import Controller, Rejected, ROLES, digest, packed, task_input, validate_output
-from .paypal import BASE, RehearsalGateway, amount, identifier
+from .paypal import BASE, LocalGateway, amount, identifier
 from . import policy as autonomy
 
 
 @dataclass(frozen=True)
 class RefundCase:
-    capture: str = "DEMO-CAPTURE-0001"
+    capture: str = "LOCAL-CAPTURE-0001"
     amount: str = "1.00"
     currency: str = "USD"
 
@@ -88,7 +88,7 @@ class RefundController(Controller):
             super().__init__(path)
         else:
             super().__init__(path, worker=worker)
-        self.gateway = gateway or RehearsalGateway(self.path.with_name("rehearsal-provider.sqlite3"))
+        self.gateway = gateway or LocalGateway(self.path.with_name("local-provider.sqlite3"))
         self.case_fingerprint = digest({**self.case.fields(), "gateway": self.gateway.mode,
             "merchant": self.gateway.client_id, "policy": "clearwake-single-capture-v1", "autonomy": self.policy["operations"]})
         with self.db() as db:
@@ -120,7 +120,7 @@ class RefundController(Controller):
         if self.mode == "local-ai":
             with self.db() as db:
                 member = self.authenticate(db, token)
-                db.execute("UPDATE events SET message=? WHERE room=? AND type='created'", ("Synthetic-only local AI configured. Inference occurs only when specialists are run.", member["room"]))
+                db.execute("UPDATE events SET message=? WHERE room=? AND type='created'", ("Test-only local AI configured. Inference occurs only when specialists are run.", member["room"]))
         return token
 
     def _plan(self, db, room):

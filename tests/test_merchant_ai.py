@@ -9,7 +9,7 @@ from unittest import mock
 
 from clearwake import guard
 from clearwake.models import Adapter, ollama_url
-from clearwake.paypal import RehearsalGateway
+from clearwake.paypal import LocalGateway
 from clearwake.swarm import MerchantSwarm
 from verdock_core.receipts import verify_log
 
@@ -32,7 +32,7 @@ def model(**reply):
 class MerchantAiTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); self.root = Path(self.folder.name)
-        self.gateway = RehearsalGateway(self.root / "provider.sqlite3")
+        self.gateway = LocalGateway(self.root / "provider.sqlite3")
         from unittest import mock
         patch = mock.patch("clearwake.swarm.MODEL_TEXT", True)   # these tests cover the model written message; the speed default sends the checked template
         patch.start(); self.addCleanup(patch.stop)

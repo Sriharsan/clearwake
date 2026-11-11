@@ -469,8 +469,8 @@ def main(argv=None):
     p.add_argument("--timeout", type=float, default=None, help="seconds to wait for PayPal's server on one call (default 60; 3 with --dry-run)")
     p.add_argument("--strict", action="store_true", help="hold money tools the policy has no operation for")
     p.add_argument("--dry-run", action="store_true", help="use the local PayPal MCP stand-in (clearwake.mcp_local_upstream) instead of a command")
-    p.add_argument("--fake-state", default=None, help="state file of the local stand-in (--dry-run)")
-    p.add_argument("--fake-fault", default="", help="drop_answer:N, the stand-in applies the next N money moves and loses the answer (--dry-run)")
+    p.add_argument("--stand-in-state", default=None, help="state file of the local stand-in (--dry-run)")
+    p.add_argument("--stand-in-fault", default="", help="drop_answer:N, the stand-in applies the next N money moves and loses the answer (--dry-run)")
     p.add_argument("--by", default=None, help="who decides (approve, reject)")
     p.add_argument("--reason", default="rejected", help="reason (reject)")
     args = p.parse_args(left)
@@ -493,10 +493,10 @@ def main(argv=None):
         return 0
     if args.dry_run:
         command = [sys.executable, "-m", "clearwake.mcp_local_upstream", "--tools=all"]
-        if args.fake_state:
-            command += ["--state", args.fake_state]
-        if args.fake_fault:
-            command += ["--fault", args.fake_fault]
+        if args.stand_in_state:
+            command += ["--state", args.stand_in_state]
+        if args.stand_in_fault:
+            command += ["--fault", args.stand_in_fault]
     if not command:
         p.error("give the PayPal MCP server command after --, for example: -- npx -y @paypal/mcp --tools=all (or use --dry-run)")
     timeout = args.timeout if args.timeout is not None else (3.0 if args.dry_run else 60.0)

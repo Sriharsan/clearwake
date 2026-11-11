@@ -1,8 +1,8 @@
-"""Add synthetic tracking to a sandbox order, as a merchant does when a parcel ships. A sandbox write, with test data only.
+"""Add test tracking to a sandbox order, as a merchant does when a parcel ships. A sandbox write, with test data only.
 
   python scripts/add_tracking.py ORDER_ID CAPTURE_ID [TRACKING_NUMBER] [CARRIER]
 
-Needs the sandbox keys in .env. The default number is invented (SYNTH...), the default carrier is UPS. Reads the order back and prints
+Needs the sandbox keys in .env. The default number is a local test value (SYNTH...), the default carrier is UPS. Reads the order back and prints
 what PayPal now shows.
 """
 from pathlib import Path

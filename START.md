@@ -1,6 +1,6 @@
-# Clearwake demo (rehearsal)
+# Clearwake local run
 
-Everything in this demo is **rehearsal**: a fake payment provider, synthetic records and no network or model calls. The page shows "Local rehearsal" and "Fake gateway · no PayPal calls". Target length: under 3 minutes (under 2 for hackathon cuts).
+Everything in this local run is **local**: a local payment provider, local records and no network or model calls. The page shows "Local run" and "Local gateway · no PayPal calls". Target length: under 3 minutes (under 2 for hackathon cuts).
 
 ## Setup once
 
@@ -28,11 +28,11 @@ It prints PASS or FAIL for each step below and exits non zero on any FAIL.
 
 Opens http://127.0.0.1:8810 on a fresh case.
 
-1. Click **Create a workroom**. Your name: `Sri`. Workroom name: `Rehearsal refund`. Click **Create workroom**.
-2. Point at the top right badge: **Local rehearsal**, and the payment card badge **Fake gateway · no PayPal calls**.
+1. Click **Create a workroom**. Your name: `Sri`. Workroom name: `Local refund`. Click **Create workroom**.
+2. Point at the top right badge: **Local run**, and the payment card badge **Local gateway · no PayPal calls**.
 3. Scroll to **The team**. Click **▶ Run specialists**. Product and Engineering finish in parallel, then Support.
 4. In **Outcome** on the right, tick **Allow artifact publication**, then click **Publish verified artifact**. Say: publishing a plan does not allow a payment.
-5. Scroll up to **Payment operations**. Tick **I approve one simulated refund of USD 1.00 …**. Click **Grant exact refund**.
+5. Scroll up to **Payment operations**. Tick **I approve one sandbox refund of USD 1.00 …**. Click **Grant exact refund**.
 6. Click **Simulate one refund**. Provider outcome shows it was sent but not yet verified.
 7. Click **Check provider record**. Show the rows: amount matched, matched reserved identity, **COMPLETED**, final outcome **Verified from provider record**.
 
@@ -50,10 +50,10 @@ Stop the server (Ctrl+C), then:
 
 ### 3. Reconciliation resolves the UNKNOWN to its true state
 
-Keep the step 2 server running. In a second terminal, read the fake provider's own record (the demo folder is printed when `run.ps1` starts, as `data\demo-lost-response-<time>`):
+Keep the step 2 server running. In a second terminal, read the local provider's own record (the local run folder is printed when `run.ps1` starts, as `data\local-lost-response-<time>`):
 
 ```powershell
-.\.venv\Scripts\python.exe scripts\show_provider_record.py data\demo-lost-response-<time>
+.\.venv\Scripts\python.exe scripts\show_provider_record.py data\local-lost-response-<time>
 ```
 
 1. Copy the printed refund ID into **Known provider refund ID**.

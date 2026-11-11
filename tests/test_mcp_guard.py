@@ -24,9 +24,9 @@ class Session:
         self.dir = Path(tempfile.mkdtemp(prefix="mcp-guard-test-"))
         test.addCleanup(shutil.rmtree, self.dir, True)
         self.state = self.dir / "state.json"
-        cmd = [sys.executable, "-m", "clearwake.mcp_guard", "--dry-run", "--data-dir", str(self.dir / "g"), "--fake-state", str(self.state), "--timeout", timeout, *flags]
+        cmd = [sys.executable, "-m", "clearwake.mcp_guard", "--dry-run", "--data-dir", str(self.dir / "g"), "--stand-in-state", str(self.state), "--timeout", timeout, *flags]
         if fault:
-            cmd += ["--fake-fault", fault]
+            cmd += ["--stand-in-fault", fault]
         self.proc = subprocess.Popen(cmd, cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
         test.addCleanup(self.close)
         self.lines, self.n = queue.Queue(), 0
@@ -152,7 +152,7 @@ class McpGuardTests(unittest.TestCase):
         s = Session(self, fault="drop_answer:1", timeout="1.0")
         s.call("accept_dispute_claim", {"dispute_id": "PP-D-1001", "note": "First"})
         s.close()
-        again = subprocess.Popen([sys.executable, "-m", "clearwake.mcp_guard", "--dry-run", "--data-dir", str(s.dir / "g"), "--fake-state", str(s.state), "--timeout", "1.5"],
+        again = subprocess.Popen([sys.executable, "-m", "clearwake.mcp_guard", "--dry-run", "--data-dir", str(s.dir / "g"), "--stand-in-state", str(s.state), "--timeout", "1.5"],
                                  cwd=ROOT, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         self.addCleanup(again.kill)
         again.stdin.write(b'{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"accept_dispute_claim","arguments":{"dispute_id":"PP-D-1001","note":"Retry"}}}\n')

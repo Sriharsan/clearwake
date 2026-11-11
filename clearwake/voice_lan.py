@@ -143,12 +143,12 @@ def main(argv=None):
         raise SystemExit("port must be between 1024 and 65535")
     from .console import Console
     from .controller import RefundController
-    from .paypal import RehearsalGateway
+    from .paypal import LocalGateway
     ip = lan_address(args.lan_ip)
     cert, key, fingerprint = make_certificate(ip)
     database = args.database.resolve()
     database.parent.mkdir(parents=True, exist_ok=True)
-    controller = RefundController(database, gateway=RehearsalGateway(database.with_name("rehearsal-provider.sqlite3"), "completed"))
+    controller = RefundController(database, gateway=LocalGateway(database.with_name("local-provider.sqlite3"), "completed"))
     console = Console(database.parent / "console", args.console_model)
     server = build_server(controller, console, ip, args.port, cert, key)
     url = f"https://{ip}:{args.port}/voice"

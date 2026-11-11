@@ -6,7 +6,7 @@ Three backends, and every result carries a label that says which one ran:
   (HF_HUB_OFFLINE=1) once the weights are in the local cache. Label: the model name and the device, for example "facebook/sam3 sam3.pt, local, cpu".
 * "recorded": the result of a real SAM run saved next to the photo as <photo>.count.json. It is used only when the file's
   SHA-256 and the prompt match. Label: "recorded <model> run of <date>".
-* "scripted": a fixed table for rehearsal and tests. Label: "scripted count, not SAM".
+* "scripted": a fixed table for local and tests. Label: "scripted count, not SAM".
 """
 from dataclasses import dataclass
 import hashlib

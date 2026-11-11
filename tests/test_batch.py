@@ -1,4 +1,4 @@
-"""The agent to agent batch: rehearsal end to end, the outcome classes, and the manual buyer mode against a fake sandbox."""
+"""The agent to agent batch: local end to end, the outcome classes, and the manual buyer mode against a stand-in sandbox."""
 import json
 from pathlib import Path
 import tempfile
@@ -8,18 +8,18 @@ from unittest import mock
 from clearwake import batch
 from clearwake.buyer_browser import NeedsHuman
 from clearwake.buyer_manual import thread_from_record
-from clearwake.paypal import RehearsalGateway
+from clearwake.paypal import LocalGateway
 
 
 def read_lines(path):
     return [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines()]
 
 
-class RehearsalBatchTests(unittest.TestCase):
+class LocalBatchTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.work = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
-        cls.report = batch.run_rehearsal(cases=batch.CASES_MIX_L, work=cls.work.name, scope_item_not_received=False)   # the earlier mix has other reasons
+        cls.report = batch.run_local(cases=batch.CASES_MIX_L, work=cls.work.name, scope_item_not_received=False)   # the earlier mix has other reasons
         cls.rows = {r["n"]: r for r in cls.report["cases"]}
 
     @classmethod
@@ -29,7 +29,7 @@ class RehearsalBatchTests(unittest.TestCase):
     def test_all_ten_run_end_to_end_with_no_errors(self):
         self.assertEqual(len(self.rows), 10)
         self.assertEqual(self.report["summary"][batch.ERROR], 0)
-        self.assertEqual(self.report["mode"], "rehearsal")
+        self.assertEqual(self.report["mode"], "local")
 
     def test_the_outcome_mix(self):
         s = self.report["summary"]
@@ -87,7 +87,7 @@ class TenItemNotReceivedTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.work = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
-        cls.report = batch.run_rehearsal(work=cls.work.name)
+        cls.report = batch.run_local(work=cls.work.name)
         cls.rows = {r["n"]: r for r in cls.report["cases"]}
 
     @classmethod
@@ -180,7 +180,7 @@ class ScopeTests(unittest.TestCase):
         from clearwake.models import Adapter
         from clearwake.swarm import MerchantSwarm
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-            gateway = RehearsalGateway(Path(d) / "p.sqlite3")
+            gateway = LocalGateway(Path(d) / "p.sqlite3")
             swarm = MerchantSwarm(gateway, Path(d) / "m", Adapter("scripted"))
             swarm.only_item_not_received = True
             for reason in ("MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "UNAUTHORISED", "DUPLICATE_TRANSACTION"):
@@ -196,7 +196,7 @@ class ScopeTests(unittest.TestCase):
         from clearwake.models import Adapter
         from clearwake.swarm import MerchantSwarm
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-            gateway = RehearsalGateway(Path(d) / "p.sqlite3")
+            gateway = LocalGateway(Path(d) / "p.sqlite3")
             swarm = MerchantSwarm(gateway, Path(d) / "m", Adapter("scripted"))
             swarm.only_item_not_received = True
             dispute = gateway.open_dispute("CAP-NR", "MERCHANDISE_OR_SERVICE_NOT_RECEIVED", "2.00", "2030-01-01T00:00:00Z", "Never came.", stage="INQUIRY")["dispute_id"]
@@ -207,7 +207,7 @@ class ScopeTests(unittest.TestCase):
 class DispatchMixTests(unittest.TestCase):
     def test_missing_items_with_dispatch_proof_use_the_recorded_sam_count_and_the_merchant_fights(self):
         cases = tuple(c for c in batch.CASES_DISPATCH if c.n in (5, 7))
-        report = batch.run_rehearsal(cases=cases)
+        report = batch.run_local(cases=cases)
         rows = {r["n"]: r for r in report["cases"]}
         self.assertIn("recorded", rows[5]["dispatch_counter"])
         self.assertEqual((rows[5]["merchant_decision"], rows[5]["buyer_end"], rows[5]["outcome"]), ("fight_with_evidence", "escalated_owner", batch.EVIDENCE))
@@ -228,7 +228,7 @@ class BuyerModelTests(unittest.TestCase):
     def run_cases(self, numbers, draft, action):
         from clearwake.models import Adapter
         cases = tuple(c for c in batch.CASES_MIX_L if c.n in numbers)
-        return batch.run_rehearsal(cases=cases, buyer_adapter=Adapter("ollama", "stub-model", send=self.stub(draft, action)))
+        return batch.run_local(cases=cases, buyer_adapter=Adapter("ollama", "stub-model", send=self.stub(draft, action)))
 
     def test_a_good_draft_is_used_and_the_calls_are_counted_and_receipted(self):
         report = self.run_cases((3,), "My order has not arrived and I would like a refund of what is missing, please.", "accept")
@@ -275,7 +275,7 @@ class PriceReferenceTests(unittest.TestCase):
             browser = pw.chromium.launch(headless=True)
             try:
                 page = browser.new_page(); page.goto(fixture_site().home_url)
-                return batch.run_batch(batch.Rehearsal(work, page), work, page, Adapter("scripted"), tuple(c for c in batch.CASES_MIX_L if c.n == 3), price_fn=price_fn), work
+                return batch.run_batch(batch.LocalRun(work, page), work, page, Adapter("scripted"), tuple(c for c in batch.CASES_MIX_L if c.n == 3), price_fn=price_fn), work
             finally:
                 browser.close()
 
@@ -297,7 +297,7 @@ class PriceReferenceTests(unittest.TestCase):
         self.assertEqual(mandate["params"]["price_reference"]["within_tolerance"], None)
         self.assertEqual(mandate["params"]["max_over_market_percent"], 25)
 
-    def test_the_rehearsal_reference_is_a_recorded_fixture_that_uses_no_credits(self):
+    def test_the_local_reference_is_a_recorded_fixture_that_uses_no_credits(self):
         report, _ = self.run_one(None)
         self.assertEqual(report["price_reference"], {"source": "recorded fixture", "used": True, "calls": 0})
         self.assertEqual(report["cases"][0]["price_reference"]["verdict"], "ok")
@@ -306,8 +306,8 @@ class PriceReferenceTests(unittest.TestCase):
 class PlanTests(unittest.TestCase):
     def test_the_plan_prints_one_approval_link_per_order_then_the_disputes_and_saves_the_orders(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-            fake, printed = FakeSandbox(Path(d) / "p.sqlite3"), []
-            lines = batch.plan_sandbox(cases=batch.CASES_MIX_L, work=Path(d) / "m", gateway=fake, out=printed.append)
+            local_gw, printed = StandInSandbox(Path(d) / "p.sqlite3"), []
+            lines = batch.plan_sandbox(cases=batch.CASES_MIX_L, work=Path(d) / "m", gateway=local_gw, out=printed.append)
             approve = [l for l in lines if l["action"] == "approve_order"]
             self.assertEqual(len(approve), 10)
             self.assertTrue(all(l["url"].startswith("https://www.sandbox.paypal.com/") for l in approve))
@@ -316,8 +316,8 @@ class PlanTests(unittest.TestCase):
             self.assertEqual(sorted(l["reason"] for l in disputes).count("unauthorised"), 2)
             self.assertEqual(len(printed), 21)
             self.assertIn("--resume", lines[-1]["command"])
-            again = batch.plan_sandbox(cases=batch.CASES_MIX_L, work=Path(d) / "m", gateway=fake, out=lambda x: None)
-            self.assertEqual(len(fake.orders), 10)   # a second plan creates no new orders
+            again = batch.plan_sandbox(cases=batch.CASES_MIX_L, work=Path(d) / "m", gateway=local_gw, out=lambda x: None)
+            self.assertEqual(len(local_gw.orders), 10)   # a second plan creates no new orders
             self.assertEqual([l["order_id"] for l in again if l["action"] == "approve_order"], [l["order_id"] for l in approve])
 
 
@@ -356,12 +356,12 @@ class HelperTests(unittest.TestCase):
         self.assertEqual(t.facts()["offer_minor"], 500)
 
 
-class FakeSandbox:
-    """Stands in for the PayPal sandbox in the manual mode tests: the rehearsal provider's disputes plus orders. Tests only."""
+class StandInSandbox:
+    """Stands in for the PayPal sandbox in the manual mode tests: the local provider's disputes plus orders. Tests only."""
     mode = "paypal-sandbox"
 
     def __init__(self, path):
-        self.inner, self.orders, self.n = RehearsalGateway(path), {}, 0
+        self.inner, self.orders, self.n = LocalGateway(path), {}, 0
 
     def __getattr__(self, name):
         return getattr(self.inner, name)
@@ -371,7 +371,7 @@ class FakeSandbox:
 
     def _request(self, path, payload, request_id):
         self.n += 1
-        oid = f"FAKEORDER{self.n}"
+        oid = f"LOCALORDER{self.n}"
         self.orders[oid] = {"status": "CREATED"}
         return self.order(oid)
 
@@ -411,9 +411,9 @@ class FakeSandbox:
 class ManualBuyerTests(unittest.TestCase):
     def test_manual_mode_prints_actions_polls_paypal_and_receipts_each_effect(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-            fake, printed = FakeSandbox(Path(d) / "p.sqlite3"), []
+            local_gw, printed = StandInSandbox(Path(d) / "p.sqlite3"), []
             cases = tuple(c for c in batch.CASES_MIX_L if c.n in (3, 7))
-            report = batch.run_sandbox(cases=cases, manual=True, work=Path(d) / "manual", timeout_s=2, out=lambda l: fake.hands(l, printed), gateway=fake, poll_s=0)
+            report = batch.run_sandbox(cases=cases, manual=True, work=Path(d) / "manual", timeout_s=2, out=lambda l: local_gw.hands(l, printed), gateway=local_gw, poll_s=0)
             rows = {r["n"]: r for r in report["cases"]}
             self.assertEqual(rows[3]["outcome"], batch.SETTLED)
             self.assertEqual([a["action"] for a in printed[:3]], ["approve_order", "open_dispute", "accept_offer"])
@@ -432,24 +432,24 @@ class ManualBuyerTests(unittest.TestCase):
 
     def test_a_missing_effect_times_out_receipted_and_stops_for_a_person_then_resume_continues(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-            fake, work = FakeSandbox(Path(d) / "p.sqlite3"), Path(d) / "manual"
+            local_gw, work = StandInSandbox(Path(d) / "p.sqlite3"), Path(d) / "manual"
             cases = tuple(c for c in batch.CASES_MIX_L if c.n == 3)
-            report = batch.run_sandbox(cases=cases, manual=True, work=work, timeout_s=0, out=lambda line: None, gateway=fake, poll_s=0)
+            report = batch.run_sandbox(cases=cases, manual=True, work=work, timeout_s=0, out=lambda line: None, gateway=local_gw, poll_s=0)
             row = report["cases"][0]
             self.assertEqual(row["outcome"], batch.ERROR)
             self.assertIn("approve_order", row["detail"])
             self.assertTrue(row["manual_steps"])
             names = [l["action_id"] for l in read_lines(work / "buyer" / "buyer-receipts.ndjson")]
             self.assertIn("clearwake.buyer.approve_order.timeout", names)
-            fake.orders["FAKEORDER1"]["status"] = "APPROVED"   # the person approved meanwhile
-            again = batch.run_sandbox(cases=cases, manual=True, resume=True, work=work, timeout_s=2, out=fake.hands, gateway=fake, poll_s=0)
+            local_gw.orders["LOCALORDER1"]["status"] = "APPROVED"   # the person approved meanwhile
+            again = batch.run_sandbox(cases=cases, manual=True, resume=True, work=work, timeout_s=2, out=local_gw.hands, gateway=local_gw, poll_s=0)
             self.assertEqual(again["cases"][0]["outcome"], batch.SETTLED)
-            self.assertEqual(len(fake.orders), 1)   # resumed on the same order, no second purchase
+            self.assertEqual(len(local_gw.orders), 1)   # resumed on the same order, no second purchase
 
     def test_the_ten_cases_in_manual_mode_print_the_buyer_actions_add_tracking_first_and_hand_the_rest_on(self):
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-            fake, printed = FakeSandbox(Path(d) / "p.sqlite3"), []
-            report = batch.run_sandbox(manual=True, work=Path(d) / "manual", timeout_s=2, out=lambda l: fake.hands(l, printed), gateway=fake, poll_s=0)
+            local_gw, printed = StandInSandbox(Path(d) / "p.sqlite3"), []
+            report = batch.run_sandbox(manual=True, work=Path(d) / "manual", timeout_s=2, out=lambda l: local_gw.hands(l, printed), gateway=local_gw, poll_s=0)
             rows = {r["n"]: r for r in report["cases"]}
             self.assertEqual(report["summary"][batch.ERROR], 0, [r.get("detail") for r in report["cases"]])
             self.assertEqual([a["action"] for a in printed].count("open_dispute"), 9)   # case 7 opens none
@@ -457,7 +457,7 @@ class ManualBuyerTests(unittest.TestCase):
             self.assertEqual(rows[7]["outcome"], batch.MANDATE_REFUSED)
             self.assertEqual({n for n, r in rows.items() if r["outcome"] == batch.SETTLED}, {3, 4, 6, 8, 10})
             for n in (1, 2, 4, 5):   # tracking was added to the PayPal order before the dispute was asked for
-                self.assertEqual(len(fake.orders[rows[n]["order_id"]]["trackers"]), 1)
+                self.assertEqual(len(local_gw.orders[rows[n]["order_id"]]["trackers"]), 1)
             self.assertTrue(all(a["performed_through"].endswith("lead's browser") for a in printed))
             self.assertIn("settled by agents inside the limits", report["summary"]["result"]["text"])
 
@@ -466,10 +466,10 @@ class ManualBuyerTests(unittest.TestCase):
         from clearwake.buyer_browser import Recorder, open_buyer_log
         from clearwake.buyer_manual import ManualBuyer
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-            fake, printed = FakeSandbox(Path(d) / "p.sqlite3"), []
-            dispute = fake.inner.open_dispute("CAP-X", batch.NOT_RECEIVED, "9.00", "2030-01-01T00:00:00Z", "Never arrived.", stage="INQUIRY")["dispute_id"]
+            local_gw, printed = StandInSandbox(Path(d) / "p.sqlite3"), []
+            dispute = local_gw.inner.open_dispute("CAP-X", batch.NOT_RECEIVED, "9.00", "2030-01-01T00:00:00Z", "Never arrived.", stage="INQUIRY")["dispute_id"]
             rec = Recorder(open_buyer_log(Path(d) / "b"), "a" * 64, "paypal-sandbox via the lead's browser", Path(d) / "s")
-            door = ManualBuyer(fake, rec, RULE, out=lambda l: fake.hands(l, printed), timeout_s=2, poll_s=0)
+            door = ManualBuyer(local_gw, rec, RULE, out=lambda l: local_gw.hands(l, printed), timeout_s=2, poll_s=0)
             self.assertTrue(door.counter(dispute, "Could you raise the refund to USD 7.20?"))
             self.assertEqual((printed[0]["action"], printed[0]["message"]), ("counter", "Could you raise the refund to USD 7.20?"))
             self.assertEqual(door.read_thread(dispute).messages[-1], ("buyer", "Could you raise the refund to USD 7.20?"))

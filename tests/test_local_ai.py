@@ -18,7 +18,7 @@ class LocalAITests(unittest.TestCase):
         if path=='/api/tags':return {'models':[{'name':MODEL,'digest':'a'*64}]}
         body=json.loads(payload['messages'][1]['content'])
         return {'model':MODEL,'done':True,'done_reason':'stop','prompt_eval_count':100,'eval_count':40,
-                'message':{'role':'assistant','content':json.dumps({'summary':'A synthetic tested summary.',**body['required_evidence']})}}
+                'message':{'role':'assistant','content':json.dumps({'summary':'A test tested summary.',**body['required_evidence']})}}
     def worker(self,send=None):return LocalWorker(model_digest='a'*64,ledger_path=self.path,send=send or self.send)
     def test_explicit_local_transport_and_usage(self):
         worker=self.worker();self.assertEqual(self.calls,[])

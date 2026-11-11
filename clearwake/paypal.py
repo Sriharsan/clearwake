@@ -1,4 +1,4 @@
-"""Sandbox-only PayPal transport and a durable, explicitly fake gateway."""
+"""Sandbox-only PayPal transport and a durable, explicitly local gateway."""
 from __future__ import annotations
 from contextlib import closing
 
@@ -290,14 +290,14 @@ class SandboxGateway:
         return self._request(f"/v2/checkout/orders/{identifier(order_id)}/capture", {}, request_id)
 
 
-class RehearsalGateway:
-    """Separate durable fake provider records. It makes zero network calls."""
-    mode = "rehearsal"
-    client_id = "synthetic-merchant"
+class LocalGateway:
+    """Separate durable local provider records. It makes zero network calls."""
+    mode = "local"
+    client_id = "test-merchant"
 
     def __init__(self, path, outcome="completed"):
         if outcome not in ("completed", "pending", "lost-response"):
-            raise ValueError("Choose completed, pending or lost-response for the fake provider.")
+            raise ValueError("Choose completed, pending or lost-response for the local provider.")
         self.path, self.outcome = Path(path), outcome
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(sqlite3.connect(self.path)) as db, db:
@@ -315,24 +315,24 @@ class RehearsalGateway:
             db.execute("INSERT OR IGNORE INTO records VALUES(?,?,?)", (request_id, refund_id, json.dumps(result)))
             stored = json.loads(db.execute("SELECT body FROM records WHERE request_id=?", (request_id,)).fetchone()[0])
         if self.outcome == "lost-response":
-            raise GatewayError("The fake provider recorded the refund but the response was lost.")
+            raise GatewayError("The local provider recorded the refund but the response was lost.")
         return stored
 
     def refund_record(self, refund_id):
         with closing(sqlite3.connect(self.path)) as db, db:
             row = db.execute("SELECT body FROM records WHERE refund_id=?", (identifier(refund_id),)).fetchone()
         if not row:
-            raise GatewayError("This fake provider record was not found.")
+            raise GatewayError("This local provider record was not found.")
         return json.loads(row[0])
 
-    # Rehearsal disputes, shaped like PayPal's Disputes API. Synthetic data only.
+    # Local disputes, shaped like PayPal's Disputes API. Test data only.
     def _disputes_db(self):
         db = sqlite3.connect(self.path)
         db.execute("CREATE TABLE IF NOT EXISTS disputes(id TEXT PRIMARY KEY,body TEXT NOT NULL)")
         return db
 
     def open_dispute(self, capture_id, reason, value, due_iso, message="", stage=None):
-        """Rehearsal only: stands in for a buyer opening a dispute in PayPal's Resolution Center.
+        """Local only: stands in for a buyer opening a dispute in PayPal's Resolution Center.
 
         stage="INQUIRY" opens it the way a PayPal account buyer does: seller and buyer talk first, no claim yet."""
         dispute_id = "PP-D-REH-" + uuid.uuid4().hex[:10].upper()
@@ -354,7 +354,7 @@ class RehearsalGateway:
         with closing(self._disputes_db()) as db, db:
             row = db.execute("SELECT body FROM disputes WHERE id=?", (identifier(dispute_id),)).fetchone()
         if not row:
-            raise GatewayError("This fake dispute was not found.")
+            raise GatewayError("This local dispute was not found.")
         return json.loads(row[0])
 
     def _update_dispute(self, dispute_id, **changes):
@@ -367,14 +367,14 @@ class RehearsalGateway:
         self._update_dispute(dispute_id, status="UNDER_REVIEW", evidences=evidences,
                              evidence_files=[{"name": n, "sha256": hashlib.sha256(d).hexdigest(), "bytes": len(d)} for n, d, _ in files])
         if self.outcome == "lost-response":
-            raise GatewayError("The fake provider recorded the evidence but the response was lost.")
+            raise GatewayError("The local provider recorded the evidence but the response was lost.")
         return {"links": []}
 
     def provide_supporting_info(self, dispute_id, notes, request_id):
         body = self.dispute(dispute_id)
         self._update_dispute(dispute_id, supporting_info=body.get("supporting_info", []) + [{"notes": notes[:2000], "source": "SUBMITTED_BY_SELLER"}])
         if self.outcome == "lost-response":
-            raise GatewayError("The fake provider recorded the note but the response was lost.")
+            raise GatewayError("The local provider recorded the note but the response was lost.")
         return {"links": []}
 
     def accept_claim(self, dispute_id, note, refund_value, currency, request_id):
@@ -387,7 +387,7 @@ class RehearsalGateway:
         self._update_dispute(dispute_id, status="RESOLVED", dispute_outcome={"outcome_code": "RESOLVED_BUYER_FAVOUR",
                              "amount_refunded": {"currency_code": currency, "value": refund_value}})
         if self.outcome == "lost-response":
-            raise GatewayError("The fake provider accepted the claim but the response was lost.")
+            raise GatewayError("The local provider accepted the claim but the response was lost.")
         return {"links": []}
 
     def _seller_may_act(self, body):
@@ -412,7 +412,7 @@ class RehearsalGateway:
             self._update_dispute(dispute_id, status="WAITING_FOR_BUYER_RESPONSE", messages=body.get("messages", []) + [{"posted_by": "SELLER", "content": note[:2000], "request_id": request_id}], offer={"offer_type": "REFUND", "request_id": request_id,
                                  "buyer_requested_amount": body["dispute_amount"], "seller_offered_amount": {"currency_code": currency, "value": offer_value}})
         if self.outcome == "lost-response":
-            raise GatewayError("The fake provider recorded the offer but the response was lost.")
+            raise GatewayError("The local provider recorded the offer but the response was lost.")
         return {"links": []}
 
     # The buyer's side. In the real sandbox the sandbox buyer does this in PayPal's Resolution Center:
@@ -433,7 +433,7 @@ class RehearsalGateway:
 
 
 class NetworkSwitch:
-    """Rehearsal stand-in for pulling the cable: while cut, every provider call fails the way the egress gateway
+    """Local stand-in for pulling the cable: while cut, every provider call fails the way the egress gateway
     answers when its upstream is gone (refused before any byte leaves). The real network cut is case m in Docker."""
 
     def __init__(self, gateway):

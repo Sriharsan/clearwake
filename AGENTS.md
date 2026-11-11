@@ -21,8 +21,8 @@ at dispatch. Revocation is first-class before dispatch. Sent/uncertain operation
 remain held; never retry blindly or replace their request identity. Verify known
 provider records before completion. Models cannot grant money authority.
 
-Use synthetic data, no real money/card/subscription/account actions. Tests use
-fake transports. Distinguish working rehearsal, offline adapter tests, real
+Use test data, no real money/card/subscription/account actions. Tests use
+local transports. Distinguish working local, offline adapter tests, real
 local AI, and unrun PayPal sandbox/hosted acceptance. Never fabricate customers,
 savings, security certification, funding readiness or event eligibility.
 

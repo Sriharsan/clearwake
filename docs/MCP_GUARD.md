@@ -30,7 +30,7 @@ Options: `--policy`, `--data-dir` (ledger, approvals, receipts), `--timeout` sec
 
 ## Measured, offline
 
-A refund of 1.50 on a capture, the response lost after PayPal applied it, the agent calls again (local run, `--fake-fault drop_answer:1`):
+A refund of 1.50 on a capture, the response lost after PayPal applied it, the agent calls again (local run, `--stand-in-fault drop_answer:1`):
 
 | | Money moves applied |
 |---|---:|

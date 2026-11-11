@@ -1,7 +1,7 @@
 """Evidence agent and deadline watch for PayPal disputes.
 
 Evidence is built only from records Clearwake read (order, capture, trackers, signed mandate receipt).
-Nothing is invented: every evidence item names the record it came from.
+Nothing is made up: every evidence item names the record it came from.
 """
 from dataclasses import dataclass, field
 from datetime import datetime, timezone

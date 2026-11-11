@@ -9,14 +9,14 @@ import unittest
 
 from clearwake import policy as autonomy
 from clearwake.controller import RefundCase, RefundController
-from clearwake.paypal import RehearsalGateway
+from clearwake.paypal import LocalGateway
 from relayloom.controller import Rejected
 
 from test_refunds import RefundTests, specialist
 
 
 class AutonomyTests(RefundTests):
-    """Reuses the offline harness (real controller, durable SQLite, fake provider)."""
+    """Reuses the offline harness (real controller, durable SQLite, local provider)."""
 
     def provider_records(self, gateway=None):
         with closing(sqlite3.connect((gateway or self.gateway).path)) as db:
@@ -41,7 +41,7 @@ class AutonomyTests(RefundTests):
         tighter = copy.deepcopy(autonomy.load()); tighter["operations"]["refund"]["limit"]["max"] = "2.00"
         with tempfile.TemporaryDirectory() as folder, self.assertRaises(ValueError):
             RefundController(Path(folder) / "case.sqlite3", case=RefundCase(amount="3.00"), policy=tighter,
-                             gateway=RehearsalGateway(Path(folder) / "provider.sqlite3"), worker=specialist)
+                             gateway=LocalGateway(Path(folder) / "provider.sqlite3"), worker=specialist)
 
     def test_every_executed_action_has_an_approval_record(self):
         self.action("refund", **self.grant())
@@ -60,7 +60,7 @@ class AutonomyTests(RefundTests):
 
     def test_unknown_is_never_retried_blindly(self):
         self.controller.close()
-        gateway = RehearsalGateway(Path(self.folder.name) / "lost.sqlite3", "lost-response")
+        gateway = LocalGateway(Path(self.folder.name) / "lost.sqlite3", "lost-response")
         self.path = Path(self.folder.name) / "lost-case.sqlite3"
         self.controller = RefundController(self.path, gateway=gateway, worker=specialist)
         self.owner = self.controller.create({"name": "Lost response", "display_name": "Owner", "brief": "Review a fictional refund policy."})
@@ -117,7 +117,7 @@ class PolicyFileTests(unittest.TestCase):
 
     def test_policy_is_bound_to_the_case_database(self):
         with tempfile.TemporaryDirectory() as folder:
-            gateway = RehearsalGateway(Path(folder) / "provider.sqlite3")
+            gateway = LocalGateway(Path(folder) / "provider.sqlite3")
             RefundController(Path(folder) / "case.sqlite3", gateway=gateway, worker=specialist).close()
             changed = copy.deepcopy(autonomy.load()); changed["operations"]["refund"]["limit"]["max"] = "2.00"
             with self.assertRaises(ValueError):

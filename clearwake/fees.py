@@ -53,7 +53,7 @@ def _when(value):
 def gauge(sales, disputes, now=None):
     """sales: [{"amount": {"value", "currency_code"}, "time": iso}], disputes: PayPal dispute records as read.
 
-    Window: the previous 3 calendar months plus the current month to date, so a demo run on fresh records counts."""
+    Window: the previous 3 calendar months plus the current month to date, so a local run on fresh records counts."""
     now = now or datetime.now(timezone.utc)
     start = (now.replace(day=1, hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)).replace(day=1)
     start = (start - timedelta(days=1)).replace(day=1)

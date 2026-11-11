@@ -1,6 +1,6 @@
 """Ten orders, ten disputes, negotiated by the buyer agent and the merchant agent. Every outcome is read back from PayPal's record.
 
-  python scripts/batch.py --rehearsal              All ten end to end offline (fake provider + local stand-in page). Safe anywhere.
+  python scripts/batch.py --local              All ten end to end offline (local provider + local stand-in page). Safe anywhere.
   python scripts/batch.py --sandbox                The real PayPal sandbox. Needs Sri's login first: python scripts/buyer_dispute.py --login
   python scripts/batch.py --sandbox --manual-buyer [--resume] [--manual-timeout 900]
                                                    No browser here: buyer browser actions are printed as JSON lines (approve link, open
@@ -8,8 +8,8 @@
   python scripts/batch.py --sandbox --manual-buyer --plan
                                                    Creates the ten sandbox orders (no money moves yet) and prints, as JSON lines, the
                                                    approval link for each order and the dispute each will need. Then run with --resume.
-  python scripts/batch.py --rehearsal --model ollama   Use the local model for both agents (default: scripted). --buyer-model sets the buyer alone.
-  python scripts/batch.py --rehearsal --mix dispatch   The earlier mix with dispatch proof (missing items counted by a recorded SAM run)
+  python scripts/batch.py --local --model ollama   Use the local model for both agents (default: scripted). --buyer-model sets the buyer alone.
+  python scripts/batch.py --local --mix dispatch   The earlier mix with dispatch proof (missing items counted by a recorded SAM run)
   python scripts/batch.py --sandbox --cases 1,3    Only these case numbers
 
 Writes data/runs/batch-<mode>-<time>.json and prints a table.
@@ -26,7 +26,7 @@ from clearwake.models import Adapter  # noqa: E402
 
 
 def main(argv):
-    if ("--rehearsal" in argv) == ("--sandbox" in argv):
+    if ("--local" in argv) == ("--sandbox" in argv):
         print(__doc__)
         return 2
     backend = argv[argv.index("--model") + 1] if "--model" in argv else "scripted"
@@ -43,8 +43,8 @@ def main(argv):
                 return 2
             batch.plan_sandbox(cases)
             return 0
-        if "--rehearsal" in argv:
-            report = batch.run_rehearsal(adapter, cases, buyer_adapter=buyer_adapter)
+        if "--local" in argv:
+            report = batch.run_local(adapter, cases, buyer_adapter=buyer_adapter)
         else:
             timeout = int(argv[argv.index("--manual-timeout") + 1]) if "--manual-timeout" in argv else 900
             report = batch.run_sandbox(adapter, cases, manual="--manual-buyer" in argv, resume="--resume" in argv, timeout_s=timeout, buyer_adapter=buyer_adapter)

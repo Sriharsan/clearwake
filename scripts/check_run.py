@@ -1,7 +1,7 @@
-"""Run the four demo cases against the rehearsal gateway and print PASS or FAIL.
+"""Run the four local cases against the local gateway and print PASS or FAIL.
 
-Rehearsal only: synthetic records, fake provider, zero network or model calls.
-Each case uses its own temporary database, like the separate demo databases.
+Local only: local records, local provider, zero network or model calls.
+Each case uses its own temporary database, like the separate local databases.
 """
 from contextlib import closing
 from pathlib import Path
@@ -13,17 +13,17 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from clearwake.controller import RefundCase, RefundController  # noqa: E402
-from clearwake.paypal import RehearsalGateway  # noqa: E402
+from clearwake.paypal import LocalGateway  # noqa: E402
 from relayloom.controller import Rejected  # noqa: E402
 
 
 class Case:
     def __init__(self, folder, outcome, *, gateway=None, case=None, worker=None):
-        self.gateway = gateway or RehearsalGateway(Path(folder) / "rehearsal-provider.sqlite3", outcome)
+        self.gateway = gateway or LocalGateway(Path(folder) / "local-provider.sqlite3", outcome)
         options = {"worker": worker} if worker else {}
         self.controller = RefundController(Path(folder) / "case.sqlite3", gateway=self.gateway, case=case, **options)
         # Model modes accept only this bundled fictional brief, so no real data can reach a model.
-        self.owner = self.controller.create({"name": "Synthetic refund review", "display_name": "Owner", "brief": "Draft a fictional refund policy for the Relayloom demo store."})
+        self.owner = self.controller.create({"name": "Test refund review", "display_name": "Owner", "brief": "Draft a fictional refund policy for the Relayloom local store."})
 
     def action(self, name, **body):
         return self.controller.mutate(self.owner, self.controller.session(self.owner)["csrf"], name, body)
@@ -86,7 +86,7 @@ def reconcile_unknown(case):
     except Rejected:
         pass
     before = case.operation()
-    # The operator reads the known refund ID from the synthetic provider's own record.
+    # The operator reads the known refund ID from the test provider's own record.
     refund_id = case.provider_records()[0][0]
     case.action("reconcile", revision=body["revision"], operation_id=before["id"], refund_id=refund_id)
     after = case.operation()["state"]
@@ -124,7 +124,7 @@ def main():
     if "--local-ai" in sys.argv:
         from check_sandbox import local_ai_worker  # free local model on loopback; no provider calls
         worker = local_ai_worker()
-    print("Clearwake demo check. REHEARSAL ONLY: fake provider, synthetic records. Specialists:",
+    print("Clearwake local check. LOCAL ONLY: local provider, local records. Specialists:",
           "local AI (qwen2.5-coder:3b on this machine)" if worker else "deterministic, no model calls")
     failed = 0
     for title, outcome, check in CASES:

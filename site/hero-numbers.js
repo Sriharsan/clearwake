@@ -27,5 +27,5 @@
     }
     if (settled) host.append(tile(cap(settled.mode), String(settled.value), '', String(settled.label), String(settled.source)));
     host.hidden = !host.children.length;
-  }).catch(function () { /* no numbers rather than invented ones */ });
+  }).catch(function () { /* no numbers rather than unsourced ones */ });
 })();

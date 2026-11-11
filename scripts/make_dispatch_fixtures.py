@@ -1,6 +1,6 @@
-"""Write the synthetic parcel pictures used by the rehearsal (fixtures/dispatch/). Standard library only.
+"""Write the test parcel pictures used by the local (fixtures/dispatch/). Standard library only.
 
-These are drawn rectangles, not photographs: an open brown box with 3 notebooks and one with 2. The rehearsal counts them with a
+These are drawn rectangles, not photographs: an open brown box with 3 notebooks and one with 2. The local counts them with a
 scripted table and labels the count "scripted count, not SAM". Real packing photos are counted by SAM (scripts/dispatch.py pack).
 """
 from pathlib import Path

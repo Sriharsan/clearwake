@@ -32,9 +32,9 @@
   }
 
   // One word per swarm state, used for node classes and plain labels. "Verified" is kept for PayPal records only.
-  function outcome(state, rehearsal) {
+  function outcome(state, local) {
     switch (state) {
-      case 'VERIFIED': return { cls: 'settled', label: rehearsal ? 'Matches local record' : 'Verified against PayPal' };
+      case 'VERIFIED': return { cls: 'settled', label: local ? 'Matches local record' : 'Verified against PayPal' };
       case 'UNKNOWN': return { cls: 'unknown', label: 'UNKNOWN, held' };
       case 'MISMATCH': return { cls: 'reversed', label: 'Record does not match' };
       case 'PENDING': return { cls: 'held', label: 'Pending at provider' };
@@ -49,7 +49,7 @@
   }
 
   // Four nodes per case: proposal, policy, sent, provider record. UNKNOWN is its own node state.
-  function track(entry, rehearsal) {
+  function track(entry, local) {
     const state = entry.state, proposed = entry.proposed || entry.action;
     const money = ['refund', 'accept_and_refund'].includes(entry.action);
     const policy = entry.policy || {};
@@ -70,8 +70,8 @@
     } else {
       gate = { cls: 'done', label: policy.needs_approval ? 'Approved' : 'Allowed' };
       sent = { cls: money || entry.action === 'provide_evidence' ? 'done' : '', label: money ? 'Sent once' : entry.action === 'provide_evidence' ? 'Evidence sent' : 'No call' };
-      const o = outcome(state, rehearsal);
-      record = { cls: o.cls, label: state === 'VERIFIED' ? (rehearsal ? 'Matches record' : 'Verified') : o.label };
+      const o = outcome(state, local);
+      record = { cls: o.cls, label: state === 'VERIFIED' ? (local ? 'Matches record' : 'Verified') : o.label };
     }
     return [proposal, gate, sent, record];
   }

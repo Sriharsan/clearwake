@@ -11,7 +11,7 @@ from clearwake import dispatch
 from clearwake.console import Console
 from clearwake.counter import Counter, CounterError, sha256_file
 from clearwake.models import Adapter
-from clearwake.paypal import RehearsalGateway, SandboxGateway
+from clearwake.paypal import LocalGateway, SandboxGateway
 from clearwake.swarm import MerchantSwarm
 from verdock_core.outcome import VERIFIED
 from verdock_core.receipts import verify_log
@@ -31,7 +31,7 @@ def due(hours):
 class DispatchTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(ignore_cleanup_errors=True); self.root = Path(self.folder.name)
-        self.gateway = RehearsalGateway(self.root / "provider.sqlite3")
+        self.gateway = LocalGateway(self.root / "provider.sqlite3")
         self.swarm = MerchantSwarm(self.gateway, self.root / "merchant", Adapter("scripted"), clock=lambda: NOW)
         self.table = Counter("scripted", table={"parcel-3-items.png": 3, "parcel-2-items.png": 2})
 
@@ -164,9 +164,9 @@ class DispatchTests(unittest.TestCase):
         sent = {}
         def send(request, timeout):
             if request.full_url.endswith("/token"):
-                return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
+                return {"access_token": "test-token", "token_type": "Bearer", "expires_in": 3600}
             sent["body"], sent["type"] = request.data, request.get_header("Content-type"); return {"links": []}
-        gateway = SandboxGateway("synthetic-client", "synthetic-secret", send=send)
+        gateway = SandboxGateway("test-client", "test-secret", send=send)
         gateway.provide_evidence("PP-D-1", [{"evidence_type": "OTHER", "notes": "x"}], "12345678-1234-4234-8234-123456789abc", [("packing.png", b"\x89PNGdata", "image/png")])
         self.assertIn(b'name="evidence-file"; filename="packing.png"', sent["body"]); self.assertIn(b"\x89PNGdata", sent["body"])
         self.assertTrue(sent["body"].rstrip().endswith(b"--")); self.assertIn("multipart/form-data; boundary=", sent["type"])

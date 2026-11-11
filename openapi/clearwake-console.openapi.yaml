@@ -84,7 +84,7 @@ paths:
                 $ref: '#/components/schemas/State'
               example:
                 label: local run data
-                mode: rehearsal
+                mode: local
                 hosted: false
                 folder: run-20261111-104352-aecb
                 model: scripted, not AI
@@ -94,7 +94,7 @@ paths:
                   budget: '102.00'
                   per_item_cap: '102.00'
                   merchants: &id004
-                  - clearwake-demo-store
+                  - clearwake-sandbox-store
                   categories: &id005
                   - home
                   - stationery
@@ -102,8 +102,8 @@ paths:
                   spent: '9.00'
                   remaining: '93.00'
                 merchant:
-                  id: clearwake-demo-store
-                  name: Northwind Goods (demo store)
+                  id: clearwake-sandbox-store
+                  name: Northwind Goods (sandbox store)
                 catalog:
                 - id: mug-stone
                   name: Stoneware mug
@@ -160,7 +160,7 @@ paths:
                     order_id: ORDER-REH-F25B12B6
                     digest: 99b3f61426ac58d69e87918393a71e55121e34a9dc9959e578a6dda247d6d108
                     public_key: 080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a
-                    line: '{"step_id":"mandate:ORDER-REH-F25B12B6","action_id":"clearwake.buyer.mandate","params":{"order_id":"ORDER-REH-F25B12B6","merchant":"clearwake-demo-store","item":"notebook-a5","price_minor":900,"currency":"USD","budget_minor":10200,"per_item_cap_minor":10200,"allowed_categories":["home","stationery"],"dispute_rule":"none","max_over_market_percent":-1,"price_reference":"none"},"success":true,"ts_ms":1794381449742,"actor":{"agent":"clearwake-buyer","user":"Local run shopper"},"public_key":"080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a","signature":"cd249dd7c01fb71413b28e7e07921e917b67bec824250f88dc5e0d03e8433f8dba7f34aacdbe9ad09ca9a5e750099ede5e780bf46b0b72d43ede434f25f8ae07"}'
+                    line: '{"step_id":"mandate:ORDER-REH-F25B12B6","action_id":"clearwake.buyer.mandate","params":{"order_id":"ORDER-REH-F25B12B6","merchant":"clearwake-sandbox-store","item":"notebook-a5","price_minor":900,"currency":"USD","budget_minor":10200,"per_item_cap_minor":10200,"allowed_categories":["home","stationery"],"dispute_rule":"none","max_over_market_percent":-1,"price_reference":"none"},"success":true,"ts_ms":1794381449742,"actor":{"agent":"clearwake-buyer","user":"Local run shopper"},"public_key":"080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a","signature":"cd249dd7c01fb71413b28e7e07921e917b67bec824250f88dc5e0d03e8433f8dba7f34aacdbe9ad09ca9a5e750099ede5e780bf46b0b72d43ede434f25f8ae07"}'
                     log_ok: true
                     log_lines: 1
                   label: local run data
@@ -412,7 +412,7 @@ paths:
                   title: Buyer agent mandate receipts
                   public_key: 080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a
                   text: |
-                    {"step_id":"mandate:ORDER-REH-F25B12B6","action_id":"clearwake.buyer.mandate","params":{"order_id":"ORDER-REH-F25B12B6","merchant":"clearwake-demo-store","item":"notebook-a5","price_minor":900,"currency":"USD","budget_minor":10200,"per_item_cap_minor":10200,"allowed_categories":["home","stationery"],"dispute_rule":"none","max_over_market_percent":-1,"price_reference":"none"},"success":true,"ts_ms":1794381449742,"actor":{"agent":"clearwake-buyer","user":"Local run shopper"},"public_key":"080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a","signature":"cd249dd7c01fb71413b28e7e07921e917b67bec824250f88dc5e0d03e8433f8dba7f34aacdbe9ad09ca9a5e750099ede5e780bf46b0b72d43ede434f25f8ae07"}
+                    {"step_id":"mandate:ORDER-REH-F25B12B6","action_id":"clearwake.buyer.mandate","params":{"order_id":"ORDER-REH-F25B12B6","merchant":"clearwake-sandbox-store","item":"notebook-a5","price_minor":900,"currency":"USD","budget_minor":10200,"per_item_cap_minor":10200,"allowed_categories":["home","stationery"],"dispute_rule":"none","max_over_market_percent":-1,"price_reference":"none"},"success":true,"ts_ms":1794381449742,"actor":{"agent":"clearwake-buyer","user":"Local run shopper"},"public_key":"080adcb3ed838b286019be62db1c0f0e178f89d8ae2c59b7cdefc24ec9964e5a","signature":"cd249dd7c01fb71413b28e7e07921e917b67bec824250f88dc5e0d03e8433f8dba7f34aacdbe9ad09ca9a5e750099ede5e780bf46b0b72d43ede434f25f8ae07"}
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -729,7 +729,7 @@ paths:
               example:
               - value: 5 of 10
                 label: disputes settled at INQUIRY, no fee
-                source: data/runs/batch-rehearsal-20261110-223520.json
+                source: data/runs/batch-local-20261110-223520.json
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -1556,7 +1556,7 @@ components:
         mode:
           type: string
           description: The run mode line shown on the console.
-          example: rehearsal
+          example: local
         folder:
           type: string
           description: The data folder of the run.

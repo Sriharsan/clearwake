@@ -1,6 +1,6 @@
 # Clearwake security boundary
 
-This is a synthetic, loopback-only payment-operations prototype. Run it on a
+This is a test, loopback-only payment-operations prototype. Run it on a
 trusted local machine, not as an internet service. Room/session cookies,
 same-origin checks, body limits, CSRF, scoped roles, invitation expiry and shared
 state are inherited from the pinned public Relayloom core.

@@ -1,6 +1,6 @@
 """Console controller behind /console: the buyer agent, the merchant swarm and both receipt logs.
 
-Rehearsal by default: one RehearsalGateway in a data folder, rehearsal records, zero network calls.
+Local by default: one LocalGateway in a data folder, local records, zero network calls.
 Each case runs the same steps as scripts/cases.py; this module only keeps the bookkeeping the screens need.
 """
 from concurrent.futures import ThreadPoolExecutor
@@ -29,12 +29,12 @@ from .counter import Counter
 from .fees import fee_if_escalated, gauge as fee_gauge
 from .models import Adapter
 from . import rules_nl
-from .paypal import GatewayError, LIMIT, NetworkSwitch, RehearsalGateway
+from .paypal import GatewayError, LIMIT, NetworkSwitch, LocalGateway
 from .swarm import Case, MerchantSwarm, money
 
 # The same owner mandate as scripts/cases.py: USD 102 budget, one store, two categories.
-MANDATE = Mandate("Local run shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))
-REHEARSAL = "local run data"
+MANDATE = Mandate("Local run shopper", 10200, 10200, ("clearwake-sandbox-store",), ("home", "stationery"))
+LOCAL = "local run data"
 INJECTION_LABEL = "injection test: a fixed scripted model reply asking for a refund, no model call"
 TRACKERS = [{"number": "SYNTH1Z999AA10123456", "carrier": "UPS", "status": "SHIPPED"}]
 
@@ -116,7 +116,7 @@ class Console:
         self.data.mkdir(parents=True, exist_ok=True)
         (self.root / "current.txt").write_text(name, encoding="utf-8")
         self.adapter = Adapter(self.backend)
-        self.gateway = RehearsalGateway(self.data / "provider.sqlite3")
+        self.gateway = LocalGateway(self.data / "provider.sqlite3")
         # The rules the owner confirms in plain words are written to this folder's own copy of the policy, never to a shared file.
         self.policy_path = self.policy_path_override or self.data / "policy" / "merchant.yaml"
         if not self.policy_path.exists():
@@ -141,7 +141,7 @@ class Console:
         tmp.write_text(body, encoding="utf-8"); tmp.replace(self.data / "console.json")
 
     def reset(self, wipe=False):
-        """Start a fresh rehearsal folder. Earlier folders are kept, unless wipe is set (the hosted demo):
+        """Start a fresh local folder. Earlier folders are kept, unless wipe is set (the hosted console):
         then every run folder under this console's data root is deleted. Nothing outside that root is touched."""
         with self._lock:
             self._open()
@@ -154,7 +154,7 @@ class Console:
 
     # One live negotiation per click -------------------------------------------------------------
     def start_negotiation(self):
-        """Run one rehearsal negotiation (case n: offer, buyer accepts, PayPal shaped record read back) in the background.
+        """Run one local negotiation (case n: offer, buyer accepts, PayPal shaped record read back) in the background.
         The step log is the merchant receipt log itself, read as it grows, so the page shows what was really signed."""
         with self._neg_guard:
             if self.negotiation.get("running"):
@@ -254,7 +254,7 @@ class Console:
                         "proposed": (proposal.value or {}).get("product_id", ""), "note": proposal.note,
                         "allowed": decision.allowed, "reason": decision.reason, "checks": decision.checks,
                         "product": decision.product, "price_minor": decision.product["price_minor"] if decision.product else 0,
-                        "spent_before_minor": spent, "receipt": None, "label": REHEARSAL}
+                        "spent_before_minor": spent, "receipt": None, "label": LOCAL}
             if decision.allowed:
                 order_id = "ORDER-REH-" + uuid.uuid4().hex[:8].upper()
                 receipt = mandate_receipt(self.buyer_log, dataclasses.replace(MANDATE, dispute_rule=self.buyer_rule) if self.buyer_rule else MANDATE, decision.product, self.agent.merchant["id"], order_id)
@@ -267,7 +267,7 @@ class Console:
     # Merchant swarm --------------------------------------------------------------------------
     def _entry(self, key, run, result, case=None, dispute=None, gateway="completed", adapter="console", extra=None):
         entry = {"id": result.case_id, "key": key, "run": run, "title": CASES[key], "at": now_iso(self.clock),
-                 "kind": "PayPal dispute" if dispute else "buyer complaint", "label": REHEARSAL,
+                 "kind": "PayPal dispute" if dispute else "buyer complaint", "label": LOCAL,
                  "state": result.state, "action": result.action, "detail": result.detail,
                  "refund_id": result.refund_id, "approval_id": result.approval_id,
                  "proposed": result.proposal.get("proposed"), "model": result.proposal.get("backend"),
@@ -338,7 +338,7 @@ class Console:
             self.runs.append({"key": key, "run": run, "at": now_iso(self.clock), "title": CASES[key],
                               "states": [e["state"] for e in made], "seconds": round(time.perf_counter() - started, 3)})
             self._save()
-            return {"key": key, "run": run, "label": REHEARSAL, "entries": made}
+            return {"key": key, "run": run, "label": LOCAL, "entries": made}
 
     def _refund_case(self, cid, run, amount, capture_minor=1800, message="Wrong colour received.", capture_ref="CAP-REH-1"):
         return Case(f"{cid}-{run}", "buyer complaint", "ORDER", capture_ref, capture_minor, f"buyer-{cid}-{run}", amount, "NOT_AS_DESCRIBED", message)
@@ -353,7 +353,7 @@ class Console:
 
     def _case_e(self, run):
         case = self._refund_case("e", run, 150)
-        lost = RehearsalGateway(self.gateway.path, "lost-response")
+        lost = LocalGateway(self.gateway.path, "lost-response")
         with self._with(gateway=lost) as swarm:
             first = swarm.handle(case)
             entry = self._entry("e", run, first, case, gateway="lost-response")
@@ -379,7 +379,7 @@ class Console:
         return (self.clock() + timedelta(hours=hours)).isoformat().replace("+00:00", "Z")
 
     def _open_dispute(self, key, run, capture, reason, value, hours, message="", customer=None, order=None, trackers=(), receipt=None, stage=None):
-        """Rehearsal stand in for a buyer opening a dispute in PayPal's Resolution Center."""
+        """Local stand in for a buyer opening a dispute in PayPal's Resolution Center."""
         opened = self.gateway.open_dispute(capture, reason, value, self._due(hours), message, stage=stage)
         return {"dispute_id": opened["dispute_id"], "reason": reason, "amount_minor": int(round(float(value) * 100)),
                 "capture": capture, "capture_minor": 900, "customer": customer or f"buyer-{key}-{run}",
@@ -403,7 +403,7 @@ class Console:
         create_seed(str(folder / "buyer.seed"))
         log = ReceiptLog(str(folder / "buyer.ndjson"), load_seed(str(folder / "buyer.seed")))
         _, _, products = load_catalog()
-        receipt = mandate_receipt(log, MANDATE, products["notebook-a5"], "clearwake-demo-store", f"ORDER-J-{run}")
+        receipt = mandate_receipt(log, MANDATE, products["notebook-a5"], "clearwake-sandbox-store", f"ORDER-J-{run}")
         checked = verify_log([receipt["line"]], receipt["public_key"])
         return [self._dispute("j", run, f"CAP-J-{run}", "UNAUTHORISED", "9.00", 72, "I did not buy this.", order=f"ORDER-J-{run}",
                               receipt=receipt, extra={"receipt_ok": checked["ok"]})]
@@ -428,7 +428,7 @@ class Console:
         return [entry]
 
     def _case_o(self, run):
-        """Rehearsal: the parcel was packed and counted, then the buyer says 2 of 3 arrived. The signed dispatch proof answers it."""
+        """Local: the parcel was packed and counted, then the buyer says 2 of 3 arrived. The signed dispatch proof answers it."""
         order, capture = f"ORDER-O-{run}", f"CAP-O-{run}"
         made = dispatch.pack(self.swarm, Counter("scripted", table={"parcel-3-items.png": 3}), order, capture,
                              {"notebook-a5": {"ordered": 3, "prompt": "notebook"}}, [FIXTURES / "parcel-3-items.png"], True)
@@ -467,11 +467,11 @@ class Console:
                          "proposed": e.get("proposed") or "", "model": e.get("model") or "", "state": e["state"], "due": e.get("due"),
                          "dispatch": e.get("dispatch") or "none", "message": e.get("message") or "", "policy_reason": e.get("detail") or "",
                          "record": record, "settled_before_escalation": settled, "fee_avoided": money(fee_if_escalated(record, False)) if settled else "0.00",
-                         "source": REHEARSAL})
+                         "source": LOCAL})
         return rows
 
     def fee_state(self):
-        """The fee leak gauge on this rehearsal folder's records: sales are the captures behind its cases."""
+        """The fee leak gauge on this local folder's records: sales are the captures behind its cases."""
         sales = {}
         for e in self.entries:
             if e.get("capture"):
@@ -483,7 +483,7 @@ class Console:
                     disputes.append(self.gateway.dispute(e["dispute_id"]))
                 except GatewayError:
                     pass
-        return {**fee_gauge(list(sales.values()), disputes, self.clock()).as_dict(), "label": REHEARSAL}
+        return {**fee_gauge(list(sales.values()), disputes, self.clock()).as_dict(), "label": LOCAL}
 
     # Inbox and reconcile ---------------------------------------------------------------------
     def _find(self, field, value):
@@ -509,7 +509,7 @@ class Console:
                     result = self.swarm.handle_dispute(entry["dispute_id"], entry["capture_minor"], entry["customer"], {"id": entry["order"]},
                                                        TRACKERS if entry.get("use_trackers") else [], None, approval_id=approval_id)
             else:
-                with self._with(gateway=RehearsalGateway(self.gateway.path, entry["gateway"])) as swarm:
+                with self._with(gateway=LocalGateway(self.gateway.path, entry["gateway"])) as swarm:
                     result = swarm.handle(self._case(entry), approval_id=approval_id)
             self._history(entry, result, f"Approved by {approver.strip()}, then run again")
             entry["approver"] = approver.strip()
@@ -517,7 +517,7 @@ class Console:
             return entry
 
     def provider_refund_id(self, entry):
-        """The refund the rehearsal provider holds for this case's stable request id (what PayPal's own record would show)."""
+        """The refund the local provider holds for this case's stable request id (what PayPal's own record would show)."""
         request_id = self.swarm.invariants.request_id(f"refund:{entry['id']}")
         with closing(sqlite3.connect(self.gateway.path)) as db:
             row = db.execute("SELECT refund_id FROM records WHERE request_id=?", (request_id,)).fetchone()
@@ -557,7 +557,7 @@ class Console:
             if p["allowed"]:
                 rows.append({"at": p["at"], "case": p["receipt"]["order_id"], "movement": "buyer to merchant (mandate only, no checkout)",
                              "amount": money(p["price_minor"]), "currency": "USD", "record": p["receipt"]["digest"][:16], "state": "mandate signed",
-                             "source": REHEARSAL})
+                             "source": LOCAL})
         with closing(sqlite3.connect(self.gateway.path)) as db:
             db.execute("CREATE TABLE IF NOT EXISTS records(request_id TEXT PRIMARY KEY,refund_id TEXT UNIQUE,body TEXT NOT NULL)")
             records = {json.loads(body)["id"]: json.loads(body) for _, body in db.execute("SELECT request_id, body FROM records")}
@@ -566,10 +566,10 @@ class Console:
                 refund = self.provider_refund_id(e)
                 rows.append({"at": e["history"][-1]["at"], "case": e["id"], "movement": "merchant to buyer (refund)",
                              "amount": money(e["amount_minor"]), "currency": "USD", "record": refund or "",
-                             "state": e["state"] if refund else "UNKNOWN", "source": REHEARSAL})
+                             "state": e["state"] if refund else "UNKNOWN", "source": LOCAL})
             elif e["kind"] == "PayPal dispute" and e["action"] == "accept_and_refund" and e["state"] in (VERIFIED, UNKNOWN):
                 rows.append({"at": e["history"][-1]["at"], "case": e["dispute_id"], "movement": "merchant to buyer (claim accepted)",
-                             "amount": money(e["amount_minor"]), "currency": "USD", "record": "", "state": e["state"], "source": REHEARSAL})
+                             "amount": money(e["amount_minor"]), "currency": "USD", "record": "", "state": e["state"], "source": LOCAL})
         rows.sort(key=lambda r: r["at"])
         return {"rows": rows, "provider_refunds": len(records)}
 
@@ -584,7 +584,7 @@ class Console:
                      "case": refunds[-1]["id"] if refunds else None, "state": refunds[-1]["state"] if refunds else None}
             catalog = [{**p, "price": money(p["price_minor"])} for p in self.agent.products.values()]
             return {
-                "label": REHEARSAL, "mode": "rehearsal", "hosted": self.hosted, "folder": self.data.name, "model": self.adapter.label(),
+                "label": LOCAL, "mode": "local", "hosted": self.hosted, "folder": self.data.name, "model": self.adapter.label(),
                 "network": "none: local provider, no provider calls" + ("" if self.backend == "scripted" else "; model calls go to Ollama on loopback"),
                 "mandate": {"owner": MANDATE.owner, "budget": money(MANDATE.budget_minor), "per_item_cap": money(MANDATE.per_item_cap_minor),
                             "merchants": list(MANDATE.allowed_merchants), "categories": list(MANDATE.allowed_categories),
@@ -608,10 +608,10 @@ class Console:
             def read(path):
                 p = Path(path)
                 return p.read_text(encoding="utf-8") if p.exists() else ""
-            return {"label": REHEARSAL, "logs": [
+            return {"label": LOCAL, "logs": [
                 {"name": "merchant", "title": "Merchant swarm receipts", "public_key": self.swarm.receipts.public_key, "text": read(self.swarm.receipts.path)},
                 {"name": "buyer", "title": "Buyer agent mandate receipts", "public_key": self.buyer_log.public_key, "text": read(self.buyer_log.path)},
             ]}
 
 
-__all__ = ["Console", "ConsoleError", "CASES", "MANDATE", "REHEARSAL", "GatewayError"]
+__all__ = ["Console", "ConsoleError", "CASES", "MANDATE", "LOCAL", "GatewayError"]

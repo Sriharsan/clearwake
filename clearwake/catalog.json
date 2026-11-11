@@ -1,5 +1,5 @@
 {
-  "merchant": {"id": "clearwake-demo-store", "name": "Northwind Goods (demo store)"},
+  "merchant": {"id": "clearwake-sandbox-store", "name": "Northwind Goods (sandbox store)"},
   "currency": "USD",
   "products": [
     {"id": "mug-stone", "name": "Stoneware mug", "category": "home", "price_minor": 1200},

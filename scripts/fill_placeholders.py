@@ -6,7 +6,7 @@
   python scripts/fill_placeholders.py --check               exit 1 if any bracket is left, except those Sri owns
   python scripts/fill_placeholders.py --run-tests           count the tests by running them instead of reading a final-check file
 
-Every value comes from a recorded file under data/runs/ or from a constant below. Nothing is invented: a value that cannot
+Every value comes from a recorded file under data/runs/ or from a constant below. Nothing is made up: a value that cannot
 be derived stays in brackets and the script says which file or field is missing. Placeholders inside HTML comments are left alone.
 """
 from dataclasses import dataclass

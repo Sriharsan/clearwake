@@ -20,7 +20,7 @@ p{margin:0 0 1rem}
 .tabs .tab-full,.tabs .tab-short{background:transparent;color:inherit;padding:0}
 .status-row{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1.5rem}
 .pill{display:inline-flex;align-items:center;min-height:1.9rem;padding:.2rem .8rem;border:1px solid var(--border);border-radius:999px;font:500 .85rem/1.4 var(--font-sans);color:var(--mist)}
-.pill.rehearsal{border-color:color-mix(in oklab,var(--amber) 55%,transparent);color:var(--cw-warn-text);background:var(--cw-warn-soft)}
+.pill.local{border-color:color-mix(in oklab,var(--amber) 55%,transparent);color:var(--cw-warn-text);background:var(--cw-warn-soft)}
 
 main{flex:1;padding-block:3rem 4rem}
 main:focus{outline:none}

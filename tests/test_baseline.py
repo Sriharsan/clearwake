@@ -1,4 +1,4 @@
-"""Baseline versus Clearwake: small deterministic runs of both agents on the same rehearsal PayPal layer."""
+"""Baseline versus Clearwake: small deterministic runs of both agents on the same local PayPal layer."""
 import tempfile
 import unittest
 from pathlib import Path

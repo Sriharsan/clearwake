@@ -7,7 +7,7 @@ from clearwake import buyer_ai, models, swarm
 from clearwake.models import Adapter, fields_instruction, schema_for
 
 
-class FakeResponse:
+class StandInResponse:
     def __init__(self, body):
         self.body = body
 
@@ -27,7 +27,7 @@ class SpeedSettingsTests(unittest.TestCase):
 
         def opener_open(request, timeout=None):
             seen["url"], seen["body"] = request.full_url, json.loads(request.data)
-            return FakeResponse({"message": {"content": '{"choice": "accept"}'}, "prompt_eval_count": 90, "eval_count": 6})
+            return StandInResponse({"message": {"content": '{"choice": "accept"}'}, "prompt_eval_count": 90, "eval_count": 6})
 
         class Opener:
             open = staticmethod(opener_open)
@@ -56,7 +56,7 @@ class SpeedSettingsTests(unittest.TestCase):
             @staticmethod
             def open(request, timeout=None):
                 bodies.append(json.loads(request.data))
-                return FakeResponse({"message": {"content": next(replies)}, "prompt_eval_count": 50, "eval_count": 5})
+                return StandInResponse({"message": {"content": next(replies)}, "prompt_eval_count": 50, "eval_count": 5})
 
         with mock.patch.object(models, "build_opener", lambda *a: Opener()):
             proposal = Adapter("ollama", "m").propose("s", "u", ["choice"], lambda: {}, schema=schema_for(["choice"]), max_tokens=16)

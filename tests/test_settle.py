@@ -12,7 +12,7 @@ from urllib.request import Request
 
 from clearwake import paypal
 from clearwake.models import Adapter
-from clearwake.paypal import NetworkSwitch, Offline, RehearsalGateway
+from clearwake.paypal import NetworkSwitch, Offline, LocalGateway
 from clearwake.swarm import Case, MerchantSwarm
 from verdock_core.outcome import MISMATCH, PENDING, VERIFIED
 from verdock_core.queue import HELD
@@ -34,7 +34,7 @@ def model_says(action):
 class SettleTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); self.root = Path(self.folder.name)
-        self.gateway = RehearsalGateway(self.root / "provider.sqlite3")
+        self.gateway = LocalGateway(self.root / "provider.sqlite3")
         self.swarm = MerchantSwarm(self.gateway, self.root / "merchant", Adapter("scripted"), clock=lambda: NOW)
 
     def tearDown(self):
@@ -151,7 +151,7 @@ class PaidSettlementTests(SettleTests):
 class NetworkCutTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); root = Path(self.folder.name)
-        self.provider = RehearsalGateway(root / "provider.sqlite3")
+        self.provider = LocalGateway(root / "provider.sqlite3")
         self.network = NetworkSwitch(self.provider)
         self.swarm = MerchantSwarm(self.network, root / "merchant", Adapter("scripted"), clock=lambda: NOW)
 
@@ -216,11 +216,11 @@ class TransportTests(unittest.TestCase):
     def test_settle_routes_are_allowed_and_buyer_routes_are_not(self):
         base = "https://api-m.sandbox.paypal.com/v1/customer/disputes/PP-D-1/"
         refused = []
-        def fake_open(*args, **kwargs):
+        def stand_in_open(*args, **kwargs):
             raise ConnectionRefusedError()
         import urllib.request
         original = urllib.request.OpenerDirector.open
-        urllib.request.OpenerDirector.open = lambda self, *a, **k: fake_open()
+        urllib.request.OpenerDirector.open = lambda self, *a, **k: stand_in_open()
         try:
             for route in ("send-message", "make-offer"):
                 with self.assertRaises((Offline, paypal.GatewayError)):

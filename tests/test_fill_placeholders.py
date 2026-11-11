@@ -62,8 +62,8 @@ class Fill(unittest.TestCase):
         self.assertIn("batch-sandbox-*.json", str(why.exception))
 
     def test_a_local_run_batch_never_counts(self):
-        self.run_json("batch-rehearsal-20261111-100000.json", batch(mode="rehearsal"))
-        self.run_json("batch-sandbox-20261111-110000.json", batch(mode="rehearsal"))
+        self.run_json("batch-local-20261111-100000.json", batch(mode="local"))
+        self.run_json("batch-sandbox-20261111-110000.json", batch(mode="local"))
         with self.assertRaises(fp.Missing) as why:
             self.src().batch()
         self.assertIn("not the real sandbox", str(why.exception))
@@ -116,12 +116,12 @@ class Fill(unittest.TestCase):
         self.assertIsNone(fp.derive(self.src(), {})["OVERRULED_EXAMPLE"][0])
 
     # model ----------------------------------------------------------------------------------------------------------
-    def eval_file(self, name, totals, mode="rehearsal"):
+    def eval_file(self, name, totals, mode="local"):
         self.run_json(name, {"mode": mode, "totals": totals})
 
     def test_model_values_come_from_the_newest_ai_eval_and_skip_the_real_record(self):
-        self.eval_file("ai-eval-rehearsal-20261110-070000.json", {"old:1b": {"calls": 5, "total_ms": 50}})
-        self.eval_file("ai-eval-rehearsal-20261111-070000.json", {"qwen3.5:4b": {"calls": 42, "total_ms": 1030000}})
+        self.eval_file("ai-eval-local-20261110-070000.json", {"old:1b": {"calls": 5, "total_ms": 50}})
+        self.eval_file("ai-eval-local-20261111-070000.json", {"qwen3.5:4b": {"calls": 42, "total_ms": 1030000}})
         self.eval_file("ai-eval-real-record-20261111-090000.json", {"other:9b": {"calls": 1, "total_ms": 1}}, mode="real sandbox record, read only")
         values = fp.derive(self.src(), {})
         self.assertEqual(values["MODEL_NAME"][0], "qwen3.5:4b")
@@ -130,12 +130,12 @@ class Fill(unittest.TestCase):
         self.assertEqual(values["MODEL_MS_PER_CALL"][0], "24,524")
 
     def test_two_models_need_a_choice(self):
-        self.eval_file("ai-eval-rehearsal-20261111-070000.json", {"a:1b": {"calls": 1, "total_ms": 1}, "b:2b": {"calls": 2, "total_ms": 2}})
+        self.eval_file("ai-eval-local-20261111-070000.json", {"a:1b": {"calls": 1, "total_ms": 1}, "b:2b": {"calls": 2, "total_ms": 2}})
         self.assertIsNone(fp.derive(self.src(), {})["MODEL_NAME"][0])
         self.assertEqual(fp.derive(self.src(model="b:2b"), {})["MODEL_CALLS"][0], "2")
 
     def test_a_model_that_differs_from_the_results_page_is_warned(self):
-        self.eval_file("ai-eval-rehearsal-20261111-070000.json", {"small:3b": {"calls": 1, "total_ms": 1}})
+        self.eval_file("ai-eval-local-20261111-070000.json", {"small:3b": {"calls": 1, "total_ms": 1}})
         self.write("docs/RESULTS.md", "The model used is big:4b: it proposed the right action.\n")
         source = self.src()
         source.model_stats()

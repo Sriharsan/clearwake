@@ -54,8 +54,8 @@
     const key = `${state.room.revision}:${grant.id}:${payment.case.capture}`;
     if (key !== approvalKey) { $('payment-ack').checked = false; approvalKey = key; }
     $('payment-panel').hidden = false;
-    $('payment-mode').textContent = payment.mode === 'rehearsal' ? 'Local run, no PayPal calls' : 'PayPal sandbox · test money only';
-    $('payment-mode').className = `payment-mode ${payment.mode === 'rehearsal' ? 'rehearsal' : 'sandbox'}`;
+    $('payment-mode').textContent = payment.mode === 'local' ? 'Local run, no PayPal calls' : 'PayPal sandbox · test money only';
+    $('payment-mode').className = `payment-mode ${payment.mode === 'local' ? 'local' : 'sandbox'}`;
     gauge(payment);
     $('payment-amount').textContent = `${payment.case.currency} ${payment.case.amount}`;
     $('payment-capture').textContent = payment.case.capture;
@@ -63,12 +63,12 @@
     if (grant.expires) $('payment-grant').textContent += ` · ${new Date(grant.expires * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     $('payment-state').textContent = operation ? `${readable(operation.state)} · request revision ${operation.revision}` : 'not sent';
     $('payment-owner').hidden = !owner();
-    $('payment-effect').textContent = `I approve one ${payment.mode === 'rehearsal' ? 'local' : 'PayPal sandbox'} refund of ${payment.case.currency} ${payment.case.amount} for capture ${payment.case.capture}, revision ${state.room.revision}. This grant expires after five minutes.`;
+    $('payment-effect').textContent = `I approve one ${payment.mode === 'local' ? 'local' : 'PayPal sandbox'} refund of ${payment.case.currency} ${payment.case.amount} for capture ${payment.case.capture}, revision ${state.room.revision}. This grant expires after five minutes.`;
     const plan = state.artifact?.revision === state.room.revision;
     $('payment-grant-button').disabled = busy || !owner() || !plan || !!operation || grant.status === 'ACTIVE' || !$('payment-ack').checked;
     $('payment-revoke').disabled = pendingActions.has('revoke') || !owner() || !grant.id || grant.status === 'REVOKED';
     $('payment-send').disabled = busy || !owner() || !plan || grant.status !== 'ACTIVE' || !!operation;
-    $('payment-send').textContent = payment.mode === 'rehearsal' ? 'Send one local refund' : 'Send one sandbox refund';
+    $('payment-send').textContent = payment.mode === 'local' ? 'Send one local refund' : 'Send one sandbox refund';
     $('payment-reason').textContent = operation?.reason || (plan ? 'Current specialist evidence is ready. The owner can review the exact effect above.' : 'Run the specialists and publish their current checked artifact below before refund approval.');
     timeline(plan, grant, operation, state.events);
     const levels = $('payment-autonomy'); levels.replaceChildren();

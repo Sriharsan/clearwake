@@ -32,19 +32,19 @@ class SiteDataTests(unittest.TestCase):
         self.assertIn("ledger.json", json.loads((SITE / "data" / "manifest.json").read_text(encoding="utf-8"))["files"])
 
     @needs_runs
-    def test_totals_come_from_the_run_files_and_a_rehearsal_batch_stays_out_of_the_public_set(self):
+    def test_totals_come_from_the_run_files_and_a_local_batch_stays_out_of_the_public_set(self):
         t = json.loads((SITE / "data" / "totals.json").read_text(encoding="utf-8"))
         self.assertTrue(t["public"]); self.assertLessEqual(len(t["public"]), 6)
         for n in t["public"] + t["local"]:
             self.assertTrue(n["value"] and n["label"] and n["source"])
-        self.assertFalse([n for n in t["public"] if "batch-rehearsal" in n["source"]])
+        self.assertFalse([n for n in t["public"] if "batch-local" in n["source"]])
         self.assertEqual(t, builder.totals(builder.build()["rows"]))  # run scripts/build_site_data.py after a new run file
 
-    def test_a_rehearsal_batch_is_never_published_and_a_sandbox_batch_becomes_rows(self):
+    def test_a_local_batch_is_never_published_and_a_sandbox_batch_becomes_rows(self):
         case = {"n": 1, "reason": "item_not_received", "ask": "9.00", "paypal_stage": "INQUIRY", "paypal_status": "RESOLVED", "outcome": "settled_inquiry_no_fee",
                 "merchant_decision": "settle_by_offer", "merchant_state": "VERIFIED", "refund_confirmed": "3.00", "dispute_id": "PP-R-ABC-1", "steps": ["buyer: accept"]}
         batch = {"kind": "buyer-seller batch", "mode": "sandbox", "finished": "2026-11-11T10:00:00+00:00", "cases": [case, dict(case, n=2, outcome="evidence_sent", refund_confirmed="0.00", dispute_id="PP-R-ABC-2")]}
-        self.assertIsNone(builder.from_batch(dict(batch, mode="rehearsal"), "batch-x"))
+        self.assertIsNone(builder.from_batch(dict(batch, mode="local"), "batch-x"))
         rows = builder.from_batch(batch, "batch-x")["rows"]
         self.assertEqual([(r["result"], r["settled_before_escalation"], r["refunded"]) for r in rows], [("settled", True, True), ("evidence", False, False)])
         self.assertEqual(rows[0]["stage"], "INQUIRY"); self.assertIn("USD 3.00", rows[0]["outcome"])
@@ -71,10 +71,10 @@ class SiteDataTests(unittest.TestCase):
     def test_no_page_still_carries_the_old_repeated_badges_or_the_giant_one(self):
         for page in ("index.html", "control-room.html", "developers.html"):
             html = (SITE / page).read_text(encoding="utf-8")
-            self.assertNotRegex(html, r'class="tag (real|rehearsal)"', page)
-            self.assertNotIn("rehearsal</span>", html, page)
+            self.assertNotRegex(html, r'class="tag (real|local)"', page)
+            self.assertNotIn("local</span>", html, page)
         home = (SITE / "index.html").read_text(encoding="utf-8")
-        self.assertNotIn("bignum", home); self.assertNotIn("Rehearsal, not PayPal", home)
+        self.assertNotIn("bignum", home); self.assertNotIn("Local, not PayPal", home)
         self.assertEqual(len(re.findall(r"Real PayPal sandbox, test money", home)), 1)
 
 

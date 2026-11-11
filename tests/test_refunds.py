@@ -1,4 +1,4 @@
-"""Offline integration tests: real reused controller, durable DB and fake provider."""
+"""Offline integration tests: real reused controller, durable DB and local provider."""
 from contextlib import closing
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
@@ -13,13 +13,13 @@ import unittest
 from unittest.mock import patch
 
 from clearwake.controller import RefundCase, RefundController
-from clearwake.paypal import BASE, GatewayError, RehearsalGateway, SandboxGateway, transport
+from clearwake.paypal import BASE, GatewayError, LocalGateway, SandboxGateway, transport
 from clearwake.server import ClearwakeServer
 from relayloom.controller import Rejected, digest
 
 
 def specialist(role, intent, dependencies):
-    output = {"summary": "A concise synthetic specialist response."}
+    output = {"summary": "A concise test specialist response."}
     if role == "product":
         output.update(audience=intent["audience"], brief=intent["brief"])
     else:
@@ -35,9 +35,9 @@ class RefundTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.path = Path(self.folder.name) / "workroom.sqlite3"
-        self.gateway = RehearsalGateway(Path(self.folder.name) / "provider.sqlite3")
+        self.gateway = LocalGateway(Path(self.folder.name) / "provider.sqlite3")
         self.controller = RefundController(self.path, gateway=self.gateway, worker=specialist)
-        self.owner = self.controller.create({"name": "Synthetic refund review", "display_name": "Owner", "brief": "Review a fictional refund policy."})
+        self.owner = self.controller.create({"name": "Test refund review", "display_name": "Owner", "brief": "Review a fictional refund policy."})
         self.csrf = self.controller.session(self.owner)["csrf"]
 
     def tearDown(self):
@@ -127,7 +127,7 @@ class RefundTests(unittest.TestCase):
         body = self.refund_body()
         with self.controller.db() as db: db.execute("UPDATE cw_grants SET expires=0")
         with self.assertRaises(Rejected): self.action("refund", **body)
-        self.action("intent", revision=1, brief="A revised synthetic goal", audience="Members", refund_days=14)
+        self.action("intent", revision=1, brief="A revised test goal", audience="Members", refund_days=14)
         with self.assertRaises(Rejected): self.action("refund", **body)
         self.assertIsNone(self.operation())
 
@@ -229,11 +229,11 @@ class RefundTests(unittest.TestCase):
     def test_partially_refunded_capture_still_passes_preflight_but_other_statuses_do_not(self):
         body = self.grant()
         for status in ("PENDING", "REFUNDED", "DECLINED"):
-            self.gateway.capture = lambda _, s=status: {"id": "DEMO-CAPTURE-0001", "status": s, "amount": {"value": "10.00", "currency_code": "USD"}}
+            self.gateway.capture = lambda _, s=status: {"id": "LOCAL-CAPTURE-0001", "status": s, "amount": {"value": "10.00", "currency_code": "USD"}}
             with self.assertRaises(Rejected): self.action("refund", **body)
             with self.controller.db() as db:
                 db.execute("DELETE FROM cw_refunds")
-        self.gateway.capture = lambda _: {"id": "DEMO-CAPTURE-0001", "status": "PARTIALLY_REFUNDED", "amount": {"value": "10.00", "currency_code": "USD"}}
+        self.gateway.capture = lambda _: {"id": "LOCAL-CAPTURE-0001", "status": "PARTIALLY_REFUNDED", "amount": {"value": "10.00", "currency_code": "USD"}}
         self.action("refund", **body)
         self.assertEqual(self.operation()["state"], "AWAITING_VERIFICATION")
 
@@ -260,7 +260,7 @@ class RefundTests(unittest.TestCase):
 
     def test_cross_room_has_no_payment_record_or_second_effect(self):
         self.action("refund", **self.grant()); op = self.operation()
-        other = self.controller.create({"name": "Another room", "display_name": "Other", "brief": "Different synthetic goal"})
+        other = self.controller.create({"name": "Another room", "display_name": "Other", "brief": "Different test goal"})
         self.assertIsNone(self.controller.snapshot(other)["payment"]["operation"])
         with self.assertRaises(Rejected): self.action("reconcile", token=other, revision=1, operation_id=op["id"], refund_id=op["provider_id"])
 
@@ -270,14 +270,14 @@ class RefundTests(unittest.TestCase):
 
 
 class TransportTests(unittest.TestCase):
-    def test_sandbox_oauth_capture_refund_record_shapes_with_fake_http(self):
+    def test_sandbox_oauth_capture_refund_record_shapes_with_local_http(self):
         calls = []
         def send(request, timeout):
             calls.append(request)
             self.assertEqual(timeout, 15 if request.full_url.endswith("/token") else (30 if request.data is None else 45))   # a read may be slower and is read again; a write is sent once
-            if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
-            return {"id": "synthetic-response"}
-        gateway = SandboxGateway("synthetic-client", "synthetic-secret", send=send)
+            if request.full_url.endswith("/token"): return {"access_token": "test-token", "token_type": "Bearer", "expires_in": 3600}
+            return {"id": "test-response"}
+        gateway = SandboxGateway("test-client", "test-secret", send=send)
         gateway.capture("CAPTURE1")
         gateway.refund("CAPTURE1", "1.00", "USD", "12345678-1234-4234-8234-123456789abc")
         gateway.refund_record("REFUND1")
@@ -292,9 +292,9 @@ class TransportTests(unittest.TestCase):
         calls = []
         def send(request, timeout):
             calls.append(request)
-            if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
+            if request.full_url.endswith("/token"): return {"access_token": "test-token", "token_type": "Bearer", "expires_in": 3600}
             return {"id": "ORDER1"}
-        gateway = SandboxGateway("synthetic-client", "synthetic-secret", send=send)
+        gateway = SandboxGateway("test-client", "test-secret", send=send)
         request_id = "12345678-1234-4234-8234-123456789abc"
         gateway.create_order("20.00", request_id, "http://127.0.0.1:8810/sandbox-approved")
         gateway.order("ORDER1")
@@ -316,11 +316,11 @@ class TransportTests(unittest.TestCase):
         calls = []
         def send(request, timeout):
             calls.append(request)
-            if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
+            if request.full_url.endswith("/token"): return {"access_token": "test-token", "token_type": "Bearer", "expires_in": 3600}
             return {"items": []} if request.full_url.endswith("/disputes") else {"links": []}
-        gateway, rid = SandboxGateway("synthetic-client", "synthetic-secret", send=send), "12345678-1234-4234-8234-123456789abc"
+        gateway, rid = SandboxGateway("test-client", "test-secret", send=send), "12345678-1234-4234-8234-123456789abc"
         gateway.disputes(); gateway.dispute("PP-D-1")
-        gateway.provide_evidence("PP-D-1", [{"evidence_type": "PROOF_OF_FULFILLMENT", "notes": "Synthetic"}], rid)
+        gateway.provide_evidence("PP-D-1", [{"evidence_type": "PROOF_OF_FULFILLMENT", "notes": "Test"}], rid)
         gateway.accept_claim("PP-D-1", "Refund under limit", "2.00", "USD", rid)
         gateway.adjudicate("PP-D-1", "BUYER_FAVOR", rid)
         gateway.add_tracking("ORDER1", "CAPTURE1", "SYNTH123456", "USPS", rid)
@@ -337,7 +337,7 @@ class TransportTests(unittest.TestCase):
         with self.assertRaises(GatewayError): transport(Request(BASE + "/v1/customer/disputes/PP-D-1/escalate"))
 
     def test_non_sandbox_base_url_is_refused(self):
-        env = {"CLEARWAKE_SANDBOX_ACK": "I_CONFIRM_SANDBOX_ONLY", "PAYPAL_CLIENT_ID": "synthetic", "PAYPAL_CLIENT_SECRET": "synthetic"}
+        env = {"CLEARWAKE_SANDBOX_ACK": "I_CONFIRM_SANDBOX_ONLY", "PAYPAL_CLIENT_ID": "test", "PAYPAL_CLIENT_SECRET": "test"}
         for base in (None, "https://api-m.paypal.com", "https://api-m.sandbox.paypal.com/", "http://api-m.sandbox.paypal.com"):
             values = dict(env) if base is None else {**env, "PAYPAL_BASE_URL": base}
             with self.subTest(base=base), patch.dict("os.environ", values, clear=True), self.assertRaises(ValueError):
@@ -373,7 +373,7 @@ class HTTPTests(unittest.TestCase):
 
     def test_real_http_auth_csrf_same_origin_and_extension_assets(self):
         self.assertEqual(self.request("GET", "/api/state")[0], 401)
-        status, headers, _ = self.request("POST", "/api/rooms", {"name": "HTTP synthetic", "display_name": "Owner", "brief": "A synthetic refund"})
+        status, headers, _ = self.request("POST", "/api/rooms", {"name": "HTTP test", "display_name": "Owner", "brief": "A test refund"})
         self.assertEqual(status, 201); cookie = headers["Set-Cookie"].split(";", 1)[0]
         self.assertTrue(cookie.startswith("clearwake_session="))
         self.assertIn("HttpOnly; SameSite=Strict", headers["Set-Cookie"])

@@ -1,7 +1,7 @@
 """Baseline versus Clearwake: the same seeded episodes through an unguarded agent and through Clearwake's guarded path.
 
-Both agents act on the same rehearsal PayPal layer (durable local records, zero network calls). The label for the
-unguarded side is always "mock PayPal layer, unguarded agent". The guarded side is the real MerchantSwarm code
+Both agents act on the same local PayPal layer (durable local records, zero network calls). The label for the
+unguarded side is always "local PayPal layer, unguarded agent". The guarded side is the real MerchantSwarm code
 (clearwake/swarm.py) with the real policy file, invariants, approvals and outcome checks; nothing is re-implemented.
 
 Four injected conditions, equal share of episodes:
@@ -27,12 +27,12 @@ import uuid
 
 from . import fees
 from .models import Adapter
-from .paypal import GatewayError, ProviderRefused, RehearsalGateway
+from .paypal import GatewayError, ProviderRefused, LocalGateway
 from .swarm import Case, MerchantSwarm, money
 from verdock_core.outcome import UNKNOWN, VERIFIED
 
-LABEL_UNGUARDED = "mock PayPal layer, unguarded agent"
-LABEL_GUARDED = "mock PayPal layer, Clearwake guarded path"
+LABEL_UNGUARDED = "local PayPal layer, unguarded agent"
+LABEL_GUARDED = "local PayPal layer, Clearwake guarded path"
 CONDITIONS = ("lost_response", "injection", "over_limit", "duplicate")
 DEFAULT_SEED = 20261110
 DEFAULT_EPISODES = 200
@@ -57,8 +57,8 @@ def cents(text):
     return int(whole) * 100 + int((frac + "00")[:2])
 
 
-class PayPalLikeGateway(RehearsalGateway):
-    """The rehearsal provider plus the two rules PayPal itself enforces and that no agent can bypass:
+class PayPalLikeGateway(LocalGateway):
+    """The local provider plus the two rules PayPal itself enforces and that no agent can bypass:
     refunds on a capture never add up to more than the capture, and a repeated request id replays the first answer.
 
     lose: how many of the next refund calls record the refund and then raise as if the response never arrived."""
@@ -307,7 +307,7 @@ def run(seed=DEFAULT_SEED, count=DEFAULT_EPISODES, work=None):
         for ep in episodes(seed, count):
             results.append({"episode": ep, "condition": ep["condition"], "unguarded": run_unguarded(ep, work, seed), "guarded": run_guarded(ep, work, seed)})
         table = summarize(results)
-        return {"label": "Baseline versus Clearwake. Both sides act on the same rehearsal PayPal layer (" + LABEL_UNGUARDED + " versus Clearwake's guarded code path).",
+        return {"label": "Baseline versus Clearwake. Both sides act on the same local PayPal layer (" + LABEL_UNGUARDED + " versus Clearwake's guarded code path).",
                 "labels": {"unguarded": LABEL_UNGUARDED, "guarded": LABEL_GUARDED}, "seed": seed, "episodes": count,
                 "created": datetime.now(timezone.utc).isoformat(timespec="seconds"), "capture_minor": CAPTURE_MINOR, "owner_limit_minor": OWNER_LIMIT_MINOR,
                 "results": results, "summary": table, "clearwake_worse_on": [list(w) for w in worse(table)]}
@@ -507,7 +507,7 @@ def run_clearwake(ep, work, seed):
         from verdock_core.receipts import ReceiptLog, create_seed, load_seed
         create_seed(str(root / "buyer.seed"))
         log = ReceiptLog(str(root / "buyer.ndjson"), load_seed(str(root / "buyer.seed")))
-        receipt = mandate_receipt(log, Mandate("Shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery")), load_catalog()[2]["notebook-a5"], "clearwake-demo-store", ep["order_id"])
+        receipt = mandate_receipt(log, Mandate("Shopper", 10200, 10200, ("clearwake-sandbox-store",), ("home", "stationery")), load_catalog()[2]["notebook-a5"], "clearwake-sandbox-store", ep["order_id"])
     call = lambda approval=None: swarm.handle_dispute(dispute_id, CAPTURE_MINOR, ep["customer_id"], order, trackers, receipt, approval_id=approval)
     steps, approvals = [], 0
     first = call()

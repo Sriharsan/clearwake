@@ -247,7 +247,7 @@ class MerchantSwarm:
 
     def handle_dispute(self, dispute_id, capture_minor, customer_id, order=None, trackers=(), mandate_receipt=None,
                        approval_id=None, owner="swarm-1"):
-        """A real PayPal dispute (or its rehearsal twin): Intake, Evidence, Decider, policy, Checker. Deadlines escalate."""
+        """A real PayPal dispute (or its local twin): Intake, Evidence, Decider, policy, Checker. Deadlines escalate."""
         from .evidence import DisputeView, deadline, evidence_pack, propose as rule
         args = {"dispute_id": dispute_id, "capture_minor": capture_minor, "customer_id": customer_id, "order": order,
                 "trackers": list(trackers), "mandate_receipt": mandate_receipt, "approval_id": approval_id}

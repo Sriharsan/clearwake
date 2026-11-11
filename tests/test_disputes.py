@@ -1,4 +1,4 @@
-"""PayPal dispute path (rehearsal provider shaped like the Disputes API): evidence, deadlines, policy, Checker."""
+"""PayPal dispute path (local provider shaped like the Disputes API): evidence, deadlines, policy, Checker."""
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 import json
@@ -9,7 +9,7 @@ import unittest
 
 from clearwake.buyer import Mandate, load_catalog, mandate_receipt
 from clearwake.models import Adapter
-from clearwake.paypal import RehearsalGateway
+from clearwake.paypal import LocalGateway
 from clearwake.swarm import MerchantSwarm
 from verdock_core.outcome import VERIFIED
 from verdock_core.receipts import ReceiptLog, create_seed, load_seed, verify_log
@@ -25,7 +25,7 @@ def due(hours):
 class DisputeTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); self.root = Path(self.folder.name)
-        self.gateway = RehearsalGateway(self.root / "provider.sqlite3")
+        self.gateway = LocalGateway(self.root / "provider.sqlite3")
         self.swarm = MerchantSwarm(self.gateway, self.root / "merchant", Adapter("scripted"), clock=lambda: NOW)
 
     def tearDown(self):
@@ -42,8 +42,8 @@ class DisputeTests(unittest.TestCase):
         seed = self.root / "buyer.seed"; create_seed(str(seed))
         buyer_log = ReceiptLog(str(self.root / "buyer.ndjson"), load_seed(str(seed)))
         _, _, products = load_catalog()
-        mandate = Mandate("Synthetic shopper", 10200, 10200, ("clearwake-demo-store",), ("stationery",))
-        receipt = mandate_receipt(buyer_log, mandate, products["notebook-a5"], "clearwake-demo-store", "ORDER-2")
+        mandate = Mandate("Test shopper", 10200, 10200, ("clearwake-sandbox-store",), ("stationery",))
+        receipt = mandate_receipt(buyer_log, mandate, products["notebook-a5"], "clearwake-sandbox-store", "ORDER-2")
         d = self.gateway.open_dispute("CAP-2", "UNAUTHORISED", "9.00", due(72), "I did not buy this.")
         result = self.swarm.handle_dispute(d["dispute_id"], 900, "buyer-2", {"id": "ORDER-2"}, [], receipt)
         self.assertEqual((result.action, result.state), ("provide_evidence", VERIFIED))
@@ -102,9 +102,9 @@ class DisputeTests(unittest.TestCase):
     def test_sandbox_helpers_pass_paypal_refusals_through_unchanged(self):
         from clearwake.paypal import ProviderRefused, SandboxGateway
         def send(request, timeout):
-            if request.full_url.endswith("/token"): return {"access_token": "synthetic-token", "token_type": "Bearer", "expires_in": 3600}
+            if request.full_url.endswith("/token"): return {"access_token": "test-token", "token_type": "Bearer", "expires_in": 3600}
             raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY NOT_ALLOWED).")
-        gateway = SandboxGateway("synthetic-client", "synthetic-secret", send=send)
+        gateway = SandboxGateway("test-client", "test-secret", send=send)
         with self.assertRaises(ProviderRefused):
             gateway.provide_evidence("PP-D-1", [], "12345678-1234-4234-8234-123456789abc")
         with self.assertRaises(ProviderRefused):

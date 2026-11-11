@@ -57,9 +57,9 @@ RESULT = {"settled_inquiry_no_fee": "settled", "evidence_sent": "evidence"}
 
 
 def from_batch(body, name):
-    """Rows for the buyer-seller batch of clearwake/batch.py. A rehearsal batch is never published: nothing in it is PayPal's."""
+    """Rows for the buyer-seller batch of clearwake/batch.py. A local batch is never published: nothing in it is PayPal's."""
     mode = str(body.get("mode", "")).lower()
-    if "rehearsal" in mode or "sandbox" not in mode:
+    if "local" in mode or "sandbox" not in mode:
         return None
     rows = []
     for c in body.get("cases", []):
@@ -163,7 +163,7 @@ def totals(ledger_rows):
 
     public: real sandbox batch if one exists, else the real sandbox ledger; model calls from the newest ai-eval run; the newest baseline run's
             "headline" list ([{"value", "label"}]) when agent E's run file has one.
-    local:  the same, but a rehearsal batch counts (the console is local and carries its own mode label)."""
+    local:  the same, but a local batch counts (the console is local and carries its own mode label)."""
     out = {"public": [], "local": []}
 
     def batch(kind_ok):
@@ -176,7 +176,7 @@ def totals(ledger_rows):
                 return path, body["summary"]
         return None, None
 
-    real = lambda m: "sandbox" in m and "rehearsal" not in m
+    real = lambda m: "sandbox" in m and "local" not in m
     for key, ok in (("public", real), ("local", lambda m: True)):
         path, sm = batch(ok)
         if sm:
@@ -373,7 +373,7 @@ def main():
         if isinstance(body, dict) and body.get("kind") == "buyer-seller batch":
             converted = from_batch(body, source.stem)
             if converted is None:
-                print("not published", source.name, "(a rehearsal batch: its records are not PayPal's)")
+                print("not published", source.name, "(a local batch: its records are not PayPal's)")
             else:
                 (data / source.name).write_text(json.dumps(converted, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
                 print("converted", source.name, "to", len(converted["rows"]), "rows")

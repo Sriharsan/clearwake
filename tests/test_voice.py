@@ -33,11 +33,11 @@ def merchant_receipts(console, action):
     return [r for r in lines if r.get("action_id") == action]
 
 
-class FakeTranscriber:
+class StandInTranscriber:
     """Stands in for Whisper where a test is about what happens after the words are known."""
 
     def __init__(self, words):
-        self.words, self.model_dir = words, Path("fake")
+        self.words, self.model_dir = words, Path("local_gw")
 
     def available(self):
         return True
@@ -130,7 +130,7 @@ class FlowTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory()
         self.console = Console(Path(self.folder.name) / "console")
-        self.voice = voice.Voice(self.console, FakeTranscriber(RULES))
+        self.voice = voice.Voice(self.console, StandInTranscriber(RULES))
         self.guard = patch("urllib.request.OpenerDirector.open", no_network)
         self.guard.start()
 
@@ -139,8 +139,8 @@ class FlowTests(unittest.TestCase):
         self.folder.cleanup()
 
     def spoken(self, words):
-        self.voice.transcriber = FakeTranscriber(words)
-        heard = self.voice.transcribe(b"fake audio bytes")
+        self.voice.transcriber = StandInTranscriber(words)
+        heard = self.voice.transcribe(b"local_gw audio bytes")
         return self.voice.turn(transcript_id=heard["transcript_id"])
 
     def test_ask_is_composed_by_code_from_the_ledger_and_the_screen_text_is_the_spoken_text(self):
@@ -442,7 +442,7 @@ class PhoneTests(unittest.TestCase):
         from clearwake.voice_phone import PhoneServer
         self.folder = tempfile.TemporaryDirectory()
         self.console = Console(Path(self.folder.name) / "console")
-        self.console.voice = voice.Voice(self.console, FakeTranscriber(RULES))
+        self.console.voice = voice.Voice(self.console, StandInTranscriber(RULES))
         self.server = PhoneServer(("127.0.0.1", 0), self.console, token="tok-123")
         self.port = self.server.server_address[1]
         self.server.start()
@@ -493,11 +493,11 @@ class PhoneTests(unittest.TestCase):
         self.assertEqual(list(LANGUAGES), ["en"])
         self.assertTrue(all("en" in entry for entry in STRINGS.values()))
 
-    def test_typed_and_spoken_turns_work_through_the_token_and_cannot_fake_voice(self):
+    def test_typed_and_spoken_turns_work_through_the_token_and_cannot_forge_voice(self):
         h = {"Content-Type": "application/json"}
         status, _, body = self.call("POST", "/turn?t=tok-123", json.dumps({"text": "What happened with my disputes today?"}), h)
         self.assertEqual((status, json.loads(body)["source"]), (200, "typed"))
-        status, _, body = self.call("POST", "/transcribe?t=tok-123", b"RIFF....WAVEfake", {"Content-Type": "audio/wav"})
+        status, _, body = self.call("POST", "/transcribe?t=tok-123", b"RIFF....WAVElocal", {"Content-Type": "audio/wav"})
         heard = json.loads(body)
         self.assertEqual(status, 200, body)
         status, _, body = self.call("POST", "/turn?t=tok-123", json.dumps({"transcript_id": heard["transcript_id"]}), h)
@@ -600,7 +600,7 @@ class WhisperTests(unittest.TestCase):
         folder = tempfile.TemporaryDirectory()
         try:
             console = Console(Path(folder.name) / "console")
-            said = voice.Voice(console, FakeTranscriber(self.heard["film_rules"]["transcript"]))
+            said = voice.Voice(console, StandInTranscriber(self.heard["film_rules"]["transcript"]))
             heard = said.transcribe(b"x")
             turn = said.turn(transcript_id=heard["transcript_id"])
             self.assertTrue(turn["needs_confirm"], turn["text"])

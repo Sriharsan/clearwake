@@ -27,7 +27,7 @@
           if (pick) list = pick.split(',').map(function (i) { return list[+i]; }).filter(Boolean);
           render(host, list);
         })
-        .catch(function () { /* no numbers rather than invented ones */ });
+        .catch(function () { /* no numbers rather than unsourced ones */ });
     });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

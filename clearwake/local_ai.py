@@ -1,4 +1,4 @@
-"""Explicit synthetic-only local AI. No remote inference or automatic downloads."""
+"""Explicit test-only local AI. No remote inference or automatic downloads."""
 import json
 import os
 import re
@@ -37,8 +37,8 @@ class LocalWorker:
 
     @classmethod
     def from_environment(cls):
-        if os.environ.get('CLEARWAKE_LOCAL_AI_ACK')!='I_CONFIRM_LOCAL_SYNTHETIC':
-            raise ValueError('Explicit local synthetic inference acknowledgement is required.')
+        if os.environ.get('CLEARWAKE_LOCAL_AI_ACK')!='I_CONFIRM_LOCAL_TEST_DATA':
+            raise ValueError('Explicit local test inference acknowledgement is required.')
         if os.environ.get('CLEARWAKE_LOCAL_MODEL',MODEL)!=MODEL:
             raise ValueError('This bounded local trial supports only '+MODEL+'.')
         return cls(model_digest=os.environ.get('CLEARWAKE_LOCAL_MODEL_DIGEST',''),
