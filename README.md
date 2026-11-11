@@ -1,6 +1,10 @@
 **When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
 
-> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, median 0.65 minutes), **0 double refunds**, 0 evidence sent. 3 stopped and handed to a person. 4 moved by PayPal to the CHARGEBACK stage.
+**When an agent's order goes missing, agents fix it.**
+
+[Live site](https://clearwake-mu.vercel.app) &nbsp;|&nbsp; [Live console](https://clearwake-console.onrender.com/console) &nbsp;|&nbsp; [Break it](https://clearwake-mu.vercel.app/break) &nbsp;|&nbsp; [Docs index](docs/INDEX.md) &nbsp;|&nbsp; Run it: `python -m clearwake`
+
+> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps), **0 double refunds**, 0 evidence sent. 3 stopped and handed to a person. 4 moved by PayPal to the CHARGEBACK stage.
 
 ![Two agents and PayPal's own record of dispute PP-R-ISN-10198775: offer of USD 5.00, two signed receipts 1c6bed15c803 and fc8f566c85ef, RESOLVED at INQUIRY, no fee](docs/img/hero-thread.svg)
 
@@ -296,6 +300,6 @@ Where this goes: built on PayPal today are agent to agent settling inside the di
 * **4 of 10** item not received disputes settled by the two agents at INQUIRY with no fee (**Real PayPal sandbox run**), 4 moved by PayPal to CHARGEBACK, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate.
 * **USD 0.00 overpaid** by Clearwake in 200 episodes, against USD 2,633.25 for an agent using PayPal's Agent Toolkit directly (**Planted failure**).
 * **0 double refunds** in the batch and in 200 episodes, against 61 without it.
-* **0.65 minutes** median per settled case, 11 of 11 spoken rules understood.
+* **24 to 62 minutes** from filing to RESOLVED in PayPal's timestamps, 11 of 11 spoken rules understood.
 
 Links: [site](https://clearwake-mu.vercel.app), [Break it page](https://clearwake-mu.vercel.app/break), [Render console](https://clearwake-console.onrender.com/console), [repo](https://github.com/Sriharsan/clearwake), [video]([VIDEO_URL]). APIMatic: [APIMATIC_RESULT]. Postman: [POSTMAN_RUN].

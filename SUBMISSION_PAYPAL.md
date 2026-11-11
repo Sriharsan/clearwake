@@ -2,7 +2,7 @@
 
 **When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
 
-> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, median 0.65 minutes), **0 double refunds**, 0 evidence sent. 3 stopped and handed to a person. 4 moved by PayPal to the CHARGEBACK stage.
+> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps), **0 double refunds**, 0 evidence sent. 3 stopped and handed to a person. 4 moved by PayPal to the CHARGEBACK stage.
 
 Repository: https://github.com/Sriharsan/clearwake (MIT). Public site: https://clearwake-mu.vercel.app (static, recorded sandbox run, receipt verifier that runs in your browser, not network isolated). Live console, hosted on Render, not network isolated: https://clearwake-console.onrender.com. Video: [VIDEO_URL]
 

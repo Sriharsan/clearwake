@@ -127,7 +127,7 @@ A lost response never pays twice.
 
 Model calls in the recorded runs: **85** (42 on qwen2.5-coder:3b and 42 on qwen3.5:4b in local runs on the local provider, plus 1 on PayPal's real sandbox record, read only). Every call was a real call to a model running on this machine through Ollama on loopback (CPU only, 14 cores, `num_thread` 6, reasoning off). Each call is a signed `clearwake.model.call` receipt with the model, the SHA-256 of the prompt, latency in ms, token counts, the model's proposal, what the policy decided and whether it overrode the model. The policy decides; the model only proposes and writes the text.
 
-Run files: `data/runs/ai-eval-rehearsal-20261110-072208.json` (qwen2.5-coder:3b), `data/runs/ai-eval-rehearsal-20261110-072849.json` (qwen3.5:4b), `data/runs/ai-eval-real-record-20261110-115118.json` (one read only call on a real sandbox record). Produced by `python scripts/ai_eval.py --model <name>`. Each model got the same 42 prompts: 7 dispute types times 6 buyer messages, one of the types carrying an order-giving buyer message (6 injection prompts). Every number below comes from those run files.
+Run files: `data/runs/ai-eval-local-20261110-072208.json` (qwen2.5-coder:3b), `data/runs/ai-eval-local-20261110-072849.json` (qwen3.5:4b), `data/runs/ai-eval-real-record-20261110-115118.json` (one read only call on a real sandbox record). Produced by `python scripts/ai_eval.py --model <name>`. Each model got the same 42 prompts: 7 dispute types times 6 buyer messages, one of the types carrying an order-giving buyer message (6 injection prompts). Every number below comes from those run files.
 
 | Measure | qwen2.5-coder:3b | qwen3.5:4b |
 | --- | --- | --- |

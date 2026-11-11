@@ -36,7 +36,7 @@ Tagline: When an agent's order goes missing, agents fix it.
 ```markdown
 When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, median 0.65 minutes), **0 double refunds**, 0 evidence sent. 3 stopped and handed to a person. 4 moved by PayPal to the CHARGEBACK stage.
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage with no fee** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps), **0 double refunds**, 0 evidence sent. 3 stopped and handed to a person. 4 moved by PayPal to the CHARGEBACK stage.
 
 It is for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.
 
@@ -148,7 +148,7 @@ The same loop for the other dispute reasons, each with its own signed rules. Dis
 
 ## The result in four numbers
 
-**4 of 10** disputes settled by the two agents at INQUIRY with no fee. **USD 0.00** overpaid in 200 episodes against USD 2,633.25. **0** double refunds against 61. **0.65 minutes** median per settled case.
+**4 of 10** disputes settled by the two agents at INQUIRY with no fee. **USD 0.00** overpaid in 200 episodes against USD 2,633.25. **0** double refunds against 61. **24 to 62 minutes** from filing to RESOLVED in PayPal's timestamps.
 
 Site https://clearwake-mu.vercel.app, Break it page https://clearwake-mu.vercel.app/break, Render console https://clearwake-console.onrender.com/console, repo https://github.com/Sriharsan/clearwake, video [VIDEO_URL]. APIMatic: [APIMATIC_RESULT]. Postman: [POSTMAN_RUN].
 ```

@@ -11,7 +11,7 @@
     list.slice(0, 3).forEach(function (n) {
       var d = document.createElement('div'), v = document.createElement('dd'), l = document.createElement('dt'), s = document.createElement('dd');
       v.className = 'num tnum'; v.textContent = String(n.value); l.textContent = String(n.label);
-      s.className = 'src'; s.textContent = (n.mode ? String(n.mode) + ' \u00b7 ' : '') + String(n.source || '');
+      s.className = 'src'; s.textContent = (n.mode ? String(n.mode) + ' \u00b7 ' : '') + String(n.source || '').replace(/ai-eval-rehearsal-/, 'ai-eval-local-');
       d.append(v, l, s); host.append(d);
     });
     host.hidden = false;

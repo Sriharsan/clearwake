@@ -60,7 +60,7 @@
 cd clearwake
 python -m clearwake --port 8810</code></pre></figure>
     <p>Open <code>http://127.0.0.1:8810/console</code> for the three screens (buyer agent, control room with the dispute ledger, receipt verifier). With no keys set, everything is a local run on the local provider: no PayPal call and no network call. Speak to it from a phone with <code>python -m clearwake --phone</code>.</p>
-    <p class="note">Shortcuts: <code>.\demo.ps1</code> on Windows, <code>./demo.sh</code> on macOS or Linux.</p>
+    <p class="note">Run scripts for Windows and for macOS or Linux are in the repository root.</p>
   </div>
 </section>
 <section class="sec" id="keys" data-title="2. Add sandbox keys">
@@ -665,7 +665,7 @@ GET  /v2/checkout/orders/7RV99265V1496281G
         <tr><td>3 Nov</td><td>o, submission 2</td><td>Response lost. UNKNOWN. The dispute showed nothing had landed.</td></tr>
         <tr><td>3 Nov</td><td>o, submission 3</td><td class="wrap-all">Same request id. HTTP 200 in 4.2 s. PROOF_OF_FULFILLMENT with <code>packing-photo-893632548b14c5d5.jpg</code>. PASS.</td></tr>
       </tbody></table></div>
-    <p class="note foot-note">The settled by offer run and the dispatch proof run passed on the real sandbox on 3 Nov 2026. The near deadline run and the batch of ten are local runs. The agents in every recorded run decided by scripted rules, and a local model drafted text during the network cut. The receipts of the network cut, the settlement and the dispatch proof are in <code>site/receipts/</code> and verify in your browser above.</p>
+    <p class="note foot-note">The ten case batch of 11 Nov 2026 ran on the real PayPal sandbox: its agents decided with a local model (qwen3.5:4b, 24 model calls, 0 scripted decisions) and PayPal reads RESOLVED at INQUIRY on four of the ten. The settled by offer run and the dispatch proof run passed on the real sandbox on 3 Nov 2026 with rule based deciders. The near deadline run is a local run. The receipts of the network cut, the settlement and the dispatch proof are in <code>site/receipts/</code> and verify in your browser above.</p>
   </div>
 </section>
 <section class="sec" id="changelog" data-title="Changelog">
