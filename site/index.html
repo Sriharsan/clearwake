@@ -143,33 +143,97 @@
     </div>
   </section>
 
-  <section class="band wrap anat" id="anatomy" aria-labelledby="anat-h" data-step="0">
+  <section class="band wrap anat" id="anatomy" aria-labelledby="anat-h" data-step="0" data-open="0" data-view="all">
     <p class="eyebrow">How it works</p>
     <h2 id="anat-h">One dispute. Six layers. Every layer checked.</h2>
-    <p class="lede">Batch case 3 ran on the real PayPal sandbox. Follow it from the owner's spoken rule down to PayPal's record.</p>
+    <p class="lede">Batch case 3 ran on the real PayPal sandbox. The assembled unit stands in the middle. Take it apart layer by layer, like a body: the skeleton holds it up, the muscles do the work, the skin seals it, the heart is the judge.</p>
     <span class="anat-tag">Real PayPal sandbox run, case 3</span>
-    <div class="anat-grid">
-      <div class="anat-stage" role="group" aria-label="Six layers, one case, USD 5.00 paid once">
-        <div class="anat-thread" aria-hidden="true"></div>
-        <div class="anat-bead" aria-hidden="true">Case 3 &middot; USD 5.00</div>
-        <ol class="anat-sheets">
-          <li class="anat-sheet" tabindex="0"><span class="anat-n">1</span><span class="anat-name">Owner's spoken rules<span class="anat-sub">Spoken once. Read back. Signed.</span></span></li>
-          <li class="anat-sheet" tabindex="0"><span class="anat-n">2</span><span class="anat-name">Buyer agent<span class="anat-sub">Files the claim. Cannot pay itself.</span></span></li>
-          <li class="anat-sheet" tabindex="0"><span class="anat-n">3</span><span class="anat-name">Merchant agent<span class="anat-sub">Offers inside its owner's limit.</span></span></li>
-          <li class="anat-sheet" tabindex="0"><span class="anat-n">4</span><span class="anat-name">Policy gate<span class="anat-sub">Every action checked before money moves.</span></span></li>
-          <li class="anat-sheet" tabindex="0"><span class="anat-n">5</span><span class="anat-name">Signed receipts chain<span class="anat-sub">Each step signed. Each link checked.</span></span></li>
-          <li class="anat-sheet" tabindex="0"><span class="anat-n">6</span><span class="anat-name">PayPal's record<span class="anat-sub">The judge. Nothing counts until it matches.</span></span></li>
-        </ol>
+
+    <svg class="anat-defs" width="0" height="0" focusable="false" aria-hidden="true">
+      <defs>
+        <g id="slab"><path class="sf-top" d="M180 -44 L300 0 L180 44 L60 0Z"/><path class="sf-l" d="M60 0 L180 44 L180 60 L60 16Z"/><path class="sf-r" d="M180 44 L300 0 L300 16 L180 60Z"/></g>
+        <symbol id="g1" viewBox="0 0 60 40"><path class="gl" d="M6 18v4M13 12v16M20 6v28M27 14v12M34 9v22M41 15v10M48 11v18M54 17v6"/></symbol>
+        <symbol id="g2" viewBox="0 0 60 40"><circle class="gl" cx="20" cy="11" r="7"/><path class="gl" d="M6 37q0-13 14-13t14 13"/><rect class="gl" x="38" y="16" width="16" height="20" rx="2"/><path class="gl" d="M42 22h8M42 27h8M42 32h5"/></symbol>
+        <symbol id="g3" viewBox="0 0 60 40"><circle class="gl" cx="20" cy="11" r="7"/><path class="gl" d="M6 37q0-13 14-13t14 13"/><rect class="gl" x="38" y="18" width="16" height="16" rx="2"/><path class="gl" d="M42 26l4 4 7-8"/></symbol>
+        <symbol id="g4" viewBox="0 0 60 40"><path class="gl" d="M8 38V4M52 38V4M8 4H52M8 20H52"/><path class="gl" d="M24 31l5 5 10-12"/></symbol>
+        <symbol id="g5" viewBox="0 0 60 40"><rect class="gl" x="1" y="12" width="12" height="16" rx="2"/><rect class="gl" x="16" y="12" width="12" height="16" rx="2"/><rect class="gl" x="31" y="12" width="12" height="16" rx="2"/><rect class="gl" x="46" y="12" width="12" height="16" rx="2"/><path class="gl" d="M13 20h3M28 20h3M43 20h3"/></symbol>
+        <symbol id="g6" viewBox="0 0 60 40"><path class="gl" d="M30 37C8 24 12 6 23 8c5 1 7 6 7 6s2-5 7-6c11-2 15 16-7 29Z"/></symbol>
+      </defs>
+    </svg>
+
+    <div class="anat-board">
+      <div class="anat-col anat-left" role="list" aria-label="Layers 1 to 3">
+        <article class="anat-part k-skel" id="part-1" data-layer="1" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g1"/></svg><span class="anat-num">1</span><span class="anat-meta">Skeleton</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="1">Owner's spoken rules</button></h3>
+          <p class="anat-one">The owner speaks the limits once, and every agent stays inside them.</p>
+          <p class="anat-val"><span>Limit alone</span> <b data-v="limit">USD 5.00</b> <span>Ceiling</span> <b data-v="ceiling">USD 9.00</b></p>
+          <p class="anat-more">Skeleton: what holds everything up. The agents act only inside what the owner said.</p>
+        </article>
+        <article class="anat-part k-musc" id="part-2" data-layer="2" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g2"/></svg><span class="anat-num">2</span><span class="anat-meta">Muscles</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="2">Buyer agent</button></h3>
+          <p class="anat-one">It files the claim for an order it placed and cannot pay itself.</p>
+          <p class="anat-val"><span>Claim</span> <b data-v="ask">USD 5.00</b> <span>Order</span> <b class="anat-id" data-v="order">0HW636872W597254K</b></p>
+          <p class="anat-more">Muscles: the buyer agent does the work. No agent moves money on its own word.</p>
+        </article>
+        <article class="anat-part k-musc" id="part-3" data-layer="3" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g3"/></svg><span class="anat-num">3</span><span class="anat-meta">Muscles</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="3">Merchant agent</button></h3>
+          <p class="anat-one">It reads the dispute and offers inside its owner's limit.</p>
+          <p class="anat-val"><span>Offer</span> <b data-v="offer">USD 5.00</b> <span>Model draft</span> <b data-v="draft">14.6 s</b></p>
+          <p class="anat-more">Muscles: the merchant agent does the work, with proof, inside its owner's limits.</p>
+        </article>
       </div>
-      <div class="anat-card">
-        <h3>What each layer did to PP-R-ISN-10198775</h3>
-        <ol class="anat-lines">
-          <li><b>1</b><span></span></li><li><b>2</b><span></span></li><li><b>3</b><span></span></li>
-          <li><b>4</b><span></span></li><li><b>5</b><span></span></li><li><b>6</b><span></span></li>
-        </ol>
+
+      <div class="anat-center">
+        <svg class="anat-fig" viewBox="0 0 360 540" role="group" aria-label="The assembled Clearwake unit: six stacked layers, one case, USD 5.00 paid once">
+          <line class="anat-thread" x1="180" y1="6" x2="180" y2="534"/>
+          <circle class="anat-pin" cx="180" cy="6" r="4"/><circle class="anat-pin" cx="180" cy="534" r="4"/>
+          <g class="slab s1 k-skel" data-layer="1" tabindex="0" role="button" aria-label="Layer 1, Owner's spoken rules, skeleton"><g transform="translate(0 60)"><use href="#slab"/><g class="glyph"><use href="#g1" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="1"><circle cx="60" cy="8" r="13"/><text x="60" y="8">1</text></g></g></g>
+          <g class="slab s2 k-musc" data-layer="2" tabindex="0" role="button" aria-label="Layer 2, Buyer agent, muscles"><g transform="translate(0 138)"><use href="#slab"/><g class="glyph"><use href="#g2" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="2"><circle cx="60" cy="8" r="13"/><text x="60" y="8">2</text></g></g></g>
+          <g class="slab s3 k-musc" data-layer="3" tabindex="0" role="button" aria-label="Layer 3, Merchant agent, muscles"><g transform="translate(0 216)"><use href="#slab"/><g class="glyph"><use href="#g3" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="3"><circle cx="60" cy="8" r="13"/><text x="60" y="8">3</text></g></g></g>
+          <g class="slab s4 k-skel" data-layer="4" tabindex="0" role="button" aria-label="Layer 4, Policy gate, skeleton"><g transform="translate(0 294)"><use href="#slab"/><g class="glyph"><use href="#g4" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="4"><circle cx="300" cy="8" r="13"/><text x="300" y="8">4</text></g></g></g>
+          <g class="slab s5 k-skin" data-layer="5" tabindex="0" role="button" aria-label="Layer 5, Signed receipts chain, skin and seal"><g transform="translate(0 372)"><use href="#slab"/><g class="glyph"><use href="#g5" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="5"><circle cx="300" cy="8" r="13"/><text x="300" y="8">5</text></g></g></g>
+          <g class="slab s6 k-heart" data-layer="6" tabindex="0" role="button" aria-label="Layer 6, PayPal's record, heart and blood"><g transform="translate(0 450)"><use href="#slab"/><g class="glyph"><use href="#g6" x="-30" y="-26" width="60" height="40" transform="translate(180 0) matrix(.95 .55 -.95 .55 0 0)"/></g><g class="anc" data-anc="6"><circle cx="300" cy="8" r="13"/><text x="300" y="8">6</text></g></g></g>
+          <g class="anat-bead st0"><rect x="108" y="-13" width="144" height="26" rx="13"/><text x="180" y="0">Case 3 &middot; USD 5.00</text></g>
+        </svg>
+
+        <div class="anat-switch" role="group" aria-label="Layer switch">
+          <button type="button" class="anat-view" data-view="all" aria-pressed="true">All layers</button>
+          <button type="button" class="anat-view" data-view="rules" aria-pressed="false">Rules only (skeleton)</button>
+          <button type="button" class="anat-view" data-view="agents" aria-pressed="false">Agents only (muscles)</button>
+          <button type="button" class="anat-view" data-view="receipts" aria-pressed="false">Receipts only (skin)</button>
+          <button type="button" class="anat-view" data-view="paypal" aria-pressed="false">PayPal only (heart)</button>
+        </div>
         <p class="anat-cap" aria-live="polite"></p>
-        <div class="anat-ctl"><button class="btn anat-replay" type="button">Replay</button><a class="btn" href="receipts/manifest.json">Open the signed receipts</a></div>
+        <div class="anat-ctl"><button class="btn anat-replay" type="button">Replay the dispute</button><button class="btn anat-open" type="button" aria-pressed="false">Explode</button><a class="btn" href="receipts/manifest.json">Open the signed receipts</a></div>
       </div>
+
+      <div class="anat-col anat-right" role="list" aria-label="Layers 4 to 6">
+        <article class="anat-part k-skel" id="part-4" data-layer="4" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g4"/></svg><span class="anat-num">4</span><span class="anat-meta">Skeleton</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="4">Policy gate</button></h3>
+          <p class="anat-one">It checks every action before money moves, so nothing goes outside the rules.</p>
+          <p class="anat-val"><span>Proposed</span> <b data-v="proposed">settle_by_offer</b> <span>Decided</span> <b data-v="decided">settle_by_offer</b> <span>Overridden</span> <b data-v="overridden">no</b></p>
+          <p class="anat-more">Skeleton: nothing moves outside it. A wrong action stops here, before money moves.</p>
+        </article>
+        <article class="anat-part k-skin" id="part-5" data-layer="5" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g5"/></svg><span class="anat-num">5</span><span class="anat-meta">Skin and seal</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="5">Signed receipts chain</button></h3>
+          <p class="anat-one">Each step is signed, and each receipt checks the one before it.</p>
+          <p class="anat-val"><span>Policy hash</span> <b class="anat-id" data-v="hash">4ff70bb8a4df</b> <span>Offer receipt</span> <b data-v="line">line 28</b></p>
+          <p class="anat-more">Skin and seal: a chain of signed receipts anyone can verify offline against one dispute id.</p>
+        </article>
+        <article class="anat-part k-heart" id="part-6" data-layer="6" role="listitem">
+          <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g6"/></svg><span class="anat-num">6</span><span class="anat-meta">Heart and blood</span></header>
+          <h3><button type="button" class="anat-pick" data-layer="6">PayPal's record</button></h3>
+          <p class="anat-one">PayPal's record is the judge, and nothing counts until the receipts match it.</p>
+          <p class="anat-val"><b data-v="status">RESOLVED at INQUIRY</b> <span>Refund</span> <b data-v="refund">USD 5.00</b> <span>Fee</span> <b data-v="fee">USD 0.00</b></p>
+          <p class="anat-more">Heart and blood: PayPal's record is the judge, and the money is what is counted.</p>
+        </article>
+      </div>
+      <svg class="anat-leaders" aria-hidden="true" focusable="false"></svg>
     </div>
   </section>
 
