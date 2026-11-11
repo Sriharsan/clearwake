@@ -106,14 +106,14 @@ Start the local console first (`python -m clearwake --port 8810`). The snippet m
 ## After Step B
 
 1. Put the portal link and the SDK snippet on the Developers page. Agent C owns `site/developers.html`; the exact lines are below.
-2. Fill `[APIMATIC_PORTAL_URL]` and the APIMatic answer in `docs/DEVPOST_FORM.md`.
+2. The portal link `https://clearwake-api.vercel.app` is filled in `docs/DEVPOST_FORM.md`; add your own APIMatic words there.
 3. Run `python openapi/check_openapi.py --live` after any change to the console routes. It compares the spec with `clearwake/server.py` and fails when they differ.
 
 ## Developers page lines (for agent C's pass)
 
 * Section title: `API reference and SDKs`
 * Body line: `The console API is described in OpenAPI 3.1. Download the spec, open the API portal, or generate a client with APIMatic.`
-* Links in this order: `OpenAPI spec (YAML)` to `https://github.com/Sriharsan/clearwake/blob/main/openapi/clearwake-console.openapi.yaml`; `API portal` to `[APIMATIC_PORTAL_URL]`; `Postman collection` to `https://github.com/Sriharsan/clearwake/blob/main/postman/clearwake-paypal.postman_collection.json`.
+* Links in this order: `OpenAPI spec (YAML)` to `https://github.com/Sriharsan/clearwake/blob/main/openapi/clearwake-console.openapi.yaml`; `API portal` to `https://clearwake-api.vercel.app`; `Postman collection` to `https://github.com/Sriharsan/clearwake/blob/main/postman/clearwake-paypal.postman_collection.json`.
 * Code block: the Python SDK snippet above, once it has run.
 * The spec and Postman links can go in now. Add the portal link and the snippet only after the portal exists and the snippet has run.
 
