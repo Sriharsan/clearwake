@@ -4,6 +4,10 @@ Every document in `docs/`, grouped by what a reader needs it for. Back to the [R
 
 ## Start here
 
+The result in one line: on a real PayPal sandbox run, 4 of 10 agent bought item not received disputes settled at INQUIRY with no fee, 0 double refunds, 3 pending with PayPal, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate, and 4 cases moved by PayPal to CHARGEBACK. The run file is `data/runs/batch-sandbox-20261111-132948.json`.
+
+Tags used on every page: **Real PayPal sandbox run**, **Planted failure**, **Verified in your browser**, **Local run**.
+
 * [RESULTS.md](RESULTS.md): every measured number, by case and by run file.
 * [SANDBOX_RUN.md](SANDBOX_RUN.md): the real PayPal sandbox runs with their ids.
 * [BASELINE.md](BASELINE.md): an agent using PayPal's Agent Toolkit directly versus Clearwake over 200 episodes.
@@ -35,8 +39,8 @@ Every document in `docs/`, grouped by what a reader needs it for. Back to the [R
 
 ## Developer tools: Postman, OpenAPI, APIMatic, MCP guard
 
-* [POSTMAN.md](POSTMAN.md): the collection of every PayPal call Clearwake makes, with tests on PayPal's responses. Run record: [postman-run-2026-11-11.json](postman-run-2026-11-11.json).
-* [APIMATIC.md](APIMATIC.md): the OpenAPI 3.1 spec, SDK, portal and Context Plugin review.
+* [POSTMAN.md](POSTMAN.md): the collection of 29 requests (11 local attack suite, 18 PayPal sandbox), with tests on PayPal's responses. Run record: [postman-run-2026-11-11.json](postman-run-2026-11-11.json).
+* [APIMATIC.md](APIMATIC.md): the OpenAPI 3.1 spec, CLI validation from 382 findings to 104, Python SDK 0.6.1 and the static portal.
 * [RENDER.md](RENDER.md): hosting the live console on Render.
 * [MCP_GUARD.md](MCP_GUARD.md): run the guard in front of `@paypal/mcp`.
 * The OpenAPI spec is `openapi/clearwake-console.openapi.yaml` and the collection is `postman/clearwake-paypal.postman_collection.json`.
@@ -46,8 +50,9 @@ Every document in `docs/`, grouped by what a reader needs it for. Back to the [R
 * [PLAIN_WORDS_RULES.md](PLAIN_WORDS_RULES.md): rules said once in plain words, read back, checked by code, signed.
 * [VOICE.md](VOICE.md): local Whisper for the merchant, phone mode, QR code, measured word error.
 
-## Study notes
+## Submission texts and notes
 
 * [DEVPOST_FORM.md](DEVPOST_FORM.md): the ready answers for each Devpost field.
+* [../SUBMISSION_PAYPAL.md](../SUBMISSION_PAYPAL.md) and [../VIDEO_SCRIPT.md](../VIDEO_SCRIPT.md): the submission notes and the video script.
 * [THIRD_PARTY.md](THIRD_PARTY.md): third party work, licences and versions. UI assets: [THIRD_PARTY_UI.txt](THIRD_PARTY_UI.txt).
 * [REFERENCES.md](REFERENCES.md) and [SOURCES.md](SOURCES.md): the reading behind the design.

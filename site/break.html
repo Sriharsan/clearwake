@@ -61,7 +61,7 @@
     <pre class="codeblock" tabindex="0"><code>from clearwake.toolkit_guard import guard
 api = guard(paypal_tools, reader=paypal_reader)
 api.accept_dispute_claim(dispute_id, note)</code></pre>
-    <p>The guard reads PayPal's record, takes the amount from it and from the signed policy, refuses what is above the limit, gives every money move one request id, and writes a receipt for every call. It covers what <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_FAILURE_CASES.md">the toolkit failure page</a> records, and it is not a PayPal product. <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md">Read the guard's page</a>.</p>
+    <p>The guard reads PayPal's record, takes the amount from it and from the signed policy, refuses what is above the limit, gives every money move one request id, and writes a receipt for every call. It covers what <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_FAILURE_CASES.md">the toolkit failure page</a> records, and Clearwake built it as an independent guard. <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md">Read the guard's page</a>.</p>
   </section>
   <noscript><p class="note">This page needs JavaScript to show the recorded episodes and to verify receipts in your browser.</p></noscript>
 </main>

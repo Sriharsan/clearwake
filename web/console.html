@@ -14,22 +14,21 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to the screen</a>
-<header class="top">
-  <a class="brand" href="/console#buyer" aria-label="Clearwake console home">Clearwake<span class="brand-sub">Control Room</span></a>
-  <nav class="tabs" aria-label="Screens">
-    <a class="tab" href="#buyer" data-screen="buyer"><span class="tab-num">1</span><span class="tab-full">Buyer agent</span><span class="tab-short" aria-hidden="true">Buyer</span></a>
-    <a class="tab" href="#merchant" data-screen="merchant"><span class="tab-num">2</span><span class="tab-full">Merchant control room</span><span class="tab-short" aria-hidden="true">Merchant</span></a>
-    <a class="tab" href="#verify" data-screen="verify"><span class="tab-num">3</span><span class="tab-full">Receipt verifier</span><span class="tab-short" aria-hidden="true">Verifier</span></a>
-    <a class="tab" href="/voice"><span class="tab-num">4</span><span class="tab-full">Voice</span><span class="tab-short" aria-hidden="true">Voice</span></a>
-  </nav>
-  <div class="top-meta">
-    <span class="pill rehearsal" id="mode-pill">Local run on the local provider</span>
-    <span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: loading</span>
-    <button class="theme" type="button" aria-label="Switch to the light theme">Light</button>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="/console#buyer" aria-label="Clearwake console home">Clearwake</a>
+    <nav class="tabs" aria-label="Screens">
+      <a class="tab" href="#buyer" data-screen="buyer"><span class="tab-full">Buyer agent</span><span class="tab-short" aria-hidden="true">Buyer</span></a>
+      <a class="tab" href="#merchant" data-screen="merchant"><span class="tab-full">Control Room</span><span class="tab-short" aria-hidden="true">Merchant</span></a>
+      <a class="tab" href="#verify" data-screen="verify"><span class="tab-full">Receipt verifier</span><span class="tab-short" aria-hidden="true">Verifier</span></a>
+      <a class="tab" href="/voice"><span class="tab-full">Voice</span><span class="tab-short" aria-hidden="true">Voice</span></a>
+    </nav>
+    <button class="theme" type="button" aria-label="Switch to the light theme"><svg class="ico sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6"/></svg><svg class="ico moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 14.2A8.5 8.5 0 0 1 9.8 4a8.5 8.5 0 1 0 10.2 10.2z"/></svg></button>
   </div>
 </header>
 
-<main id="main" tabindex="-1">
+<main id="main" class="wrap" tabindex="-1">
+  <div class="status-row"><span class="pill rehearsal" id="mode-pill">Local run on the local provider</span><span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: loading</span></div>
   <a class="phone-go button primary" href="#merchant">Run a case</a>
   <dl class="lead-numbers" id="lead-numbers" aria-label="Measured numbers from the run files" hidden></dl>
   <p class="hosted-line" id="hosted-line" hidden>Hosted on Render, local provider. The real PayPal sandbox runs are in the ledger below, recorded.</p>
@@ -39,7 +38,7 @@
   <section id="screen-buyer" class="screen" aria-labelledby="buyer-title" hidden>
     <div class="screen-head">
       <div><p class="eyebrow">Buyer agent</p><h1 id="buyer-title">Spend only inside the owner's mandate.</h1></div>
-      <p class="screen-note">The agent may only name a product. The mandate check reads numbers and ids, never the agent's words. Every purchase it allows gets a signed receipt. No PayPal checkout runs here.</p>
+      <p class="screen-note">The agent names a product and nothing more. The mandate check reads numbers and ids, never the agent's words. Every purchase it allows gets a signed receipt, and no PayPal checkout is called from this screen.</p>
     </div>
     <div class="buyer-grid">
       <article class="card mandate" aria-labelledby="mandate-title">
@@ -119,12 +118,12 @@
   <section id="screen-merchant" class="screen" aria-labelledby="merchant-title" hidden>
     <div class="screen-head">
       <div><p class="eyebrow">Merchant control room</p><h1 id="merchant-title">Every refund held to its limit and its record.</h1></div>
-      <p class="screen-note">A local provider in a data folder plays PayPal, and every record here comes from it. The flow is the one the sandbox run uses: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
+      <p class="screen-note">The local provider keeps PayPal's records in a data folder, and every record here comes from it. The flow matches the sandbox run: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
     </div>
 
     <section class="card rules-say" aria-labelledby="rules-title">
       <h2 id="rules-title" class="card-title">Say your rules</h2>
-      <p class="card-sub">Write the rules in your own words. Clearwake turns them into a policy, reads them back in plain words, and nothing takes effect until you press Confirm. Typed on purpose: browser speech recognition sends audio to a cloud service, and these rules stay on this machine.</p>
+      <p class="card-sub">Write the rules in your own words, or speak them on the <a href="/voice">Voice page</a>. Clearwake turns them into a policy, reads them back in plain words, and nothing takes effect until you press Confirm.</p>
       <div class="rules-row">
         <label for="rules-role" class="sr-only">Whose rules</label>
         <select id="rules-role" class="rules-role"><option value="merchant">My shop's rules</option><option value="buyer">My buying agent's rules</option></select>
@@ -193,7 +192,7 @@
         <h2 id="cases-title" class="card-title">Cases</h2>
         <p class="card-sub legend"><span class="node settled"></span>settled <span class="node unknown"></span>UNKNOWN, held <span class="node reversed"></span>refused or reversed <span class="node held"></span>waiting for a person</p>
         <ol class="case-list" id="case-list"></ol>
-        <div class="empty" id="cases-empty"><h3 class="empty-title">No cases yet</h3><p>Run case c for a refund under the limit, or e to see an UNKNOWN held and then reconciled.</p></div>
+        <div class="empty" id="cases-empty"><h3 class="empty-title">No cases yet</h3><p>Run a refund under the limit, or the case that leaves an UNKNOWN held and then reconciled.</p></div>
       </section>
 
       <div class="room-side">
@@ -202,12 +201,12 @@
           <label class="field-label" for="approver">Approver name</label>
           <input id="approver" maxlength="60" autocomplete="off" value="Sri (approver)">
           <ol class="inbox-list" id="inbox-list"></ol>
-          <p class="empty-line" id="inbox-empty">Nothing waiting. Case d puts a USD 3.50 refund here; k puts a dispute close to its deadline here.</p>
+          <p class="empty-line" id="inbox-empty">Nothing waiting. A USD 3.50 refund above the auto limit lands here, and so does a dispute close to its deadline.</p>
         </section>
         <section class="card disputes" aria-labelledby="disputes-title">
           <h2 id="disputes-title" class="card-title">Disputes</h2>
           <ol class="dispute-list" id="dispute-list"></ol>
-          <p class="empty-line" id="disputes-empty">No disputes yet. Cases i, j, k and l open local run disputes shaped like PayPal's Disputes API.</p>
+          <p class="empty-line" id="disputes-empty">No disputes yet. Four cases open local disputes shaped like PayPal's Disputes API.</p>
         </section>
       </div>
     </div>
@@ -236,7 +235,7 @@
         <button class="button small" type="button" id="export-csv">Export CSV for the accountant</button>
       </div>
       <div id="dispute-grid" class="ag-host" role="region" aria-label="Dispute ledger"></div>
-      <p class="empty-line" id="dispute-ledger-empty">No disputes yet. Case n settles one in conversation; i, j, k and l answer others.</p>
+      <p class="empty-line" id="dispute-ledger-empty">No disputes yet. One case settles a dispute in conversation, and four others answer disputes by policy.</p>
       <article class="detail" id="dispute-detail" aria-labelledby="detail-title" aria-live="polite" hidden>
         <h3 id="detail-title" class="mini-title">Dispute detail</h3>
         <dl class="facts" id="detail-facts"></dl>
@@ -252,7 +251,7 @@
   <section id="screen-verify" class="screen" aria-labelledby="verify-title" hidden>
     <div class="screen-head">
       <div><p class="eyebrow">Receipt verifier</p><h1 id="verify-title">Check every receipt in this browser.</h1></div>
-      <p class="screen-note">Uses WebCrypto Ed25519 and SHA-256 in this page, with the verdock-core verifier served from this machine. It needs no network once the page is open. It proves a log was not altered after it was written; it cannot prove every action was recorded or that the end was not cut off.</p>
+      <p class="screen-note">WebCrypto Ed25519 and SHA-256 run in this page, with the verdock-core verifier served from this machine. Once the page is open it needs no network. It proves a log was not altered after it was written. It does not prove that every action was recorded or that the end was not cut off.</p>
     </div>
 
     <div class="verify-grid">
@@ -287,6 +286,6 @@
     </section>
   </section>
 </main>
-<footer class="foot"><p>Loopback only. Default runs make no provider or model calls. An outcome is called verified only when it matches PayPal's own record. Local run outcomes are checked against the local provider record, so this console shows them as "matches local record".</p></footer>
+<footer class="foot"><div class="wrap"><p>Every run on this console reads and writes the local provider. An outcome is called verified only when it matches PayPal's own record, so local outcomes read "matches local record".</p></div></footer>
 </body>
 </html>

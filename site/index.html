@@ -59,7 +59,7 @@
     <div class="hud" id="hud">
       <div class="hud-bar">
         <p class="hud-title">THE CONVERSATION</p>
-        <p class="hud-tag">Recorded real sandbox batch, case 3, 11 Nov 2026</p>
+        <p class="hud-tag">Recorded real sandbox batch, case 3, 11 Nov 2026. Characters: illustration.</p>
         <div class="hud-ctl">
           <button class="hud-btn" type="button" id="hud-play" aria-label="Play the scene"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="i-play" d="M8 5.5v13l11-6.5z"/><path class="i-pause" d="M7.5 5.5v13M16.5 5.5v13"/></svg><span id="hud-play-t">Play</span></button>
           <button class="hud-btn" type="button" id="hud-replay" aria-label="Replay the scene from the start"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4.5 12a7.5 7.5 0 1 0 2.4-5.5M4.5 4.5v4h4"/></svg><span>Replay</span></button>
@@ -68,7 +68,7 @@
       <div class="hud-stage" id="hud-stage" aria-hidden="true">
         <div class="panels" id="panels">
           <section class="pn pn-owner" id="pn-owner">
-            <div class="pn-h"><span class="mk">OWNER</span><span class="st" id="owner-st">standing by</span></div>
+            <div class="pn-h"><div class="fig fig-owner" id="fg-owner" aria-hidden="true"></div><span class="mk">OWNER</span><span class="st" id="owner-st">standing by</span></div>
             <div class="voice" id="wave"></div>
             <div class="rrow" id="rr-buyer">
               <svg class="rr" viewBox="0 0 48 48" focusable="false"><circle class="rr-base" cx="24" cy="24" r="19"/><circle class="rr-spin" cx="24" cy="24" r="19" pathLength="100"/><path class="rr-tick" d="M15 24.5l6 6 12-13"/></svg>
@@ -80,14 +80,14 @@
             </div>
           </section>
           <section class="pn pn-buyer" id="pn-buyer">
-            <div class="pn-h"><span class="mk">BUYER AGENT</span><span class="st" id="buyer-st">watching</span></div>
+            <div class="pn-h"><div class="fig fig-buyer" id="fg-buyer" aria-hidden="true"></div><span class="mk">BUYER AGENT</span><span class="st" id="buyer-st">watching</span></div>
             <p class="it" id="b1"><span class="k">ORDER</span><b class="mono" data-f="order"></b><br>paid <b data-f="paid"></b>, no tracking on the order</p>
             <p class="it" id="b2"><span class="k">OPENS DISPUTE</span><b class="mono" data-f="dispute"></b><br>asks <b data-f="ask"></b> back</p>
             <p class="it" id="b3"><span class="k">CHECKS ITS OWN RULE</span>An order this agent placed, claim inside its amount. <b class="ok">Inside</b></p>
             <p class="it" id="b4"><span class="k">READS PAYPAL</span><b data-f="status"></b> at <b data-f="stage"></b>, refund <b data-f="refund"></b></p>
           </section>
           <section class="pn pn-merch" id="pn-merch">
-            <div class="pn-h"><span class="mk">MERCHANT AGENT</span><span class="st" id="merch-st">waiting</span></div>
+            <div class="pn-h"><div class="fig fig-merch" id="fg-merch" aria-hidden="true"></div><span class="mk">MERCHANT AGENT</span><span class="st" id="merch-st">waiting</span></div>
             <div class="tools">
               <p class="it tool" id="t1"><span class="k">TOOL</span>model.call<i class="tk" aria-hidden="true"></i></p>
               <p class="it tool" id="t2"><span class="k">TOOL</span>dispute.decision<i class="tk" aria-hidden="true"></i></p>

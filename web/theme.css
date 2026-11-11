@@ -80,3 +80,20 @@ dialog{box-shadow:0 30px 120px color-mix(in oklab,black 60%,transparent)}dialog:
 
 :root[data-theme="light"]{--cw-accent-text:color-mix(in oklab,var(--teal) 78%,black);--cw-warn-text:color-mix(in oklab,var(--amber) 62%,black);--cw-alert-text:color-mix(in oklab,var(--coral) 80%,black)}
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--cw-accent-text:color-mix(in oklab,var(--teal) 78%,black);--cw-warn-text:color-mix(in oklab,var(--amber) 62%,black);--cw-alert-text:color-mix(in oklab,var(--coral) 80%,black)}}
+
+/* Shared with site/base.css: the top bar, the sun and moon toggle and the body type, so the console reads as the same product. */
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--background);color:var(--foreground);font:400 1.0625rem/1.6 var(--font-sans);-webkit-font-smoothing:antialiased}
+.wrap{width:min(100% - 2rem,76rem);margin-inline:auto}
+.bar{position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--background) 88%,transparent);backdrop-filter:blur(10px)}
+.bar .wrap{display:flex;align-items:center;justify-content:space-between;height:4rem;gap:1rem}
+.bar .brand{font:400 1.6rem/1 var(--font-display);letter-spacing:-.03em;color:var(--foreground);text-decoration:none}
+.theme{display:grid;place-items:center;width:2.75rem;height:2.75rem;padding:0;border:1px solid var(--border);border-radius:50%;background:transparent;color:var(--foreground);cursor:pointer;font:inherit;transition:background .25s,border-color .25s}
+.theme:hover{background:var(--surface);border-color:var(--teal)}
+.theme .ico{grid-area:1/1;width:1.3rem;height:1.3rem;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:opacity .35s ease,transform .5s cubic-bezier(.2,.7,.2,1)}
+.theme .moon{opacity:0;transform:rotate(-70deg) scale(.5)}
+:root[data-theme="light"] .theme .sun{opacity:0;transform:rotate(70deg) scale(.5)}
+:root[data-theme="light"] .theme .moon{opacity:1;transform:none}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]) .theme .sun{opacity:0;transform:rotate(70deg) scale(.5)}:root:not([data-theme="dark"]) .theme .moon{opacity:1;transform:none}}
+:focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.theme .ico{transition:none}}

@@ -10,8 +10,9 @@
 
   var rows = [], stage = 'all', selected = null, api = null;
   var COLS = [
-    { field: 'case', headerName: 'Case', minWidth: 90, maxWidth: 110, pinned: 'left', cellClass: 'cell-b' },
-    { field: 'dispute', headerName: 'PayPal id', minWidth: 190, cellClass: 'cell-id' },
+    { field: 'what_text', headerName: 'What ran', minWidth: 320, pinned: 'left', cellClass: 'cell-b' },
+    { field: 'id_text', headerName: 'PayPal id', minWidth: 250, cellClass: 'cell-id' },
+    { field: 'date_text', headerName: 'Recorded', minWidth: 120 },
     { field: 'stage_text', headerName: 'Stage', minWidth: 120 },
     { colId: 'countdown', headerName: 'Deadline', minWidth: 150, cellClass: 'cell-id', valueGetter: function (p) { return L.deadlineOf(p.data, Date.now()); },
       cellClassRules: { 'cw-late': function (p) { return p.value === 'Deadline passed'; },
@@ -28,9 +29,16 @@
     { field: 'dispatch_text', headerName: 'Dispatch proof', minWidth: 280 }
   ];
 
+  var TITLES = { c: 'Refund under the limit', d: 'Refund above the approval line, approved', e: 'Lost reply, reconciled', m1: 'Refund before the network cut', m2: 'Refund held offline, then resumed', m3: 'Refund held offline, then resumed',
+    i: 'Item not received, tracking sent', n: 'Dispute settled by offer', o: 'Dispatch proof sent as evidence' };
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function titleOf(c) { var b = /^b(\d+)$/.exec(c); return TITLES[c] || (b ? 'Batch dispute ' + b[1] + ' of 10' : String(c)); }
+  function dateOf(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? (+m[3]) + ' ' + MONTHS[+m[2] - 1] + ' ' + m[1] : ''; }
+  function idOf(r) { return /^(refund of case|batch-sandbox)/.test(r.dispute || '') ? 'not written to the run file' : r.dispute; }
   function text(v) { return v === null || v === undefined || v === '' ? L.DASH : String(v); }
   function prepare(r) {
     return Object.assign({}, r, {
+      what_text: titleOf(r.case), id_text: text(idOf(r)), date_text: text(dateOf(r.recorded)),
       stage_text: r.kind === 'refund' ? 'Refund, no dispute' : text(r.stage), proposal_text: L.proposalOf(r), model_text: r.proposed ? text(r.model) : L.DASH,
       decided_text: text(L.plain(r.decided)), amount_text: text(r.amount), reason_text: text(L.readable(r.reason)), dispatch_text: text(r.dispatch), outcome: text(r.outcome)
     });
@@ -70,7 +78,7 @@
     selected = r ? r.dispute : null;
     $('row-detail').hidden = !r; $('detail-hint').hidden = !!r;
     if (!r) return;
-    var facts = [['PayPal id', r.dispute], ['Case', text(r.case)], ['Reason', text(L.readable(r.reason))], ['Amount', r.amount ? 'USD ' + r.amount : L.DASH], ['Stage', r.stage_text],
+    var facts = [['PayPal id', text(idOf(r))], ['What ran', titleOf(r.case)], ['Recorded', text(dateOf(r.recorded))], ['Reason', text(L.readable(r.reason))], ['Amount', r.amount ? 'USD ' + r.amount : L.DASH], ['Stage', r.stage_text],
       ['PayPal record', text(r.paypal_status)], ['Deadline', r.due ? r.due + ' (' + L.deadlineOf(r, Date.now()) + ')' : L.DASH],
       ['Model proposal', r.proposal_text + (r.proposed && r.model ? ', by ' + r.model : '')], ['Policy decision', r.decided_text], ['Outcome', r.outcome],
       ['Run', text(r.mode) + ', ' + text(r.recorded)]];

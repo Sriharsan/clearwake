@@ -179,7 +179,7 @@
     var h = el('h3', 'side-title', 'Change the buyer\'s sentence');
     h.id = 'h-inj';
     box.appendChild(h);
-    box.appendChild(el('p', 'side-note', 'This shows only what the guard\'s pattern check says about your text. The recorded money result above does not change, and it would not: no text is ever used as an amount.'));
+    box.appendChild(el('p', 'side-note', 'The pattern check reads your text. The recorded money result above stays the same, because the guard never takes an amount from text.'));
     var label = el('label', 'sr', 'Buyer message');
     label.setAttribute('for', 'inj-text');
     var area = el('textarea', 'inj-text');
@@ -193,7 +193,7 @@
       clear(read);
       read.appendChild(el('p', signals.length ? 'flag' : 'noflag', signals.length ? 'Pattern check: flagged (' + signals.join(', ') + '). The guard writes a receipt and changes nothing else.' : 'Pattern check: no pattern matched. The guard writes no flag for this text.'));
       read.appendChild(el('p', null, 'Amount named in the text: ' + (named.length ? named.map(usd).join(', ') + ', ignored' : 'none') + '. Amount the guard uses: ' + usd(real) + ', read from PayPal\'s record, then checked against the owner\'s limit of ' + usd(LIMIT) + '.'));
-      read.appendChild(el('p', 'mini-note', signals.length ? 'The flag is a warning for the owner. It is not what keeps the money safe.' : 'A sentence that no pattern matches is still held: the amount is above the limit, and the limit does not read text.'));
+      read.appendChild(el('p', 'mini-note', signals.length ? 'The flag warns the owner. The limit keeps the money safe.' : 'No pattern matched, and the amount is still held above the limit, because the limit does not read text.'));
     }
     area.addEventListener('input', paint);
     reset.addEventListener('click', function () { area.value = item.episode.message; paint(); });
@@ -237,7 +237,7 @@
     }
     box.appendChild(fig(usd(t.unguarded_overpaid_minor), 'coral', 'overpaid by the unguarded agent over all ' + t.episodes + ' attack episodes. The guarded agent: ' + usd(t.guarded_overpaid_minor) + '.'));
     box.appendChild(fig(String(t.unguarded_double_refunds), 'coral', 'double refunds, from lost responses and repeated deliveries. The guarded agent: ' + t.guarded_double_refunds + '.'));
-    box.appendChild(fig(t.held_for_person + ' of ' + t.episodes, 'teal', 'episodes the guard held for a person instead of paying. That is its cost: a person decides.'));
+    box.appendChild(fig(t.held_for_person + ' of ' + t.episodes, 'teal', 'episodes the guard held for a person instead of paying. A person decides each of those.'));
   }
 
   function start() {
@@ -245,7 +245,7 @@
     if (theme && !theme.textContent) theme.textContent = 'Light';
     fetch('data/break.json').then(function (r) { if (!r.ok) throw new Error('data'); return r.json(); }).then(function (data) {
       DATA = data; LIMIT = data.owner_limit_minor;
-      $('label').textContent = 'Recorded from the ' + data.episodes + ' episode run, seed ' + data.seed + ', on the ' + data.layer + '. No PayPal sandbox call, no real money.';
+      $('label').textContent = 'Recorded from the ' + data.episodes + ' episode run, seed ' + data.seed + ', on the ' + data.layer + '. Replayed with no PayPal call, and no money moves.';
       totals();
       Array.prototype.forEach.call(document.querySelectorAll('input[name="attack"]'), function (radio) {
         radio.addEventListener('change', function () { choose(radio.value); });

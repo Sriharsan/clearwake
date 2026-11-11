@@ -93,10 +93,56 @@
   var state = 'idle', run = 0, userPaused = false, autoPaused = false, D = null;
   var wave = $('wave'), core = $('core'), ring = doc.querySelector('.ring-wrap');
   var IDS = ['rr-buyer', 'rr-merch', 'b1', 'b2', 'b3', 'b4', 't1', 't2', 't3', 'm1', 'm2', 'm3', 'm4', 'chip3', 'chip5'];
+
+  /* ---------- the three characters: original vector figures, drawn here, no outside assets ---------- */
+  function figure(kind) {
+    var K = {
+      owner: {
+        back: '',
+        torso: '<path class="cos" d="M12 140C12 108 34 98 60 98s48 10 48 42z"/><path class="cos2" d="M44 100L60 130 38 140 26 112z"/><path class="cos2" d="M76 100L60 130 82 140 94 112z"/><path class="shirt" d="M50 99L60 126 70 99z"/><path class="tie" d="M57 104h6l2 5-5 17-5-17z"/><path class="lap" d="M44 100L56 118 52 99zM76 100L64 118 68 99z"/><g class="core"><path class="cglow" d="M80 119l6 6-6 6-6-6z"/><path class="cdia" d="M80 121.5l3.5 3.5-3.5 3.5-3.5-3.5z"/></g>',
+        hair: '<path class="hair" d="M38 56C34 30 50 20 62 20c14 0 22 12 20 36-2-8-5-14-9-16-8 4-22 5-30 2-3 3-4 9-5 14z"/><path class="grey" d="M38.5 56c0-5 1-9 3-12l2 2c-2 4-3 8-3 12zM81.5 56c0-5-1-9-3-12l-2 2c2 4 3 8 3 12z"/>',
+        brow: 'M45 48q5-3 10-1M65 47q5-2 10 1', extra: ''
+      },
+      buyer: {
+        back: '<path class="hair" d="M36 52C28 88 30 104 44 104h32c14 0 16-16 8-52z"/>',
+        torso: '<path class="cos" d="M12 140C12 108 34 98 60 98s48 10 48 42z"/><path class="cos2" d="M46 99L60 112 74 99 70 88H50z"/><path class="plate" d="M40 114L60 124 80 114 80 132 60 140 40 132z"/><path class="edge" d="M60 112v28M40 114L60 124 80 114"/><ellipse class="plate" cx="19" cy="110" rx="12" ry="9" transform="rotate(-25 19 110)"/><ellipse class="plate" cx="101" cy="110" rx="12" ry="9" transform="rotate(25 101 110)"/><path class="lt" d="M10 112q8-10 17-6M110 112q-8-10-17-6"/><path class="lt" d="M46 120h10M64 120h10"/>',
+        hair: '<path class="hair" d="M37 58C32 30 52 18 64 21c14 3 20 16 18 38-2-10-8-18-18-20-10 0-20 6-27 19z"/><circle class="sig sg" cx="39" cy="61" r="2.6"/>',
+        brow: 'M45 49q5-3 10-1M65 48q5-2 10 1', extra: ''
+      },
+      merch: {
+        back: '<circle class="hair" cx="60" cy="14" r="9"/>',
+        torso: '<path class="cos" d="M12 140C12 108 34 98 60 98s48 10 48 42z"/><path class="cos2" d="M44 100L56 138H38L30 112zM76 100l12 38H64z"/><path class="coll" d="M46 97L50 82h20l4 15-14 10z"/><path class="lt" d="M60 107l0 33"/><circle class="btn" cx="68" cy="116" r="1.8"/><circle class="btn" cx="68" cy="126" r="1.8"/><g class="core"><circle class="cglow" cx="46" cy="122" r="7"/><circle class="cdia" cx="46" cy="122" r="4.2"/></g>',
+        hair: '<path class="hair" d="M38 56C34 30 50 18 62 19c14 0 22 12 20 37-3-9-6-14-10-16-9 4-23 5-31 2-3 4-3 9-3 14z"/><circle class="sig sg" cx="81" cy="62" r="2.6"/>',
+        brow: 'M45 48q5-2 10 0M65 48q5-2 10 0', extra: ''
+      }
+    }[kind];
+    return '<svg viewBox="0 0 120 132" focusable="false" aria-hidden="true">' + K.back +
+      '<g class="body"><path class="neck" d="M52 78h16v26H52z"/>' + K.torso +
+      '<path class="slv" d="M20 106L24 138"/><path class="slv" d="M100 106L96 138"/>' +
+      '<g class="card"><rect x="42" y="102" width="36" height="28" rx="3"/><path d="M48 111h24M48 117h16M48 123h20"/></g>' +
+      '<g class="fa fa-l"><path class="slv" d="M24 138L45 152.7"/><circle class="hand" cx="45" cy="152.7" r="5.5"/></g>' +
+      '<g class="fa fa-r"><path class="slv" d="M96 138L75 152.7"/><circle class="hand" cx="75" cy="152.7" r="5.5"/></g></g>' +
+      '<g class="headg"><g class="head"><ellipse class="skin" cx="40" cy="60" rx="3.5" ry="5.5"/><ellipse class="skin" cx="80" cy="60" rx="3.5" ry="5.5"/><ellipse class="skin" cx="60" cy="58" rx="20" ry="25"/>' +
+      '<g class="feat"><g class="eyes"><ellipse class="sclera" cx="51" cy="57" rx="5" ry="3.6"/><ellipse class="sclera" cx="69" cy="57" rx="5" ry="3.6"/><g class="pup"><circle class="iris" cx="51" cy="57" r="2.4"/><circle class="iris" cx="69" cy="57" r="2.4"/></g></g>' +
+      '<path class="brow" d="' + K.brow + '"/><path class="nose" d="M60 59q-3 8 0 9h2"/>' +
+      '<path class="m-rest" d="M53 73q7 4 14 0"/><path class="m-glad" d="M52 72q8 8 16 0"/><ellipse class="m-open" cx="60" cy="73" rx="5" ry="3.2"/></g>' + K.hair + '</g>' +
+      '<g class="vl"><path d="M88 52q6 6 0 12M93 48q9 10 0 20M98 44q12 14 0 28"/></g></g></svg>';
+  }
+  var FIG = {};
+  ['owner', 'buyer', 'merch'].forEach(function (n) { var h = $('fg-' + n); if (h) { h.innerHTML = figure(n); FIG[n] = h; } });
+  /* who looks where: the speaker faces front, the others turn toward the speaker */
+  function lookAt(sp, glad) {
+    ['owner', 'buyer', 'merch'].forEach(function (n) {
+      var f = FIG[n]; if (!f) return;
+      var d = n === sp ? 'c' : (n === 'merch' ? 'l' : (sp === 'merch' ? 'r' : (n === 'owner' ? 'd' : 'u')));
+      f.className = f.className.replace(/\s*\b(look-\w|speaking|hold|gest)\b/g, '') + ' look-' + d +
+        (n === sp ? ' speaking' : '') + (n === sp && n !== 'owner' ? ' hold' : '') + (n === sp && n === 'owner' ? ' gest' : '') + (glad ? ' glad' : '');
+    });
+  }
   for (var k = 0; k < 30; k++) wave.appendChild(doc.createElement('i'));
 
   function on() { for (var i = 0; i < arguments.length; i++) $(arguments[i]).classList.add('on'); }
-  function active(name) { ['owner', 'buyer', 'merch'].forEach(function (n) { $('pn-' + n).classList.toggle('active', n === name); }); }
+  function active(name) { ['owner', 'buyer', 'merch'].forEach(function (n) { $('pn-' + n).classList.toggle('active', n === name); }); lookAt(name); }
   function cap(text, final) {
     capEl.textContent = text; capEl.classList.toggle('final', !!final);
     capEl.classList.remove('in'); void capEl.offsetWidth; capEl.classList.add('in');
@@ -119,7 +165,7 @@
   }
   function reset() {
     IDS.forEach(function (id) { $(id).classList.remove('on', 'signing', 'locked'); });
-    ['pn-owner', 'pn-buyer', 'pn-merch'].forEach(function (id) { $(id).classList.remove('active'); });
+    ['pn-owner', 'pn-buyer', 'pn-merch'].forEach(function (id) { $(id).classList.remove('active'); }); lookAt('owner');
     core.classList.remove('armed', 'done', 'flash'); ring.classList.remove('bus');
     wave.classList.remove('talk');
     ['say-buyer', 'say-merch', 'rc-id1', 'rc-id2', 'rc-state'].forEach(function (id) { $(id).textContent = ''; $(id).classList && $(id).classList.remove('typing'); });
@@ -151,11 +197,11 @@
       function () { cap('A proposal comes in. The rule decides.'); st('merch-st', 'proposing'); on('m1', 't2'); return sleep(1900); },
       function () { on('m2'); st('rc-state', 'OFFER ' + D.offer.replace('USD ', '')); return sleep(2000); },
       function () { st('merch-st', 'inside the limit'); cap('One offer, sent alone.'); on('t3', 'm3'); return sleep(1700); },
-      function () { cap('PayPal’s record reads ' + D.status + ' at ' + D.stage + '. No fee.'); active('merch'); st('merch-st', 'resolved'); on('m4'); core.classList.add('done', 'flash'); st('rc-state', D.status); return sleep(1600); },
+      function () { cap('PayPal’s record reads ' + D.status + ' at ' + D.stage + '. No fee.'); active('merch'); st('merch-st', 'resolved'); on('m4'); core.classList.add('done', 'flash'); lookAt('merch', true); st('rc-state', D.status); return sleep(1600); },
       function () { active('buyer'); st('buyer-st', 'resolved'); cap('The buyer agent reads the same record.'); on('b4'); return sleep(1700); },
       function () { cap('Two signed receipts, one dispute id.'); on('chip3'); return sleep(650); },
       function () { on('chip5'); return sleep(1700); },
-      function () { active('merch'); st('owner-st', 'not interrupted'); cap('Done. You were not asked.', true); setState('done'); return Promise.resolve(); }
+      function () { active('merch'); lookAt('owner', true); st('owner-st', 'not interrupted'); cap('Done. You were not asked.', true); setState('done'); return Promise.resolve(); }
     ]);
   }
   function start() {

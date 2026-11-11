@@ -85,3 +85,8 @@ main{padding-bottom:2rem}
 .use p{max-width:44rem}
 .note{max-width:44rem}
 .codeblock{max-width:44rem}
+
+/* readable body text and even section rhythm */
+body{font-size:1.0625rem;line-height:1.65}
+.note{font-size:1rem}
+.foot{margin-top:2.5rem}

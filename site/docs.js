@@ -45,6 +45,7 @@ function paint() {
   ro.btn.setAttribute('aria-pressed', String(tamperAt === cur));
   const a = links[cur], c = a.closest('.chain');
   if (c && c.scrollWidth > c.clientWidth) c.scrollLeft = a.parentElement.offsetLeft - 60;
+  if (c && c.scrollHeight > c.clientHeight + 1) { const t = a.parentElement.offsetTop; if (t < c.scrollTop + 4 || t + 44 > c.scrollTop + c.clientHeight) c.scrollTop = Math.max(0, t - c.clientHeight / 2); }
 }
 async function init() {
   if (!(window.crypto && crypto.subtle)) { ro.h.textContent = 'unavailable'; return; }
@@ -155,7 +156,7 @@ const items = [
   ...$$('.ep').map(e => ({ k: 'Endpoint', l: e.dataset.title, go: () => { location.hash = '#' + e.id; e.scrollIntoView(); } })),
   ...errs.map(e => ({ k: 'Error', l: e.dataset.title, go: () => { errq.value = e.dataset.title; filterErrs(); location.hash = '#errors'; $('#errors').scrollIntoView(); } })),
   { k: 'Action', l: 'Switch theme', go: () => $('.theme').click() },
-  { k: 'Action', l: 'Verify the case n log', go: () => { location.hash = '#vcard'; $('#vcard').scrollIntoView(); } }
+  { k: 'Action', l: 'Verify the settled by offer log', go: () => { location.hash = '#vcard'; $('#vcard').scrollIntoView(); } }
 ];
 let shown = [], sel = 0, opener = null;
 function renderPal() {
