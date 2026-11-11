@@ -24,7 +24,7 @@ changes only the Relayloom README; the reused code is the same.
 | Payment case/evidence UI | web/*, clearwake/server.py | Real HTTP asset tests and offline UI state tests; rendered acceptance separately recorded |
 | Runnable CLI and pinned public-core extension | clearwake/__main__.py, __init__.py, server.py | Clean-checkout command, real loopback HTTP/core boundary tests |
 | Optional local AI | clearwake/local_ai.py, tests/test_local_ai.py | Parent-owned addition; its actual evidence is recorded separately, not inferred here |
-| Repeatable local run on the local provider (30 October) | DEMO.md, demo.ps1, scripts/check_demo.*, scripts/show_provider_record.py | Four local run cases PASS through the real controller and the local gateway; UI steps 1 to 3 clicked through on loopback. No sandbox call |
+| Repeatable local run on the local provider (30 October) | START.md, run.ps1, scripts/check_run.*, scripts/show_provider_record.py | Four local run cases PASS through the real controller and the local gateway; UI steps 1 to 3 clicked through on loopback. No sandbox call |
 
 The payment UI is injected into the pinned base HTML; three reviewed runtime
 hooks publish state/session/clear events. Source anchors are checked so an

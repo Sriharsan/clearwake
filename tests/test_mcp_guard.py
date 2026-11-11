@@ -80,7 +80,7 @@ def verify(session):
 class McpGuardTests(unittest.TestCase):
     def test_initialize_and_tools_list_are_forwarded_unchanged(self):
         s = Session(self)
-        direct = subprocess.run([sys.executable, "-m", "clearwake.mcp_fake_upstream", "--state", str(s.dir / "direct.json")], cwd=ROOT, capture_output=True,
+        direct = subprocess.run([sys.executable, "-m", "clearwake.mcp_local_upstream", "--state", str(s.dir / "direct.json")], cwd=ROOT, capture_output=True,
                                 input=b'{"jsonrpc":"2.0","id":1,"method":"tools/list"}\n')
         want = json.loads(direct.stdout.splitlines()[0])["result"]["tools"]
         got = s.rpc("tools/list")["result"]["tools"]

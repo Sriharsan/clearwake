@@ -115,7 +115,7 @@ No keys needed. Without keys the console is a **Local run** on the local provide
 
 * **Break it page.** https://clearwake-mu.vercel.app/break replays the recorded episodes in your browser: pick an attack, press Run, see both outcomes, and verify the guarded receipts.
 * **Render console.** https://clearwake-console.onrender.com/console, hosted, the AG Grid dispute ledger and the fee leak gauge. It is not network isolated.
-* **Local run.** `python -m clearwake --port 8810`, then `/console`. Windows: `.\demo.ps1`. macOS or Linux: `./demo.sh`. The network cut run (case m) needs Docker: `python scripts/airgap.py`.
+* **Local run.** `python -m clearwake --port 8810`, then `/console`. Windows: `.\run.ps1`. macOS or Linux: `./run.sh`. The network cut run (case m) needs Docker: `python scripts/airgap.py`.
 * **Phone.** Scan the QR code on the site Home page to open the hosted console, or speak to the local one with `python -m clearwake --phone`, which prints a link and a QR code ([docs/VOICE.md](docs/VOICE.md)).
 
 Cases, one command each:

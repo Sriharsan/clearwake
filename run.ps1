@@ -1,7 +1,7 @@
 # One command demo: starts the Clearwake rehearsal server and opens it in the browser.
 # Rehearsal only: fake provider, synthetic records, no network or model calls.
-# Usage: .\demo.ps1                 (normal refund, steps 1 and 4)
-#        .\demo.ps1 -Outcome lost-response   (steps 2 and 3)
+# Usage: .\run.ps1                 (normal refund, steps 1 and 4)
+#        .\run.ps1 -Outcome lost-response   (steps 2 and 3)
 param(
     [ValidateSet("completed", "pending", "lost-response")]
     [string]$Outcome = "completed",

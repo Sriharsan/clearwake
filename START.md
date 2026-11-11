@@ -13,7 +13,7 @@ py -3.12 -m venv .venv
 No package install is needed. Check all four cases before recording:
 
 ```powershell
-.\scripts\check_demo.ps1
+.\scripts\check_run.ps1
 ```
 
 It prints PASS or FAIL for each step below and exits non zero on any FAIL.
@@ -23,7 +23,7 @@ It prints PASS or FAIL for each step below and exits non zero on any FAIL.
 ### 1. A refund under the limit succeeds and is checked against the record
 
 ```powershell
-.\demo.ps1
+.\run.ps1
 ```
 
 Opens http://127.0.0.1:8810 on a fresh case.
@@ -41,16 +41,16 @@ Opens http://127.0.0.1:8810 on a fresh case.
 Stop the server (Ctrl+C), then:
 
 ```powershell
-.\demo.ps1 -Outcome lost-response
+.\run.ps1 -Outcome lost-response
 ```
 
 1. Repeat clicks 1 to 5 from step 1.
 2. Click **Simulate one refund**. The provider recorded the refund but its reply was lost. **Provider outcome** shows **unknown** and the page says the request identity stays held until a known provider record is checked.
-3. Point at **Simulate one refund**: it is now disabled. Nothing can be resent from here, and the server refuses a second send for the same capture (`check_demo.ps1` step 2 checks this).
+3. Point at **Simulate one refund**: it is now disabled. Nothing can be resent from here, and the server refuses a second send for the same capture (`check_run.ps1` step 2 checks this).
 
 ### 3. Reconciliation resolves the UNKNOWN to its true state
 
-Keep the step 2 server running. In a second terminal, read the fake provider's own record (the demo folder is printed when `demo.ps1` starts, as `data\demo-lost-response-<time>`):
+Keep the step 2 server running. In a second terminal, read the fake provider's own record (the demo folder is printed when `run.ps1` starts, as `data\demo-lost-response-<time>`):
 
 ```powershell
 .\.venv\Scripts\python.exe scripts\show_provider_record.py data\demo-lost-response-<time>
@@ -64,7 +64,7 @@ Keep the step 2 server running. In a second terminal, read the fake provider's o
 The case is fixed at USD 1.00 with a hard cap of USD 5.00. The page has no way to type another amount, so show this step from the check:
 
 ```powershell
-.\scripts\check_demo.ps1
+.\scripts\check_run.ps1
 ```
 
 Point at line 4: a USD 6.00 case is refused at setup, a USD 6.00 send is refused, and nothing is reserved or sent.

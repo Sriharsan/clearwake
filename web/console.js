@@ -445,7 +445,7 @@ function exportCsv() {
 // The extra tile is this console's own state: the signed logs it holds, checked in this browser with WebCrypto.
 async function loadTotals() {
   try {
-    const t = await call('/console/api/tally');
+    const t = await (await fetch('/batch-tally.json', { credentials: 'same-origin' })).json();
     if (t.batch && Array.isArray(t.batch.items) && t.batch.items.length) {
       $('tally-batch-tag').textContent = t.batch.tag;
       $('tally-batch-src').textContent = t.batch.source;

@@ -229,9 +229,6 @@ def public_numbers(found):
         out.append({"value": f"{len(done)} of {len(inside)}",
                     "label": f"settled at INQUIRY with no fee: every dispute inside the owner's limit that stayed at INQUIRY, USD {sm.get('refunds_confirmed_total', '0.00')} refunded",
                     "source": src, "mode": "real PayPal sandbox"})
-        out.append({"value": f"{sm.get('settled_inquiry_no_fee', 0)} of {n}",
-                    "label": f"settled at INQUIRY with no fee out of all ten, USD {sm.get('refunds_confirmed_total', '0.00')} refunded; the other six are counted on the Control Room",
-                    "source": src, "mode": "real PayPal sandbox"})
     path, ev = newest("ai-eval-*.json")
     if ev and ev.get("totals"):
         model, t = next(iter(ev["totals"].items()))

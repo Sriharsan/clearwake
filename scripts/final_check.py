@@ -26,7 +26,7 @@ ALLOW LISTS (everything the scans skip is named here, with the reason)
                 contain a placeholder marker (your, xxx, example, placeholder, changeme, redacted, <) are skipped. Names that say
                 public, hash, digest, signature or sha are skipped: those hold public keys and checksums.
   Word scan     ALLOW_PHRASES: the prize name. QUOTE_FILES: quoted third party text in the named docs (blockquote lines and
-                quoted spans). IDENT rule: a word inside a file name, path, flag, code identifier or option (demo.ps1, check_demo.py,
+                quoted spans). IDENT rule: a word inside a file name, path, flag, code identifier or option (run.ps1, check_run.py,
                 --rehearsal) is a technical identifier and is skipped. Fenced code blocks in Markdown are commands and output, not
                 prose, so words and exclamation marks are not checked there (dashes still are). Vendor files, fonts and
                 docs/FINAL_CHECK.md (it names the rules it checks) are not scanned. The word 'unguarded' is the baseline run's own

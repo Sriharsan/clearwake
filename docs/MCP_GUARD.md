@@ -1,6 +1,6 @@
 # MCP guard: Clearwake between your agent and PayPal's MCP server
 
-One line of labelling: the outcomes on this page are measured on a local run with a local PayPal MCP server that answers with the real tool names and result shapes (`clearwake/mcp_fake_upstream.py`). The guard was not run against the live PayPal MCP server.
+One line of labelling: the outcomes on this page are measured on a local run with a local PayPal MCP server that answers with the real tool names and result shapes (`clearwake/mcp_local_upstream.py`). The guard was not run against the live PayPal MCP server.
 
 `clearwake/mcp_guard.py` is a stdio proxy. Any MCP client (Claude, ChatGPT, an agent framework) talks to it as it would to PayPal's server. It starts the real server as a child, forwards everything, and applies the signed policy (`policy/merchant.yaml`) to the money moving tools. It is Clearwake's own code and not a PayPal product.
 
@@ -50,4 +50,4 @@ A refund of 1.50 on a capture, the response lost after PayPal applied it, the ag
 - The injection pattern check is a flag, not the defence. A sentence no pattern matches is still limited by the amount rule.
 - It holds what is above the limit for a person. It does not settle by offer or send evidence: PayPal's MCP server has no tool for either.
 
-Files: `clearwake/mcp_guard.py`, `clearwake/mcp_fake_upstream.py`, `tests/test_mcp_guard.py`, `examples/mcp_config.json`, `docs/PAYPAL_MCP_TOOLS.md`, `docs/paypal_mcp_tools.json`.
+Files: `clearwake/mcp_guard.py`, `clearwake/mcp_local_upstream.py`, `tests/test_mcp_guard.py`, `examples/mcp_config.json`, `docs/PAYPAL_MCP_TOOLS.md`, `docs/paypal_mcp_tools.json`.

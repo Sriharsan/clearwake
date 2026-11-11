@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
 # One command demo: starts Clearwake on http://127.0.0.1:8810 with a fresh database.
-# Rehearsal by default (fake provider, invented records). Usage: ./demo.sh [completed|pending|lost-response]
+# Rehearsal by default (fake provider, invented records). Usage: ./run.sh [completed|pending|lost-response]
 cd "$(dirname "$0")" || exit 1
 OUTCOME="${1:-completed}"
 PY=.venv/bin/python; [ -x "$PY" ] || PY=python3

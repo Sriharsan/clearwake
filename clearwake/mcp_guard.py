@@ -468,7 +468,7 @@ def main(argv=None):
     p.add_argument("--data-dir", default=".clearwake-mcp-guard", help="ledger, approvals and signed receipts")
     p.add_argument("--timeout", type=float, default=None, help="seconds to wait for PayPal's server on one call (default 60; 3 with --dry-run)")
     p.add_argument("--strict", action="store_true", help="hold money tools the policy has no operation for")
-    p.add_argument("--dry-run", action="store_true", help="use the local PayPal MCP stand-in (clearwake.mcp_fake_upstream) instead of a command")
+    p.add_argument("--dry-run", action="store_true", help="use the local PayPal MCP stand-in (clearwake.mcp_local_upstream) instead of a command")
     p.add_argument("--fake-state", default=None, help="state file of the local stand-in (--dry-run)")
     p.add_argument("--fake-fault", default="", help="drop_answer:N, the stand-in applies the next N money moves and loses the answer (--dry-run)")
     p.add_argument("--by", default=None, help="who decides (approve, reject)")
@@ -492,7 +492,7 @@ def main(argv=None):
         print(f"{args.action}d {args.target}")
         return 0
     if args.dry_run:
-        command = [sys.executable, "-m", "clearwake.mcp_fake_upstream", "--tools=all"]
+        command = [sys.executable, "-m", "clearwake.mcp_local_upstream", "--tools=all"]
         if args.fake_state:
             command += ["--state", args.fake_state]
         if args.fake_fault:

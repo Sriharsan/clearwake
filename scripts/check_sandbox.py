@@ -18,7 +18,7 @@ from clearwake import envfile  # noqa: E402
 from clearwake.controller import RefundCase  # noqa: E402
 from clearwake.paypal import GatewayError, SandboxGateway  # noqa: E402
 from relayloom.controller import Rejected  # noqa: E402
-from check_demo import Case  # noqa: E402
+from check_run import Case  # noqa: E402
 
 
 class CountingGateway:

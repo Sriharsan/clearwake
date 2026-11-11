@@ -76,50 +76,144 @@ $('g-form').addEventListener('submit', e => e.preventDefault());
 })();
 gauge();
 
-/* ---- pull the cable: case m, recorded real sandbox ---- */
+/* ---- pull the cable: case m, recorded real sandbox. Refund ids and amounts come from data/ledger.json, request ids from the signed receipts. ---- */
 (function cable() {
   const svg = $('cable-svg'), plug = $('plug'), path = $('cable-path'), sec = $('cable');
-  const OUT = 490, CUT = 140;
-  let x = OUT, cut = false, retried = false, drag = false, everCut = false;
-  const queue = [...$('queue').children];
-  const rows = (states, labels) => queue.forEach((li, i) => {
-    li.classList.toggle('verified', states[i] === 'v'); li.classList.toggle('held', states[i] === 'h');
-    li.querySelector('.qs').textContent = labels[i];
-  });
+  if (!svg || !plug) return;
+  const CUT = -50, STAGE = [135, 130], GATE = [300, 130], RECORD_Y = 162;
+  const OUTBOX = [null, [52, RECORD_Y], [90, RECORD_Y]], PAID = [[497, RECORD_Y], [533, RECORD_Y], [568, RECORD_Y]];
+  const heldSlot = k => [67, 296 + 34 * k];
+  let tx = 0, cut = false, drag = false, running = false, toks = [], held = [], unknown = -1, started = false;
+  const wait = ms => new Promise(r => setTimeout(r, reduced ? Math.min(ms, 350) : ms));
+  const place = (t, p) => { t.pos = p; t.g.setAttribute('transform', `translate(${p[0]} ${p[1]})`); };
+  function tween(t, to, ms, abortAt) {
+    const from = t.pos;
+    if (reduced || !ms) { place(t, to); return Promise.resolve(false); }
+    return new Promise(res => {
+      const t0 = performance.now();
+      const step = now => {
+        const k = clamp((now - t0) / ms, 0, 1), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+        const p = [from[0] + (to[0] - from[0]) * e, from[1] + (to[1] - from[1]) * e];
+        place(t, p);
+        if (abortAt && cut && p[0] >= abortAt) return res(true);
+        if (k < 1) requestAnimationFrame(step); else res(false);
+      };
+      requestAnimationFrame(step);
+    });
+  }
+  const setState = (t, s) => { t.state = s; t.g.setAttribute('class', 'cb-tok ' + ({ held: 'held', unk: 'unk', paid: 'paid' }[s] || '')); };
+  const say = msg => { $('cable-msg').textContent = msg; };
+  function render() {
+    const paid = toks.filter(t => t.state === 'paid').length, nHeld = held.length;
+    $('cb-paidn').textContent = `Paid ${paid}`; $('cb-heldn').textContent = `Held ${nHeld}`;
+    $('cb-score').textContent = `Paid ${paid}, Held ${nHeld}`;
+    const label = { ready: 'Ready', send: 'Sending', held: 'Held at the Agents side', unk: "UNKNOWN, reading PayPal's record first", paid: 'Paid once, same PayPal-Request-Id' };
+    toks.forEach((t, i) => {
+      t.li.classList.toggle('held', t.state === 'held' || t.state === 'unk'); t.li.classList.toggle('paid', t.state === 'paid');
+      t.st.textContent = i === 0 ? 'Paid and verified before the cut' : (t.state === 'paid' && !t.wasHeld ? 'Paid once' : label[t.state]);
+    });
+    sec.classList.toggle('unknown', unknown >= 0);
+    $('cb-rstate').textContent = unknown >= 0 ? 'UNKNOWN' : 'Clear';
+    $('cable-final').hidden = !toks.length || paid < toks.length;
+    $('cable-reset').hidden = !started;
+    $('cable-send').disabled = !toks.some(t => t.state === 'ready');
+  }
+  const restack = () => held.forEach((h, k) => tween(h, heldSlot(k), 0));
+  async function go(t) {
+    if (t.state === 'held') held.splice(held.indexOf(t), 1);
+    restack(); setState(t, 'send'); render();
+    await tween(t, STAGE, 450);
+    const back = cut || await tween(t, GATE, 650, 150);
+    if (back) {
+      await tween(t, STAGE, 250);
+      held.push(t); setState(t, 'held'); t.wasHeld = true;
+      await tween(t, heldSlot(held.length - 1), 450);
+      say('Plug out. The refund stopped at the Agents side and is held. Nothing was sent, and nothing is lost.'); render(); return;
+    }
+    if (t.wasHeld) {
+      unknown = t.i; setState(t, 'unk'); render();
+      say(`UNKNOWN until PayPal's record is read. Capture status read first: ${t.capture}. Replaying with the same PayPal-Request-Id.`);
+      await wait(1200); unknown = -1;
+    }
+    await tween(t, [465, 130], 600);
+    await tween(t, PAID[t.i], 350);
+    setState(t, 'paid'); render();
+  }
+  async function drive() {
+    if (running) return; running = true;
+    for (;;) {
+      const next = toks.find(t => t.state === 'send') || (!cut && held[0]);
+      if (!next) break;
+      await go(next);
+    }
+    running = false;
+    if (toks.length && toks.every(t => t.state === 'paid')) say('The network is up and every held refund has replayed. PayPal shows each refund once.');
+    render();
+  }
   function draw() {
-    plug.setAttribute('transform', `translate(${x} 0)`);
-    path.setAttribute('d', `M30 74 C ${30 + (x - 30) * 0.3} ${x < 300 ? 126 : 118} ${30 + (x - 30) * 0.7} ${x < 300 ? 126 : 118} ${x} 74`);
+    plug.setAttribute('transform', `translate(${tx} 0)`);
+    const px = 192 + tx;
+    path.setAttribute('d', `M125 130Q${(125 + px) / 2} ${130 - tx * 0.4} ${px} 130`);
   }
   function setCut(next) {
     if (next === cut) return;
-    cut = next; x = cut ? CUT : OUT; draw();
+    cut = next; tx = cut ? CUT : 0; draw(); started = true; sec.classList.add('used');
     sec.classList.toggle('cut', cut);
     plug.setAttribute('aria-valuenow', cut ? '0' : '1'); plug.setAttribute('aria-valuetext', cut ? 'Cut' : 'Connected');
     const pill = $('net-pill'); pill.textContent = cut ? 'Network cut' : 'Network up'; pill.classList.toggle('coral', cut);
-    $('cable-retry').hidden = !cut;
     if (cut) {
-      everCut = true; retried = false;
-      rows('vhh', ['Verified', 'Held, offline', 'Held, offline']);
-      $('cable-msg').textContent = '22:37:01. The gateway is disconnected. Two refunds are held, offline. Nothing is sent.';
-    } else if (everCut) {
-      rows('vvv', ['Verified', 'Verified after reconnect', 'Verified after reconnect']);
-      $('cable-msg').textContent = "22:37:17. The network is restored. PayPal's capture is read first, then both refunds are verified. Running it again opened no new tunnel.";
-    }
+      say('Plug out. Nothing leaves the Agents container. Refunds sent now stop at the Agents side and wait in the held queue.');
+      toks.forEach(t => { if (t.state === 'ready') setState(t, 'send'); });
+    } else if (held.length) say("Plug in. Each held refund is UNKNOWN until PayPal's record is read, then it replays with the same PayPal-Request-Id.");
+    else say('Plug in. Network up.');
+    render(); drive();
   }
-  $('cable-retry').addEventListener('click', () => {
-    retried = true; rows('vhh', ['Verified', 'Still held', 'Still held']);
-    $('cable-msg').textContent = 'A retry while offline sends nothing. Both refunds are still held.';
+  function reset() {
+    if (running) return;
+    cut = false; tx = 0; held = []; unknown = -1; started = false; sec.classList.remove('cut', 'used');
+    plug.setAttribute('aria-valuenow', '1'); plug.setAttribute('aria-valuetext', 'Connected');
+    $('net-pill').textContent = 'Network up'; $('net-pill').classList.remove('coral');
+    toks.forEach((t, i) => { t.wasHeld = false; setState(t, i === 0 ? 'paid' : 'ready'); place(t, i === 0 ? PAID[0] : OUTBOX[i]); });
+    draw(); say("Network up. Refund 1 is paid and verified against PayPal's record. Refunds 2 and 3 are ready."); render();
+  }
+  $('cable-send').addEventListener('click', () => {
+    started = true; toks.forEach(t => { if (t.state === 'ready') setState(t, 'send'); });
+    say(cut ? 'Sending with the plug out. Watch where the refunds stop.' : 'Network up. The refunds pass the gateway and PayPal records each once.');
+    render(); drive();
   });
-  const at = e => { const b = svg.getBoundingClientRect(); return ((e.clientX - b.left) / b.width) * 640; };
+  $('cable-reset').addEventListener('click', reset);
+  const at = e => { const b = svg.getBoundingClientRect(); return ((e.clientX - b.left) / b.width) * 600; };
   plug.addEventListener('pointerdown', e => { drag = true; svg.setPointerCapture(e.pointerId); e.preventDefault(); });
-  svg.addEventListener('pointermove', e => { if (!drag) return; x = clamp(at(e) - 24, CUT, OUT); draw(); });
-  const release = () => { if (!drag) return; drag = false; const want = x < 380; x = cut ? CUT : OUT; setCut(want); x = want ? CUT : OUT; draw(); };
+  svg.addEventListener('pointermove', e => { if (!drag) return; tx = clamp(at(e) - 210, CUT, 0); draw(); });
+  const release = () => { if (!drag) return; drag = false; const want = tx < CUT / 2; tx = cut ? CUT : 0; setCut(want); tx = want ? CUT : 0; draw(); };
   svg.addEventListener('pointerup', release); svg.addEventListener('pointercancel', release);
   plug.addEventListener('keydown', e => {
     if (e.key === 'ArrowLeft' || e.key === 'Home') { setCut(true); e.preventDefault(); }
     else if (e.key === 'ArrowRight' || e.key === 'End') { setCut(false); e.preventDefault(); }
+    else if (e.key === 'Enter' || e.key === ' ') { setCut(!cut); e.preventDefault(); }
   });
   draw();
+  (async () => {
+    const [ledger, text] = await Promise.all([fetch('data/ledger.json').then(r => r.json()), fetch('receipts/case-m-merchant.ndjson').then(r => r.text())]);
+    const reqs = {};
+    for (const line of text.split('\n').filter(Boolean)) {
+      const j = JSON.parse(line);
+      if (j.action_id === 'clearwake.offline.held') reqs[j.params.key.split(':')[1].slice(0, 2)] = j.params.request_id;
+    }
+    const rows = ledger.rows.filter(r => /^m[123]$/.test(r.case)).sort((a, b) => a.case.localeCompare(b.case));
+    const list = $('queue'), layer = $('cb-tokens');
+    rows.forEach((r, i) => {
+      const g = svgEl('g'), c = svgEl('circle', { r: 14 }), n = svgEl('text', { y: 6 });
+      n.textContent = String(i + 1); g.append(c, n); layer.append(g);
+      const li = el('li', { 'data-q': i + 1 }, el('b', { text: String(i + 1) }),
+        el('span', {}, el('span', { class: 'mono', text: r.record.refund_id }), ' ', el('span', { text: usd(parseFloat(r.amount)) })),
+        el('span', { class: 'cb-st' }), reqs[r.case] ? el('span', { class: 'cb-rid', text: `PayPal-Request-Id ${reqs[r.case]}` }) : null);
+      list.append(li);
+      toks.push({ i, g, li, st: li.querySelector('.cb-st'), capture: r.record.capture_status_read_first || 'read first', state: i === 0 ? 'paid' : 'ready', pos: [0, 0], wasHeld: false });
+    });
+    toks.forEach((t, i) => { setState(t, t.state); place(t, i === 0 ? PAID[0] : OUTBOX[i]); });
+    render();
+  })().catch(() => say('The recorded run could not be loaded.'));
 })();
 
 /* ---- receipts ---- */

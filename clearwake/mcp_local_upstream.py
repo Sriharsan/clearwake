@@ -8,7 +8,7 @@ with isError false; an input that fails the tool's schema is a JSON-RPC error -3
 The records live in a small state file (--state) so a test can count money moves from outside the process. Nothing here touches
 PayPal or the network.
 
-  python -m clearwake.mcp_fake_upstream --state state.json [--fault drop_answer:1]
+  python -m clearwake.mcp_local_upstream --state state.json [--fault drop_answer:1]
 
 Faults: drop_answer:N applies the next N money moves, then never answers that request (a lost response).
 """

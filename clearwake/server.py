@@ -49,6 +49,7 @@ CONSOLE_ASSETS = {
     # AG Grid Community 35.3.1, MIT, vendored unchanged (docs/THIRD_PARTY_UI.txt). Its styles carry the page's nonce.
     "/vendor/ag-grid-community.min.js": ("vendor/ag-grid-community-35.3.1.min.js", "text/javascript"),
     "/console-theme.js": ("theme.js", "text/javascript"),
+    "/batch-tally.json": ("batch-tally.json", "application/json"),
 }
 # Self hosted fonts (SIL OFL 1.1, docs/THIRD_PARTY.md). Only this file is reachable under /fonts/.
 FONT_FILES = ("Figtree-var",)
@@ -63,7 +64,6 @@ VOICE_TRANSCRIBE = "/console/api/voice/transcribe"
 
 
 TOTALS = Path(__file__).resolve().parent.parent / "site" / "data" / "totals.json"
-TALLY = Path(__file__).resolve().parent.parent / "web" / "batch-tally.json"   # shipped in the image: the counted batch and baseline
 HOSTED_ENV = "CLEARWAKE_HOSTED"
 
 
@@ -265,11 +265,6 @@ class ClearwakeHandler(Handler):
                     return self.console_reply(200, json.loads(TOTALS.read_text(encoding="utf-8")).get("local", []))
                 except (OSError, ValueError):
                     return self.console_reply(200, [])
-            if path == "/console/api/tally":   # the counted batch, read from the shipped file
-                try:
-                    return self.console_reply(200, json.loads(TALLY.read_text(encoding="utf-8")))
-                except (OSError, ValueError):
-                    return self.console_reply(200, {})
             if path == "/console/api/receipts":
                 return self.console_reply(200, console.receipts())
             for handler in GET_EXTENSIONS:
