@@ -19,7 +19,7 @@ Files: `render.yaml` (Blueprint) and `Dockerfile.render`. Neither holds a secret
 Found while writing the Blueprint on 9 November 2026. Without them the Render service will not start or will not reach PayPal.
 
 1. **Binding.** `vendor/relayloom/relayloom/server.py` `LocalServer` refuses any address other than loopback, and `clearwake/__main__.py` has no `--host` flag. Render needs the process to listen on `0.0.0.0` and `$PORT`. `Dockerfile.render` already calls `python -m clearwake --host 0.0.0.0 --port ${PORT:-10000}`; that flag has to exist and hosted mode has to be the only way it is accepted (`CLEARWAKE_HOSTED=1`). The pinned Relayloom check cannot be edited in the submodule, so `ClearwakeServer` has to bind without calling it.
-2. **Sandbox on the hosted console.** `clearwake/console.py` runs on the rehearsal gateway today. The keys in Render are used only once the hosted console builds a `SandboxGateway.from_environment()`. Until then the hosted console is a rehearsal and must say so in its one mode line. Do not say "against the PayPal sandbox" on the page or in the Devpost answers until a hosted case has really read a PayPal record.
+2. **Sandbox on the hosted console.** `clearwake/console.py` runs on the local provider today. The keys in Render are used only once the hosted console builds a `SandboxGateway.from_environment()`. Until then the hosted console is a local run on the local provider and must say so in its one mode line. Do not say "against the PayPal sandbox" on the page or in the Devpost answers until a hosted case has really read a PayPal record.
 
 ## Steps for Sri (needs Sri's Render login)
 

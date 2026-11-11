@@ -33,9 +33,9 @@ from .paypal import GatewayError, LIMIT, NetworkSwitch, RehearsalGateway
 from .swarm import Case, MerchantSwarm, money
 
 # The same owner mandate as scripts/cases.py: USD 102 budget, one store, two categories.
-MANDATE = Mandate("Rehearsal shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))
-REHEARSAL = "rehearsal data"
-INJECTION_LABEL = "injection test: a fixed fake model reply asking for a refund, no model call"
+MANDATE = Mandate("Local run shopper", 10200, 10200, ("clearwake-demo-store",), ("home", "stationery"))
+REHEARSAL = "local run data"
+INJECTION_LABEL = "injection test: a fixed scripted model reply asking for a refund, no model call"
 TRACKERS = [{"number": "SYNTH1Z999AA10123456", "carrier": "UPS", "status": "SHIPPED"}]
 
 CASES = {
@@ -53,6 +53,9 @@ CASES = {
     "o": "Buyer says 2 of 3 items arrived: dispatch proof counted 3, sealed; evidence sent",
 }
 DISPUTE_CASES = ("i", "j", "k", "l", "n", "o")
+# The product default is the honest limit: only item not received is handled by the agents, every other reason goes to the owner untouched.
+# Cases j, l and n were recorded with other reasons, so they keep their recorded behaviour behind an explicit parameter and are labelled as such.
+OUTSIDE_PRODUCT_SCOPE = ("j", "l", "n")
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "dispatch"
 DECIDED = {"provide_evidence": "fight_with_evidence", "provide_supporting_info": "fight_with_evidence", "accept_and_refund": "refund_within_limit",
            "escalate": "escalate", "settle_by_offer": "settle_by_offer", "fight_with_evidence": "fight_with_evidence"}
@@ -120,6 +123,7 @@ class Console:
             self.policy_path.parent.mkdir(parents=True, exist_ok=True)
             self.policy_path.write_text(rules_nl.POLICY.read_text(encoding="utf-8"), encoding="utf-8")
         self.swarm = MerchantSwarm(self.gateway, self.data / "merchant", self.adapter, policy_path=self.policy_path, clock=self.clock)
+        self.swarm.only_item_not_received = True   # product default: item not received only, every other reason goes to the owner untouched
         self.pending_rules = {}
         self.buyer_rule = rules_nl.load_current("buyer", self.policy_path).dispute_rule if self.policy_path.with_name("buyer.rules.json").exists() else None
         seed = self.data / "buyer.seed"
@@ -310,13 +314,26 @@ class Console:
                 swarm.gateway, swarm.adapter = saved
         return Swap()
 
+    def _scope(self, key):
+        """The explicit parameter: a recorded case outside the product scope runs as recorded; every other case keeps the honest limit."""
+        swarm, wanted = self.swarm, key not in OUTSIDE_PRODUCT_SCOPE
+
+        class Scope:
+            def __enter__(self_inner):
+                self_inner.saved = swarm.only_item_not_received
+                swarm.only_item_not_received = wanted
+            def __exit__(self_inner, *exc):
+                swarm.only_item_not_received = self_inner.saved
+        return Scope()
+
     def run_case(self, key):
         if key not in CASES:
-            raise ConsoleError("Choose one of the rehearsal cases c, d, e, f, g, i, j, k, l, m, n or o.")
+            raise ConsoleError("Choose one of the cases c, d, e, f, g, i, j, k, l, m, n or o.")
         with self._lock:
             run = uuid.uuid4().hex[:6]
             started = time.perf_counter()
-            made = getattr(self, f"_case_{key}")(run)
+            with self._scope(key):
+                made = getattr(self, f"_case_{key}")(run)
             self.entries.extend(made)
             self.runs.append({"key": key, "run": run, "at": now_iso(self.clock), "title": CASES[key],
                               "states": [e["state"] for e in made], "seconds": round(time.perf_counter() - started, 3)})
@@ -341,7 +358,7 @@ class Console:
             first = swarm.handle(case)
             entry = self._entry("e", run, first, case, gateway="lost-response")
             again = swarm.handle(case)
-        self._history(entry, again, "Second attempt: nothing was sent again.")
+        self._history(entry, again, "Second call: nothing was sent again.")
         return [entry]
 
     def _case_f(self, run):
@@ -405,9 +422,9 @@ class Console:
     def _case_n(self, run):
         info = self._open_dispute("n", run, f"CAP-N-{run}", "MERCHANDISE_OR_SERVICE_NOT_AS_DESCRIBED", "2.50", 240, "The colour is wrong.", stage="INQUIRY")
         entry = self._handle_dispute("n", run, info)
-        self.gateway.buyer_accepts_offer(info["dispute_id"])  # rehearsal stand-in: in the sandbox the buyer accepts in the Resolution Center
+        self.gateway.buyer_accepts_offer(info["dispute_id"])  # local provider: in the sandbox the buyer accepts in the Resolution Center
         settled = self.swarm.handle_dispute(info["dispute_id"], info["capture_minor"], info["customer"], {"id": info["order"]})
-        self._history(entry, settled, "The buyer accepted the offer (rehearsal stand-in for the sandbox buyer in PayPal's Resolution Center).")
+        self._history(entry, settled, "The buyer accepted the offer (the local provider records it; in the sandbox the buyer accepts in PayPal's Resolution Center).")
         return [entry]
 
     def _case_o(self, run):
@@ -472,7 +489,7 @@ class Console:
     def _find(self, field, value):
         entry = next((e for e in self.entries if e.get(field) == value), None)
         if entry is None:
-            raise ConsoleError("No case in this rehearsal matches that reference.", 404)
+            raise ConsoleError("No case in this local run matches that reference.", 404)
         return entry
 
     def approve(self, approval_id, approver):
@@ -488,8 +505,9 @@ class Console:
             except Exception as error:  # Refused from the approval store: decided, expired or self approval
                 raise ConsoleError(f"The approval store refused: {error}.", 409)
             if entry["kind"] == "PayPal dispute":  # an approved escalation lets the swarm take only the step it named
-                result = self.swarm.handle_dispute(entry["dispute_id"], entry["capture_minor"], entry["customer"], {"id": entry["order"]},
-                                                   TRACKERS if entry.get("use_trackers") else [], None, approval_id=approval_id)
+                with self._scope(entry["key"]):
+                    result = self.swarm.handle_dispute(entry["dispute_id"], entry["capture_minor"], entry["customer"], {"id": entry["order"]},
+                                                       TRACKERS if entry.get("use_trackers") else [], None, approval_id=approval_id)
             else:
                 with self._with(gateway=RehearsalGateway(self.gateway.path, entry["gateway"])) as swarm:
                     result = swarm.handle(self._case(entry), approval_id=approval_id)
@@ -567,7 +585,7 @@ class Console:
             catalog = [{**p, "price": money(p["price_minor"])} for p in self.agent.products.values()]
             return {
                 "label": REHEARSAL, "mode": "rehearsal", "hosted": self.hosted, "folder": self.data.name, "model": self.adapter.label(),
-                "network": "none: rehearsal gateway, no provider calls" + ("" if self.backend == "scripted" else "; model calls go to Ollama on loopback"),
+                "network": "none: local provider, no provider calls" + ("" if self.backend == "scripted" else "; model calls go to Ollama on loopback"),
                 "mandate": {"owner": MANDATE.owner, "budget": money(MANDATE.budget_minor), "per_item_cap": money(MANDATE.per_item_cap_minor),
                             "merchants": list(MANDATE.allowed_merchants), "categories": list(MANDATE.allowed_categories),
                             "currency": MANDATE.currency, "spent": money(self.spent_minor()),
@@ -577,7 +595,7 @@ class Console:
                            "approval_above": money(self.swarm.policy["operations"]["refund"]["approval_above_minor"]),
                            "per_customer_per_day": money(self.swarm.policy["caps"]["per_customer_per_day_minor"]),
                            "hash": self.swarm.policy_hash},
-                "cases": [{"key": k, "title": t, "dispute": k in DISPUTE_CASES} for k, t in CASES.items()],
+                "cases": [{"key": k, "title": t, "dispute": k in DISPUTE_CASES, "scope": "outside" if k in OUTSIDE_PRODUCT_SCOPE else "product"} for k, t in CASES.items()],
                 "entries": entries, "runs": self.runs, "inbox": self.inbox(), "ledger": self.ledger(), "gauge": gauge,
                 "disputes": self.dispute_ledger(), "fees": self.fee_state(),
                 "now": now_iso(self.clock),

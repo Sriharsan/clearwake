@@ -168,7 +168,7 @@ function buildPicker() {
   $('case-picker').replaceChildren(legend, ...data.cases.map((c, i) => el('label', { class: 'case-option' },
     el('input', { type: 'radio', name: 'case', value: c.key, checked: i === 0 }),
     el('span', { class: 'key', text: c.key }),
-    el('span', { class: 'label' }, c.title, el('small', { text: c.dispute ? 'PayPal dispute shape' : 'refund' })))));
+    el('span', { class: 'label' }, c.title, el('small', { text: c.scope === 'outside' ? 'recorded case outside the product scope' : c.dispute ? 'PayPal dispute shape' : 'refund' })))));
 }
 
 function setGauge() {
@@ -189,7 +189,7 @@ function animateMoney(entry) {
   const moves = ['refund', 'accept_and_refund'].includes(entry.action);
   if (entry.state === 'UNKNOWN') { coin.classList.add('held'); $('flow-label').textContent = `${amount} held as UNKNOWN. Not retried; reconcile from the record.`; }
   else if (entry.state === 'refused') { coin.classList.add('stopped'); $('flow-label').textContent = `${amount} stopped at the merchant. Nothing was sent.`; }
-  else if (entry.state === 'VERIFIED' && moves) { coin.classList.add('to-buyer'); $('flow-label').textContent = `${amount} moved merchant to buyer. Matches the rehearsal record.`; }
+  else if (entry.state === 'VERIFIED' && moves) { coin.classList.add('to-buyer'); $('flow-label').textContent = `${amount} moved merchant to buyer. Matches the local record.`; }
   else if (entry.state === 'awaiting approval') { $('flow-label').textContent = `${amount} waits for a person in the approval inbox.`; }
   else { $('flow-label').textContent = 'No money moved on this case.'; }
 }
@@ -365,7 +365,7 @@ function wire() {
     await act('/console/api/case', { case: key }, `Case ${key} ran. Newest case is at the top of the list.`);
     $('case-run').disabled = false;
   });
-  $('reset').addEventListener('click', () => act('/console/api/reset', {}, 'Started a new rehearsal folder. Earlier folders stay on disk.').then(() => { lastEntryCount = null; }));
+  $('reset').addEventListener('click', () => act('/console/api/reset', {}, 'Started a new local folder. Earlier folders stay on disk.').then(() => { lastEntryCount = null; }));
   $('verify-all').addEventListener('click', () => verifyAll().catch(e => showError(e.message)));
   $('tamper').addEventListener('click', () => doTamper().catch(e => showError(e.message)));
   $('restore').addEventListener('click', () => { for (const l of logs) l.text = l.original; tampered = null; $('restore').disabled = true; $('tamper-note').textContent = 'Original logs restored.'; verifyAll().catch(e => showError(e.message)); });

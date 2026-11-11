@@ -253,7 +253,7 @@ class ClearwakeHandler(Handler):
             self.rate_limit("read")
             if path == "/console/api/session":
                 sid = self.console_sid() or secrets.token_hex(32)
-                return self.console_reply(200, {"csrf": console.csrf_for(sid), "label": "rehearsal data"}, sid)
+                return self.console_reply(200, {"csrf": console.csrf_for(sid), "label": "local run data"}, sid)
             if path == "/console/api/state":
                 return self.console_reply(200, console.state())
             if path == "/console/api/negotiation":

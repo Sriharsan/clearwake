@@ -32,7 +32,7 @@ AG Grid Community
   License:   MIT, Copyright (c) 2015-2024 AG GRID LTD (read in the package's LICENSE.txt)
   Source:    https://registry.npmjs.org/ag-grid-community/-/ag-grid-community-32.3.3.tgz
              npm integrity sha512-KhSJ3B6mwRFA4cLjNjOZkDndJBh8o83794ZHl4Q7xP9MJf43oCN9qoZ8pyBanohgpVfLcP0scYYCr9xIlzjdiA==
-  Tried:     31 October 2026, the "noStyle" build with ag-grid.min.css and
+  Tested:    31 October 2026, the "noStyle" build with ag-grid.min.css and
              ag-theme-quartz-no-font.min.css, served from this machine.
   Result:    the grid builds rows from HTML templates that carry inline style
              attributes. The console's Content Security Policy (style-src 'self',

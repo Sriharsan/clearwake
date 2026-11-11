@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Break it | Clearwake</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="description" content="Attack an agent that uses PayPal's Agent Toolkit and see what an unguarded agent and a guarded agent pay, with a signed receipt you can verify in your browser.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="break.css">
+<script src="theme.js"></script>
+<script src="break.js" defer></script>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="/">Clearwake</a>
+    <nav aria-label="Pages">
+      <a href="/control-room">Control Room</a>
+      <a href="/developers">Developers</a>
+      <a href="/break" aria-current="page">Break it</a>
+      <button class="theme" type="button" aria-label="Switch theme">Light</button>
+    </nav>
+  </div>
+</header>
+
+<main id="top" class="wrap">
+  <section class="intro" aria-labelledby="h1">
+    <p class="eyebrow">Break it</p>
+    <h1 id="h1">Attack an agent that uses PayPal's Agent Toolkit. See who pays.</h1>
+    <p class="lede">Pick an attack and press Run. On the left is the unguarded agent, as recorded. On the right is the same episode with a guard in front of the tool, and a signed receipt you can verify here.</p>
+    <p class="label" id="label">Loading the recorded episodes.</p>
+  </section>
+
+  <section class="picker" aria-labelledby="h-pick">
+    <h2 id="h-pick" class="sr">Choose an attack</h2>
+    <fieldset class="attacks">
+      <legend class="sr">Attack</legend>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="lost_response" checked><span><b>Lost response</b><small>PayPal applied the refund, the answer was lost</small></span></label>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="injection"><span><b>Injected instruction</b><small>The buyer's message gives orders</small></span></label>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="over_limit"><span><b>Over limit request</b><small>More than the owner allows</small></span></label>
+      <label class="attack"><input class="sr" type="radio" name="attack" value="duplicate"><span><b>Duplicate delivery</b><small>The same case, again</small></span></label>
+    </fieldset>
+    <div class="go">
+      <p class="blurb" id="blurb"></p>
+      <button class="btn primary run" id="run" type="button">Run</button>
+    </div>
+  </section>
+
+  <section class="result" id="result" aria-live="polite" aria-label="Result"></section>
+
+  <section class="totals-sec" aria-labelledby="h-tot">
+    <h2 id="h-tot">All 80 attack episodes of the run</h2>
+    <dl class="totals" id="totals"></dl>
+    <p class="note">The attack episodes are 20 each of lost response, injected instruction, over limit request and duplicate delivery. The unguarded numbers are read from the recorded run. The guarded numbers come from the same episodes replayed through the guard.</p>
+  </section>
+
+  <section class="use" aria-labelledby="h-use">
+    <h2 id="h-use">Use it in three lines</h2>
+    <pre class="codeblock" tabindex="0"><code>from clearwake.toolkit_guard import guard
+api = guard(paypal_tools, reader=paypal_reader)
+api.accept_dispute_claim(dispute_id, note)</code></pre>
+    <p>The guard reads PayPal's record, takes the amount from it and from the signed policy, refuses what is above the limit, gives every money move one request id, and writes a receipt for every call. It covers what <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_FAILURE_CASES.md">the toolkit failure page</a> records, and it is not a PayPal product. <a href="https://github.com/Sriharsan/clearwake/blob/main/docs/TOOLKIT_GUARD.md">Read the guard's page</a>.</p>
+  </section>
+  <noscript><p class="note">This page needs JavaScript to show the recorded episodes and to verify receipts in your browser.</p></noscript>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <p>Clearwake. When an agent's order goes missing, agents fix it.</p>
+    <p><a href="https://github.com/Sriharsan/clearwake">Repository</a> &nbsp; <a href="receipts/manifest.json">Receipts</a> &nbsp; <a href="https://github.com/Sriharsan/clearwake/blob/main/LICENSE">Licences</a></p>
+  </div>
+</footer>
+</body>
+</html>

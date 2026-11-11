@@ -140,7 +140,7 @@ class Proposing(unittest.TestCase):
         with patch("clearwake.models.build_opener", lambda *a: Opener()):
             got = self.propose(SENTENCE, Adapter("ollama", "test-model"))
         self.assertEqual(got.status, "valid_first_try")
-        self.assertEqual(sent["format"]["required"], rules_nl.MERCHANT_FIELDS)
+        self.assertNotIn("format", sent)   # the grammar costs time on every token: it is sent only to repeat a reply that was not JSON
         self.assertFalse(sent["think"])
         self.assertEqual((sent["options"]["temperature"], sent["keep_alive"]), (0, "30m"))
         self.assertLessEqual(sent["options"]["num_predict"], 200)

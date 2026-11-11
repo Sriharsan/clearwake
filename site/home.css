@@ -152,3 +152,25 @@ input[type=range]{width:100%;min-height:2.75rem;accent-color:var(--amber);margin
 .runit>*,.gauge>*,.wake-scene>*,.cols>*,.gauge-scene>*{min-width:0}
 .runit .mono{overflow-wrap:anywhere}
 main p,main li,main dd{overflow-wrap:anywhere}
+/* story: the one line, the loop, the rules, the limit */
+.hero h1.line{font-size:clamp(1.55rem,3.3vw,2.85rem);line-height:1.12;letter-spacing:-.025em;max-width:34ch;margin-bottom:1rem}
+.tagline{margin:0 0 1.5rem;font:600 clamp(1.15rem,2vw,1.5rem)/1.3 var(--font-sans);color:var(--teal)}
+.loop h2,.rules h2,.limit h2{max-width:24ch;font-size:clamp(1.9rem,4.4vw,3.2rem)}
+.seq{list-style:none;margin:2rem 0 1.5rem;padding:0;position:relative;max-width:46rem}
+.seq::before{content:"";position:absolute;left:1.15rem;top:1.2rem;bottom:1.2rem;width:2px;background:var(--border)}
+.seq-step{display:grid;grid-template-columns:2.3rem minmax(0,1fr);gap:1rem;margin:0 0 1.5rem;position:relative}
+.seq-n{display:grid;place-items:center;width:2.3rem;height:2.3rem;border-radius:50%;background:var(--background);border:2px solid var(--teal);color:var(--teal);font:700 1rem/1 var(--font-sans);position:relative;z-index:1}
+.seq-step.zero .seq-n{border-color:var(--amber);color:var(--amber)}
+.seq-step h3{font-size:1.25rem;font-weight:700;margin:.15rem 0 .35rem;line-height:1.2}
+.seq-step p{margin:0;color:var(--mist)}
+.two-rings{display:block;width:min(100%,24rem);height:auto;margin:1rem 0 0}
+.tr-a,.tr-b{fill:none;stroke-width:4}.tr-a{stroke:var(--teal)}.tr-b{stroke:var(--amber)}
+.tr-t{fill:var(--foreground);font:600 12px var(--font-sans);text-anchor:middle}
+.tr-m{fill:var(--foreground);font:600 10px var(--font-sans);text-anchor:middle}
+.tr-id{fill:var(--mist);font:500 11px var(--font-code);text-anchor:middle}
+.rules{display:grid;gap:2rem}
+@media (min-width:60rem){.rules{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4rem;align-items:start}}
+.rules>*{min-width:0}
+.said{margin:0 0 1rem;padding:.25rem 0 .25rem 1rem;border-left:3px solid var(--teal);font:500 clamp(1.1rem,2vw,1.4rem)/1.35 var(--font-sans)}
+.plainsteps{margin:0 0 1rem;padding-left:1.25rem}
+.limit .lede{max-width:46rem;color:var(--foreground)}

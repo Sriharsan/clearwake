@@ -20,9 +20,10 @@
     <a class="tab" href="#buyer" data-screen="buyer"><span class="tab-num">1</span><span class="tab-full">Buyer agent</span><span class="tab-short" aria-hidden="true">Buyer</span></a>
     <a class="tab" href="#merchant" data-screen="merchant"><span class="tab-num">2</span><span class="tab-full">Merchant control room</span><span class="tab-short" aria-hidden="true">Merchant</span></a>
     <a class="tab" href="#verify" data-screen="verify"><span class="tab-num">3</span><span class="tab-full">Receipt verifier</span><span class="tab-short" aria-hidden="true">Verifier</span></a>
+    <a class="tab" href="/voice"><span class="tab-num">4</span><span class="tab-full">Voice</span><span class="tab-short" aria-hidden="true">Voice</span></a>
   </nav>
   <div class="top-meta">
-    <span class="pill rehearsal" id="mode-pill">Rehearsal data</span>
+    <span class="pill rehearsal" id="mode-pill">Local run on the local provider</span>
     <span class="pill" id="model-pill" title="Which agent backend proposes actions">Agents: loading</span>
     <button class="theme" type="button" aria-label="Switch to the light theme">Light</button>
   </div>
@@ -30,7 +31,7 @@
 
 <main id="main" tabindex="-1">
   <dl class="lead-numbers" id="lead-numbers" aria-label="Measured numbers from the run files" hidden></dl>
-  <p class="hosted-line" id="hosted-line" hidden>Hosted on Render, rehearsal provider. The real PayPal sandbox runs are in the ledger below, recorded.</p>
+  <p class="hosted-line" id="hosted-line" hidden>Hosted on Render, local provider. The real PayPal sandbox runs are in the ledger below, recorded.</p>
   <div id="server-error" class="banner error" role="alert" hidden></div>
 
   <!-- 1. Buyer agent -->
@@ -97,7 +98,7 @@
         <article id="receipt-card" class="card receipt" aria-labelledby="receipt-title" hidden>
           <div class="receipt-head"><h2 id="receipt-title" class="card-title">Signed mandate receipt</h2><span class="status-chip" id="receipt-status"></span></div>
           <dl class="facts receipt-facts">
-            <div><dt>Order (rehearsal)</dt><dd id="receipt-order" class="mono"></dd></div>
+            <div><dt>Order (local run)</dt><dd id="receipt-order" class="mono"></dd></div>
             <div><dt>Digest, SHA-256 of the line</dt><dd id="receipt-digest" class="mono"></dd></div>
             <div><dt>Buyer agent public key</dt><dd id="receipt-key" class="mono"></dd></div>
           </dl>
@@ -105,7 +106,7 @@
         </article>
 
         <section class="card history" aria-labelledby="history-title">
-          <h2 id="history-title" class="card-title">Requests in this rehearsal</h2>
+          <h2 id="history-title" class="card-title">Requests in this local run</h2>
           <ol class="history-list" id="buy-history"></ol>
           <p class="empty-line" id="buy-history-empty">No requests yet.</p>
         </section>
@@ -117,7 +118,7 @@
   <section id="screen-merchant" class="screen" aria-labelledby="merchant-title" hidden>
     <div class="screen-head">
       <div><p class="eyebrow">Merchant control room</p><h1 id="merchant-title">Every refund held to its limit and its record.</h1></div>
-      <p class="screen-note">A stand-in provider in a local data folder plays PayPal, and every record here comes from it. The flow is the one the sandbox run uses: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
+      <p class="screen-note">A local provider in a data folder plays PayPal, and every record here comes from it. The flow is the one the sandbox run uses: Intake, Evidence, Decider, the policy file, then an independent Checker reads the provider record.</p>
     </div>
 
     <section class="card rules-say" aria-labelledby="rules-title">
@@ -152,7 +153,7 @@
     </section>
 
     <form class="card runner" id="case-form" aria-labelledby="runner-title">
-      <div class="runner-head"><h2 id="runner-title" class="card-title">Run a rehearsal case</h2><button type="button" class="button quiet" id="reset">New rehearsal folder</button></div>
+      <div class="runner-head"><h2 id="runner-title" class="card-title">Run a local case</h2><button type="button" class="button quiet" id="reset">New local folder</button></div>
       <fieldset class="case-picker" id="case-picker"><legend class="sr-only">Case</legend></fieldset>
       <div class="runner-foot"><button class="button primary" type="submit" id="case-run">Run case</button><p class="card-sub" id="runner-status" aria-live="polite"></p></div>
     </form>
@@ -205,7 +206,7 @@
         <section class="card disputes" aria-labelledby="disputes-title">
           <h2 id="disputes-title" class="card-title">Disputes</h2>
           <ol class="dispute-list" id="dispute-list"></ol>
-          <p class="empty-line" id="disputes-empty">No disputes yet. Cases i, j, k and l open rehearsal disputes shaped like PayPal's Disputes API.</p>
+          <p class="empty-line" id="disputes-empty">No disputes yet. Cases i, j, k and l open local run disputes shaped like PayPal's Disputes API.</p>
         </section>
       </div>
     </div>
@@ -218,6 +219,7 @@
 
     <section class="card ledger" aria-labelledby="fees-title">
       <div class="ledger-head"><h2 id="fees-title" class="card-title">Dispute ledger and fee leak</h2></div>
+      <p class="screen-note" id="scope-line">Item not received: handled by agents inside your rules. Every other reason goes to you untouched.</p>
       <div class="fee-strip" id="fee-strip">
         <div class="fee-cell"><span class="fee-k">Dispute rate, 3 months</span><span class="fee-v" id="fee-rate">none yet</span>
           <div class="rate-bar" aria-hidden="true"><span class="rate-fill" id="rate-fill"></span><span class="rate-line"></span></div><span class="fee-note">PayPal's High Volume line: 1.50%</span></div>
@@ -254,7 +256,7 @@
 
     <div class="verify-grid">
       <section class="card" aria-labelledby="logs-title">
-        <div class="ledger-head"><h2 id="logs-title" class="card-title">This rehearsal's logs</h2></div>
+        <div class="ledger-head"><h2 id="logs-title" class="card-title">This local run's logs</h2></div>
         <div class="log-cards" id="log-cards"></div>
         <div class="verify-actions">
           <button class="button primary" id="verify-all" type="button">Verify both logs</button>
@@ -284,6 +286,6 @@
     </section>
   </section>
 </main>
-<footer class="foot"><p>Loopback only. Default runs make no provider or model calls. An outcome is called verified only when it matches PayPal's own record. Rehearsal outcomes are checked against the stand-in provider record, so this console shows them as "matches rehearsal record".</p></footer>
+<footer class="foot"><p>Loopback only. Default runs make no provider or model calls. An outcome is called verified only when it matches PayPal's own record. Local run outcomes are checked against the local provider record, so this console shows them as "matches local record".</p></footer>
 </body>
 </html>

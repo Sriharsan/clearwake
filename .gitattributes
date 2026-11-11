@@ -1,3 +1,4 @@
 web/vendor/** -text
 *.ndjson -text
 *.patch -text
+site/vendor/** -text

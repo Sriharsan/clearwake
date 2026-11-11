@@ -62,7 +62,7 @@
 .hint.coral{border-left-color:var(--coral)}
 .note{color:var(--mist);font-size:.95rem}
 
-/* terminal blocks. The left rule says where the output came from: teal = recorded real sandbox, amber = rehearsal */
+/* terminal blocks. The left rule says where the output came from: teal = recorded real sandbox, amber = local run */
 .cb{margin:0 0 1.5rem;background:var(--term-bg);color:var(--term-fg);border-left:3px solid var(--term-mist);border-radius:0;max-width:100%;overflow:hidden}
 .cb.real{border-left-color:var(--teal)}
 .cb.rehearsal{border-left-color:var(--amber)}

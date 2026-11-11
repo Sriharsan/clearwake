@@ -23,7 +23,7 @@ To check it yourself: `git log --reverse --format='%h %ad %s' --date=iso`, and t
 | 1 Nov | `1d087a2` to `0f79321` | Dispatch proof: signed packing record, strong or weak check against a buyer's claim, case o |
 | 3 Nov | `0f884b6` to `a70a542` | Dispatch proof run for real with SAM 3 on the CPU and accepted by the sandbox; the offer goes first and alone; real case n recorded (settled, RESOLVED at INQUIRY); real receipts published on the site |
 | 9 Nov | `ce2d0c7`, `23fb2b6` | The editorial public site (home, control room, developers) and restyled console |
-| 10 Nov | `2f1c00a` and the work after it | The v6 build: the buyer agent's driver for PayPal's Resolution Center, the agent to agent batch, guard rails, the AG Grid ledger on the site and console, the Postman collection, the OpenAPI spec, the Render files |
+| 10 Nov | `2f1c00a` and the work after it | The v6 build: the buyer agent's driver for PayPal's Resolution Center, the agent to agent batch, guard rails, the AG Grid ledger on the site and console, the Postman collection, the OpenAPI spec, the Render files. The story narrowed to one problem, item not received, end to end: rules said once in plain words (`clearwake/rules_nl.py`), voice for the merchant (`clearwake/voice.py`, phone mode `python -m clearwake --phone`), the baseline of 200 episodes against an agent using PayPal's Agent Toolkit directly, and the ten case agent to agent batch |
 
 ## What is not new work
 

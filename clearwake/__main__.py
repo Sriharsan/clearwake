@@ -59,7 +59,7 @@ def main():
         parser.error(str(error))
     server = ClearwakeServer((args.host, args.port), controller, console, hosted=hosted)
     print(f"Clearwake: http://127.0.0.1:{args.port}")
-    print(f"Console:   http://127.0.0.1:{args.port}/console (rehearsal data; agents: {console.adapter.label()})")
+    print(f"Console:   http://127.0.0.1:{args.port}/console (local run on the local provider; agents: {console.adapter.label()})")
     print(f"Payments: {gateway.mode}. Specialists: {controller.mode}. No calls occur just by opening the page.")
     print("Loopback only. Use synthetic data. One immutable bounded capture per database.")
     try:

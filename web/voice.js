@@ -177,7 +177,7 @@
     post("/console/api/voice/transcribe", blob, true, blob.type).then(function (t) {
       el.transcript.textContent = t.transcript || "(nothing heard)";
       el.chip.textContent = "Heard in " + (t.ms / 1000).toFixed(1) + " s on this laptop, " + t.audio_seconds.toFixed(1) + " s of audio";
-      if (!t.transcript) { state = "idle"; paint(); say("I heard nothing. Try again closer to the microphone."); return; }
+      if (!t.transcript) { state = "idle"; paint(); say("I heard nothing. Say it again, closer to the microphone."); return; }
       return turn({ transcript_id: t.transcript_id });
     }).catch(function (e) {
       el.chip.textContent = "Not read";

@@ -98,7 +98,7 @@ def build():
         refund("d", "2NB27940EC188891M", "3.50", "held for approval above USD 2.00, then refund", "Approved, refund VERIFIED at PayPal",
                record_extra={"approval": "approved by a person before the refund was sent"}),
         refund("e", "", "1.50", "refund, then read PayPal before any retry", "One refund at PayPal, VERIFIED by reconciliation",
-               record_extra={"fault": "the response to the refund was withheld; the second attempt sent nothing"}),
+               record_extra={"fault": "the response to the refund was withheld; the second call sent nothing"}),
     ]
     for i, refund_id in enumerate(("6PX35920F4587564U", "76C086475Y724052F", "9C434129FA2384059"), 1):
         key = f"m{i}-fe0692"
@@ -220,7 +220,7 @@ def main():
         else:
             print("skipped", source.name, "(not in the site row format, see the top of this file)")
     (data / "totals.json").write_text(json.dumps(totals(build()["rows"]), indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
-    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json"))
+    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json"))
     files.remove("ledger.json"); files.insert(0, "ledger.json")
     (data / "manifest.json").write_text(json.dumps({"files": files}, indent=1) + "\n", encoding="utf-8")
     print("site/data/manifest.json lists:", ", ".join(files))

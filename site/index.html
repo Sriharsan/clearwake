@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Clearwake</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="description" content="Clearwake settles PayPal disputes before they turn into fees. Shown from recorded runs on the real PayPal sandbox.">
+<meta name="description" content="When an agent's order goes missing, agents fix it. The buyer's agent and the seller's agent settle an item not received dispute inside PayPal, with proof, before a claim or a fee.">
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="home.css">
@@ -20,6 +20,7 @@
     <nav aria-label="Pages">
       <a href="/control-room">Control Room</a>
       <a href="/developers">Developers</a>
+      <a href="/break">Break it</a>
       <button class="theme" type="button" aria-label="Switch theme">Light</button>
     </nav>
   </div>
@@ -29,26 +30,86 @@
   <section class="hero" aria-labelledby="h1">
     <img class="wave" src="img/hokusai-great-wave.jpg" width="600" height="403" alt="Hokusai's woodblock print The Great Wave: a huge wave with foam like claws curls over three boats, with Mount Fuji small in the distance">
     <div class="hero-in wrap">
-      <p class="eyebrow">For sellers on PayPal</p>
-      <h1 id="h1">Settle PayPal disputes before they turn into fees.</h1>
+      <p class="eyebrow">After an agent buys</p>
+      <h1 id="h1" class="line">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</h1>
+      <p class="tagline">When an agent's order goes missing, agents fix it.</p>
       <div class="hero-row">
-        <p class="lede">Agents inside your own network resolve each case with the buyer, inside your limits, and never call a refund done until PayPal's record says so.</p>
+        <p class="lede">Built for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.</p>
         <div class="cta">
           <a class="btn primary" href="/control-room">Open the Control Room</a>
-          <a class="btn" href="/developers">Read the developer docs</a>
+          <a class="btn" href="#loop">See the loop</a>
         </div>
       </div>
       <dl class="lead-numbers" id="lead-numbers" aria-label="Measured numbers from the recorded runs" hidden></dl>
-      <ul class="proof-line" id="proof-line" aria-label="Results on the real PayPal sandbox">
-        <li><b>Case n</b> settled at INQUIRY, no fee</li>
-        <li><b>Case o</b> dispatch proof on PayPal's record</li>
-        <li><b>Case i</b> tracking on PayPal's record</li>
-      </ul>
-      <p class="hero-note">Real PayPal sandbox, test money. Every figure comes from a recorded run.</p>
+      <p class="hero-note">Real PayPal sandbox, test money. Every figure comes from a recorded run; a figure from a local run on the local provider says so.</p>
     </div>
   </section>
 
-  <section class="wrap lanes-sec" aria-label="Cases">
+  <section class="band wrap loop" id="loop" aria-labelledby="loop-h">
+    <p class="eyebrow">One loop, every case</p>
+    <h2 id="loop-h">Item not received, from shipping to two receipts.</h2>
+    <p class="lede">Every part of Clearwake is a step in this one sequence. No step is a separate product.</p>
+    <ol class="seq">
+      <li class="seq-step zero"><span class="seq-n" aria-hidden="true">0</span><div><h3>Rules, set once, in plain words</h3><p>The merchant says the limits out loud. The buyer sets what their agent may claim. After that a model can propose anything, and it can never go past the signed rules.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">1</span><div><h3>Prevention</h3><p>When the merchant ships, Clearwake adds the tracking to PayPal through the Add Tracking API, so the order is ready to defend before any dispute exists.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">2</span><div><h3>The buyer's agent watches</h3><p>When the tracking stalls past the expected date, it opens the item not received dispute in PayPal, inside its mandate. It can only claim for orders its mandate covers.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">3</span><div><h3>The merchant's agent reads</h3><p>The dispute, the order, the tracking on PayPal, and the signed dispatch record, with the photo count where there is one.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">4</span><div><h3>The model drafts, the rules decide</h3><p>Delivered with proof: send the evidence. In transit: message the buyer's agent with the tracking and a date. Not shipped, lost or short shipped: offer a refund or a partial settlement inside the merchant's limits, sent alone. The buyer's agent accepts only what its mandate allows.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">5</span><div><h3>Both sides read PayPal's record</h3><p>Until it says RESOLVED. A lost response is never retried blindly, and nothing is ever paid twice.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">6</span><div><h3>Two signed receipts</h3><p>One from each side. Both name the same PayPal dispute id, and both verify offline.</p></div></li>
+    </ol>
+    <svg class="two-rings" viewBox="0 0 320 130" role="img" aria-labelledby="tr-t tr-d">
+      <title id="tr-t">Two receipts, one dispute id</title>
+      <desc id="tr-d">Two overlapping rings. The left ring is the buyer's signed receipt and the right ring is the merchant's signed receipt. Where they overlap is the same PayPal dispute id, PP-R-OBG-10196144.</desc>
+      <circle class="tr-a" cx="125" cy="65" r="52"/><circle class="tr-b" cx="195" cy="65" r="52"/>
+      <text class="tr-t" x="88" y="62">Buyer</text><text class="tr-t" x="232" y="62">Merchant</text>
+      <text class="tr-m" x="160" y="58">same</text><text class="tr-m" x="160" y="74">dispute id</text>
+      <text class="tr-id" x="160" y="124">PP-R-OBG-10196144</text>
+    </svg>
+  </section>
+
+  <section class="band wrap rules" id="rules" aria-labelledby="rules-h">
+    <div>
+      <p class="eyebrow">Step zero</p>
+      <h2 id="rules-h">Say the rules once, in plain words.</h2>
+      <p class="lede">The merchant says it out loud. Typing works too.</p>
+      <blockquote class="said">Refund anything under $30 that has not arrived in 10 days. Ask me above that. Never refund twice.</blockquote>
+      <blockquote class="said">You can claim for orders you placed, up to the order amount.</blockquote>
+    </div>
+    <div>
+      <ol class="plainsteps">
+        <li>A local model turns the sentence into a policy.</li>
+        <li>The system reads it back in plain words, written by code from the checked policy, so what you hear is what is enforced.</li>
+        <li>The merchant says yes, and the policy is signed.</li>
+      </ol>
+      <p>Ask by voice what happened today. The answer comes from the receipts only. Approve by voice only when the signed policy allows it. On a phone, run <span class="mono">python -m clearwake --phone</span> and scan the code.</p>
+      <p class="note">Every figure in a sentence must be one the person said. A limit the sentence never named is refused.</p>
+    </div>
+  </section>
+
+  <section class="band wrap limit" id="limit" aria-labelledby="limit-h">
+    <p class="eyebrow">The honest limit</p>
+    <h2 id="limit-h">One problem, end to end.</h2>
+    <p class="lede">Clearwake settles item not received. Every other dispute reason is escalated to the owner untouched, with the evidence ready and nothing sent. Agents act only inside the limits the people set, and anything outside goes to a person.</p>
+  </section>
+
+  <section class="band wrap runit" id="run-it" aria-labelledby="run-h">
+    <div>
+      <p class="eyebrow">How to run it</p>
+      <h2 id="run-h">Python 3.12 or newer. Nothing to install.</h2>
+      <p class="lede">It starts on local records and makes no network calls.</p>
+    </div>
+    <div>
+      <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
+cd clearwake
+python -m clearwake --port 8810</pre>
+      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. Speak to it from a phone with <span class="mono">python -m clearwake --phone</span>. The network isolated run (case m) needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
+    </div>
+  </section>
+
+  <section class="wrap lanes-sec" id="cases" aria-label="Recorded cases">
+    <p class="eyebrow">The recorded proof</p>
+    <p class="lanes-note">Real PayPal sandbox cases, each with its PayPal id.</p>
     <div class="lanes" role="group" aria-label="Cases sorted into three lanes">
       <div class="lane teal">
         <h2 class="lane-title">Settled before escalation</h2>
@@ -188,11 +249,11 @@
         <p class="result" id="proof-result" aria-live="polite"></p>
       </div>
     </div>
-    <p class="after">The buyer then wrote "Only 2 of 3 notebooks arrived." on dispute PP-R-UKF-10195772. The policy found strong proof and sent evidence. PayPal refused the first try (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES) and nothing was applied. The next reply was lost, so Clearwake held it as UNKNOWN and read the dispute. The third try, with the same request id, was accepted, and PayPal's record shows a PROOF_OF_FULFILLMENT from the seller.</p>
+    <p class="after">The buyer then wrote "Only 2 of 3 notebooks arrived." on dispute PP-R-UKF-10195772. The policy found strong proof and sent evidence. PayPal refused the first send (ITEM_ID_IS_MANDATORY_FOR_MULTIPLE_EVIDENCES) and nothing was applied. The next reply was lost, so Clearwake held it as UNKNOWN and read the dispute. The third send, with the same request id, was accepted, and PayPal's record shows a PROOF_OF_FULFILLMENT from the seller.</p>
   </section>
 
   <section class="band wrap cable" id="cable" aria-labelledby="cable-h">
-    <p class="eyebrow">Pull the cable</p>
+    <p class="eyebrow">One proof case: the network cut</p>
     <h2 id="cable-h">Drag the plug out. Money waits.</h2>
     <p class="lede">Case m, network isolated containers, 31 Oct 2026. Drag the plug left, or focus it and press the left arrow. Press the right arrow to plug it back in.</p>
     <svg id="cable-svg" class="cable-svg" viewBox="0 0 640 130" role="group" aria-label="Cable between the agents and the egress gateway">
@@ -266,20 +327,6 @@
     </details>
   </section>
 
-  <section class="band wrap runit" id="run-it" aria-labelledby="run-h">
-    <div>
-      <p class="eyebrow">Run it on your machine</p>
-      <h2 id="run-h">Python 3.12 or newer. Nothing to install.</h2>
-      <p class="lede">It starts on local records and makes no network calls.</p>
-    </div>
-    <div>
-      <pre class="codeblock">git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
-cd clearwake
-python -m clearwake --port 8810</pre>
-      <p>Then open <span class="mono">http://127.0.0.1:8810/console</span>. The network isolated run (case m) needs Docker and your own sandbox keys: <span class="mono">python scripts/airgap.py</span>. Check a receipt log with the network off: <span class="mono">python -m verdock_core verify &lt;log.ndjson&gt; --public-key &lt;64 hex characters&gt;</span>.</p>
-    </div>
-  </section>
-
   <section class="closing" aria-labelledby="close-h">
     <img class="wave" src="img/hokusai-great-wave.jpg" width="600" height="403" alt="" loading="lazy">
     <div class="wrap closing-in">
@@ -294,7 +341,7 @@ python -m clearwake --port 8810</pre>
 
 <footer class="foot">
   <div class="wrap">
-    <p>Clearwake. A PayPal dispute and refund agent for sellers.</p>
+    <p>Clearwake. When an agent's order goes missing, agents fix it.</p>
     <p><a href="https://github.com/Sriharsan/clearwake">Repository</a> &nbsp; <a href="receipts/manifest.json">Receipts</a> &nbsp; <a href="https://github.com/Sriharsan/clearwake/blob/main/LICENSE">Licences</a></p>
     <p class="credit">Art: Hokusai, The Great Wave, Met Museum, public domain. Type: Figtree.</p>
   </div>

@@ -22,6 +22,35 @@ def ollama_url():
     return f"http://{host}/v1/chat/completions"
 META = "https://api.meta.ai/v1/chat/completions"
 
+# Speed settings for the local model, chosen by measurement (scripts/ai_speed.py, docs/RESULTS.md "Speed"). Each can be set in the environment.
+NUM_CTX = int(os.environ.get("CLEARWAKE_OLLAMA_CTX", "1024"))      # a small window: the prompts here are about 300 tokens
+NUM_BATCH = int(os.environ.get("CLEARWAKE_OLLAMA_BATCH", "512"))
+NUM_THREADS = int(os.environ.get("CLEARWAKE_OLLAMA_THREADS", "6"))
+# Grammar constrained output (a schema sent as `format`) costs about 90 ms per generated token on this CPU, measured. Off by default: the reply is read
+# tolerantly and code validates every field; the grammar is used only for one retry when the first reply is not JSON.
+GRAMMAR = os.environ.get("CLEARWAKE_OLLAMA_GRAMMAR", "off") == "on"
+KEEP_ALIVE = os.environ.get("CLEARWAKE_OLLAMA_KEEP_ALIVE", "30m")  # weights stay in memory, so the filmed call has no load time
+
+
+def fields_instruction(fields):
+    return " Reply with one JSON object on a single line, no code fence, with exactly these keys: " + ", ".join(fields) + "."
+
+
+def extract_json(text):
+    """The first JSON object in a model reply, read tolerantly (a code fence or a line of prose around it). Raises ValueError if there is none."""
+    text = (text or "").strip()
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end < start:
+        raise ValueError("no JSON object in the reply")
+    return json.loads(text[start:end + 1])
+
+
+def schema_for(fields, enums=None):
+    """A JSON schema that holds exactly `fields`. Ollama builds a grammar from it, so the reply is only those fields and nothing else."""
+    enums = enums or {}
+    return {"type": "object", "properties": {f: ({"type": "string", "enum": list(enums[f])} if f in enums else {"type": "string"}) for f in fields},
+            "required": list(fields), "additionalProperties": False}
+
 
 @dataclass(frozen=True)
 class Proposal:
@@ -52,14 +81,26 @@ class Adapter:
         native = self.backend == "ollama" and url.endswith("/v1/chat/completions")
         if native:  # Ollama's own chat route accepts the thread count and switches reasoning off; the OpenAI route accepts neither
             url = url.replace("/v1/chat/completions", "/api/chat")
-            payload = {"model": payload["model"], "stream": False, "format": payload.get("ollama_format") or "json", "think": False, "keep_alive": "30m", "messages": payload["messages"],
-                       "options": {"temperature": 0, "num_predict": payload.get("max_tokens", 400), "num_thread": int(os.environ.get("CLEARWAKE_OLLAMA_THREADS", "6"))}}
+            schema = payload.get("ollama_format")
+            base = {"model": payload["model"], "stream": False, "think": False, "keep_alive": KEEP_ALIVE, "messages": payload["messages"],
+                    "options": {"temperature": 0, "num_predict": payload.get("max_tokens", 400), "num_thread": NUM_THREADS, "num_ctx": NUM_CTX, "num_batch": NUM_BATCH}}
+            tokens = [0, 0]
+            for constrained in ((True,) if GRAMMAR else (False, True)):
+                body = {**base, "format": schema or "json"} if constrained else base
+                reply = self._post(opener, url, body, headers)
+                tokens = [(tokens[0] or 0) + (reply.get("prompt_eval_count") or 0), (tokens[1] or 0) + (reply.get("eval_count") or 0)]
+                content = reply["message"]["content"]
+                try:
+                    content = json.dumps(extract_json(content))
+                    break
+                except ValueError:
+                    continue   # not JSON: ask once more with the grammar
+            return {"choices": [{"message": {"content": content}}], "usage": {"prompt_tokens": tokens[0], "completion_tokens": tokens[1]}}
+        return self._post(opener, url, payload, headers)
+
+    def _post(self, opener, url, payload, headers):
         with opener.open(Request(url, data=json.dumps(payload).encode(), headers={"Content-Type": "application/json", **headers}, method="POST"), timeout=self.timeout) as response:
-            reply = json.loads(response.read(1 << 20))
-        if native:
-            return {"choices": [{"message": {"content": reply["message"]["content"]}}],
-                    "usage": {"prompt_tokens": reply.get("prompt_eval_count"), "completion_tokens": reply.get("eval_count")}}
-        return reply
+            return json.loads(response.read(1 << 20))
 
     def propose(self, system, user, fields, scripted, required=None, schema=None, max_tokens=None):
         """Ask for a JSON object with `fields` (`required` keys must all be present, default all). `scripted` is the rule used when backend is scripted.
@@ -69,7 +110,7 @@ class Adapter:
             return Proposal("scripted", "scripted", self.label(), scripted())
         url, headers = (ollama_url(), {}) if self.backend == "ollama" else (META, {"Authorization": "Bearer " + os.environ.get("META_API_KEY", "")})
         payload = {"model": self.model, "temperature": 0, "response_format": {"type": "json_object"},
-                   "messages": [{"role": "system", "content": system + " Reply with one JSON object with exactly these keys: " + ", ".join(fields) + "."},
+                   "messages": [{"role": "system", "content": system + fields_instruction(fields)},
                                 {"role": "user", "content": user}]}
         if self.backend == "ollama":
             payload.update(self.options)

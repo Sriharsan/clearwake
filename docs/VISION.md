@@ -11,7 +11,7 @@ Clearwake (PayPal) and Relayloom (Meta) are two entries built on the same engine
 * **Built.** Evidence for PayPal disputes, gathered only from records, with deadline escalation to a person.
 
 ## Next
-* **Built (31 October).** Agents, policy, checks, receipts and the local model run on a network isolated Docker network; one verdock-core egress gateway reaches only the PayPal sandbox and receipts every request; a network cut holds money actions as "held, offline" (case m). **Planned:** the same boundary for every daily operation, not only the demo cases.
+* **Built (31 October).** Agents, policy, checks, receipts and the local model run on a network isolated Docker network; one verdock-core egress gateway reaches only the PayPal sandbox and receipts every request; a network cut holds money actions as "held, offline" (case m). **Planned:** the same boundary for every daily operation, not only the recorded cases.
 * **Planned.** Private mode on local open weights models by default. A local model already runs the agents' proposals as an option.
 * **Planned.** Shared context for teams of people and agents working on one goal. Relayloom is the start of this.
 * **Planned.** Continuous operations: agents run every day and every outcome is checked.

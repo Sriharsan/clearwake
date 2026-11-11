@@ -10,9 +10,9 @@ Policy, approvals, swarm invariants and locks, outcome states with the reconcile
 paypal/agent-toolkit (Apache 2.0, 1.11.0) pins openai-agents, langchain and crewai-tools. Making it a hard dependency would break the run with nothing installed. Clearwake keeps its own sandbox only adapter with an allowlist of routes, and uses the toolkit only in an optional environment for the toolkit comparison. The toolkit has no capture refund tool. Its money returning action for disputes is accept_dispute_claim, so the comparison uses that.
 
 ## Disputes
-* `POST /v1/customer/disputes` with a buyer PayPal-Auth-Assertion was tried against the sandbox on 31 October. It returned HTTP 400 "No permissions to set target_client_id". Opening a dispute on the buyer's behalf needs partner permission that a normal merchant app does not have.
+* `POST /v1/customer/disputes` with a buyer PayPal-Auth-Assertion was run against the sandbox on 31 October. It returned HTTP 400 "No permissions to set target_client_id". Opening a dispute on the buyer's behalf needs partner permission that a normal merchant app does not have.
 * So real PayPal disputes are opened by the sandbox buyer in the sandbox Resolution Center (a manual step by Sri). Clearwake then lists, reads and resolves them through the Disputes API: accept claim with a refund amount, or provide evidence. In the sandbox it can also settle a dispute with `/adjudicate`, which is sandbox only.
-* For repeatable demo cases, the buyer agent's complaint reaches the merchant through Clearwake itself, labelled "buyer complaint". Money still moves only through real sandbox refunds checked against PayPal's record.
+* For repeatable recorded cases, the buyer agent's complaint reaches the merchant through Clearwake itself, labelled "buyer complaint". Money still moves only through real sandbox refunds checked against PayPal's record.
 
 ## Buyer payments
 The sandbox merchant for this app is not enabled for card processing (PAYEE_NOT_ENABLED_FOR_CARD_PROCESSING, observed 31 October). So buyer agent purchases are approved by the sandbox buyer in PayPal's checkout. A US sandbox business account with card processing would let the buyer agent pay with PayPal's published sandbox test cards, without a login.

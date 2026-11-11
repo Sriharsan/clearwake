@@ -48,7 +48,7 @@ test('countdown follows seller_response_due_date with the 24 hour escalation win
 });
 
 test('rehearsal outcomes never claim verification against PayPal', () => {
-  assert.equal(L.outcome('VERIFIED', true).label, 'Matches rehearsal record');
+  assert.equal(L.outcome('VERIFIED', true).label, 'Matches local record');
   assert.doesNotMatch(L.outcome('VERIFIED', true).label, /verified/i);
   assert.equal(L.outcome('VERIFIED', false).label, 'Verified against PayPal');
   assert.equal(L.outcome('UNKNOWN', true).cls, 'unknown');

@@ -1,43 +1,57 @@
 <!--
-TODO for the lead before submission (remove this comment when done):
-* Screenshots: docs/img/console-merchant.png and docs/img/site-home.png are made by agent C and did not exist when this README was written, so they are not referenced. Add them under the headline when the files exist:
-    ![Clearwake console, merchant control room with the dispute ledger](docs/img/console-merchant.png)
-    ![Clearwake public site](docs/img/site-home.png)
-* The three numbers under the headline come from data/runs/ files (batch by agent B, model calls by agent A); fill them first.
-* Fill every [PLACEHOLDER] in the status table (list at the top of D:\paypal hackathon\DEVPOST_ENTRY.md).
+Notes for the lead before submission (remove this comment when done):
+* The real ten case batch numbers are the [BATCH_*] placeholders. Fill them from data/runs/batch-sandbox-*.json when it lands, in the headline block and the status table. List: docs/DEVPOST_FORM.md.
+* Honest limit: the batch path sets swarm.only_item_not_received (clearwake/batch.py), so every other dispute reason is escalated untouched there. The plain Swarm default for the console and live dispute path leaves that flag off. [Lead: confirm the flag is on for the live and hosted path, or the limit paragraph is true for the batch only.]
+* Screenshots: docs/img/console-merchant.png and docs/img/site-home.png, when they exist.
 -->
 # Clearwake
 
-**When an AI agent buys, Clearwake settles what goes wrong.** The buyer's agent and the merchant's agent resolve the dispute inside PayPal's own conversation, each within limits its owner signed, before it becomes a claim or a fee. PayPal's record decides when it is done, and both sides keep proof.
+**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
+
+*When an agent's order goes missing, agents fix it.*
+
+It is for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.
 
 Measured, from the run files in `data/runs/`:
 
-* **[BATCH_SETTLED] of [BATCH_TOTAL]** disputes opened by the buyer agent on the PayPal sandbox settled at the INQUIRY stage with no fee, as PayPal's record reads.
-* **[BATCH_SECONDS_PER_CASE] seconds** per case, agent to agent, with [MODEL_CALLS] model calls.
-* **1 refund instead of 2** after a lost response, and a 5000.00 claim refused instead of paid, against PayPal's agent toolkit on the same injected faults (no network) ([docs/TOOLKIT_FAILURE_CASES.md](docs/TOOLKIT_FAILURE_CASES.md)).
+* **[BATCH_SETTLED] of [BATCH_TOTAL]** agent bought item not received cases on the PayPal sandbox settled by the two agents at the INQUIRY stage with no fee, as PayPal's record reads, in [BATCH_SECONDS_PER_CASE] seconds per case, with [BATCH_ESCALATED] correctly handed to the owner.
+* **USD 0.00 overpaid and 0 double refunds by Clearwake in 200 episodes, against USD 2,633.25 and 61 double refunds for an agent using PayPal's Agent Toolkit directly** on the same cases and faults, on the local PayPal layer (`data/runs/baseline-20261110-172506.json`, [docs/BASELINE.md](docs/BASELINE.md)).
+* **85 model calls** on local models in the recorded runs, and the policy decided correctly on all 84 prompts it was scored on, overriding the model's proposal 21 times ([docs/RESULTS.md](docs/RESULTS.md)).
 
 ```sh
 git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git && cd clearwake && python -m clearwake --port 8810
 ```
 
-Open http://127.0.0.1:8810/console. Python 3.12 or newer, nothing to install. Windows: `.\demo.ps1`. macOS or Linux: `./demo.sh`. The network isolated run (case m) needs Docker: `python scripts/airgap.py`.
+Open http://127.0.0.1:8810/console. Python 3.12 or newer, nothing to install. Windows: `.\demo.ps1`. macOS or Linux: `./demo.sh`. From a phone, speak to it with `python -m clearwake --phone` ([docs/VOICE.md](docs/VOICE.md)). The network cut run (case m) needs Docker: `python scripts/airgap.py`.
 
 * Public site (recorded sandbox run, receipt verifier in your browser): https://clearwake-mu.vercel.app
 * Live console, hosted on Render, not network isolated: [RENDER_URL]
 * Video: [VIDEO_URL]
 * API: [OpenAPI 3.1 spec](openapi/clearwake-console.openapi.yaml), [Postman collection](postman/clearwake-paypal.postman_collection.json)
 
-How it runs: locally the console is a rehearsal with no PayPal calls; every PayPal sandbox run is listed in the status table below with its ids. Sandbox means PayPal's test environment with test money. No live PayPal, no real money.
+How it runs: without keys the console is a local run on the local provider, with no PayPal calls; every PayPal sandbox run is listed in the status table below with its ids. Sandbox means PayPal's test environment with test money. No live PayPal, no real money.
 
 **License:** MIT.
 
-## What happens
+## The loop
 
-1. The buyer's agent buys a parcel inside a mandate its owner signed (budget, per item cap, store, categories). The mandate is signed and linked to the PayPal order.
-2. One item is missing. The buyer's agent opens the dispute in PayPal's Resolution Center as the sandbox buyer, through a browser on the owner's own machine, and its owner's dispute rule says what it may accept (for example any refund of 80 percent or more for a missing item).
-3. The merchant's agent reads the dispute and the buyer's message. A local model proposes settle, fight or escalate. The policy file decides. Code checks every amount and every cited id. The agent checks its dispatch proof, then sends a message and an offer through PayPal's `send-message` and `make-offer`.
-4. The buyer's agent accepts within its rule. Both sides write signed receipts.
-5. Clearwake says "settled, no fee" only when PayPal's own record reads RESOLVED at the INQUIRY stage.
+Item not received, end to end, in one sequence. Every feature below is a step in it.
+
+0. **Rules, set once, in plain words.** The merchant says the rules out loud (typing is the fallback). A local model turns them into a policy, the system reads it back in plain words, the merchant says yes, and it is signed. The buyer does the same for their agent. After that the model can propose anything and can never go past the signed policy.
+1. **Prevention.** When the merchant ships, Clearwake adds the tracking to PayPal through the Add Tracking API, so the order is ready to defend before any dispute exists.
+2. **The buyer's agent watches.** It bought inside a mandate its owner signed (budget, per item cap, store, categories). When the tracking stalls past the expected date it opens the item not received dispute in PayPal's Resolution Center as the sandbox buyer, through a browser on the owner's own machine, inside that mandate. It can only claim for orders its mandate covers.
+3. **The merchant's agent reads** the dispute, the order, the tracking on PayPal and the signed dispatch record, with the photo count where there is one.
+4. **The model drafts, the rules decide.** Delivered with proof: send the evidence. In transit: message the buyer's agent with the tracking and a date. Not shipped, lost or short shipped: offer a refund or a partial settlement inside the merchant's limits, sent alone through PayPal's `make-offer`. The buyer's agent accepts only what its mandate allows.
+5. **Both sides read PayPal's record until it says RESOLVED.** A lost response is never retried blindly. "Settled, no fee" is said only when PayPal's record reads RESOLVED at the INQUIRY stage.
+6. **Two signed receipts**, one from each side, both naming the same PayPal dispute id, verified offline in Python or in a browser.
+
+### The honest limit
+
+Clearwake settles item not received and nothing else. Every other dispute reason is escalated to the owner untouched, with nothing sent. The person and the merchant each set their rules once; agents act only inside them; anything outside goes to a person with the evidence ready.
+
+### Rules in plain words, by voice
+
+The merchant says: "Refund anything under $30 that has not arrived in 10 days. Ask me above that. Never refund twice." The buyer says: "You can claim for orders you placed, up to the order amount." Speech to text runs on the laptop with local Whisper; no cloud speech service is used. A local model turns the sentence into a policy, code checks every field and every figure against the sentence, the readback in plain words is written by code, and the signed receipt records the SHA-256 of the transcript. The merchant can also ask by voice what happened today (answered from the receipts only, no model writes it) and approve by voice only when the signed policy allows it. Details: [docs/PLAIN_WORDS_RULES.md](docs/PLAIN_WORDS_RULES.md), [docs/VOICE.md](docs/VOICE.md). Measured: Whisper small.en on this laptop's CPU heard 11 of 11 spoken clips as the right intent, mean word error 0.036 (`data/runs/voice-20261110-223540.json`).
 
 ## The money leak
 
@@ -86,7 +100,7 @@ When a buyer says some items did not arrive, the Evidence agent finds that recei
 
 ```sh
 python scripts/dispatch.py pack --order <order id> --capture <capture id> --item notebook-a5=3:notebook --photo parcel.jpg --sealed
-python scripts/cases.py --only o       # rehearsal: strong proof sends evidence, weak proof settles by offer
+python scripts/cases.py --only o       # local run: strong proof sends evidence, weak proof settles by offer
 ```
 
 Still photos use **SAM 3** (`facebook/sam3`). Meta's SAM 3.1 checkpoint is the video tracker, and Clearwake does not claim to count photos with it. The model name, device and milliseconds are written into every receipt. SAM and its weights are gated on Hugging Face and need a one time setup that you run yourself: [tools/sam/README.md](tools/sam/README.md). SAM Materials are under the SAM License; credits are in [docs/THIRD_PARTY.md](docs/THIRD_PARTY.md). What is real: SAM 3 counted three notebooks in a CC0 test photo offline on this laptop's CPU (15 s to load, 56 s to count), the signed receipt was written, and PayPal's sandbox accepted the evidence with the photo on dispute `PP-R-UKF-10195772`.
@@ -98,14 +112,14 @@ Still photos use **SAM 3** (`facebook/sam3`). Meta's SAM 3.1 checkpoint is the v
 | Agent to agent batch: [BATCH_TOTAL] sandbox orders bought and disputed by the buyer agent | real sandbox, buyer agent through a local browser, merchant agent with a local model | [BATCH_SETTLED] settled at INQUIRY with no fee, [BATCH_EVIDENCE] evidence sent, [BATCH_ESCALATED] escalated to the owner, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_SECONDS_PER_CASE] s per case. A bracket means that run is not recorded yet |
 | Merchant agent, model calls | recorded run files | [MODEL_CALLS] model calls with `[MODEL_NAME]`, timings in [docs/RESULTS.md](docs/RESULTS.md) |
 | Case n, settled in conversation | **real sandbox**, dispute `PP-R-OBG-10196144` | PASS: offer of USD 2.50, PayPal paid the settlement (refund `0TB11858A85953644`), the case read RESOLVED at the INQUIRY stage, never a claim, no fee. The sandbox buyer opened it and accepted by hand |
-| Case o, dispatch proof | **real sandbox**, SAM 3 on the CPU, CC0 test photo | PASS (3 November): 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo from the seller. First try refused by PayPal, second lost and held UNKNOWN, third accepted |
+| Case o, dispatch proof | **real sandbox**, SAM 3 on the CPU, CC0 test photo | PASS (3 November): 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo from the seller. First send refused by PayPal, second lost and held UNKNOWN, third accepted |
 | Case m, network cut mid batch (`scripts/airgap.py`) | real sandbox, network isolated containers, egress gateway | PASS: refund `6PX35920F4587564U` before the cut; two refunds held offline; after reconnect `76C086475Y724052F` and `9C434129FA2384059` VERIFIED, no duplicate; receipts verified with networking disabled |
 | Case i (real PayPal dispute) | real sandbox | PASS on `PP-R-SLI-10195419`: tracking sent as the supporting info PayPal offered, read back VERIFIED |
 | Cases c, d, e (`scripts/cases.py --sandbox`) | real sandbox; e is an injected fault in sandbox | PASS, twice on 31 October. Latest refunds `6SN41486G5579815G` and `2NB27940EC188891M` VERIFIED |
 | Four refund cases (`scripts/check_sandbox.ps1`) | real sandbox | 4 of 4 PASS. Refunds `79R527888E694933F` and `7A545589JM079780C` COMPLETED |
-| Cases a to o (`scripts/cases.py`) | rehearsal, no PayPal calls | 15 of 15 PASS (1 November) |
+| Cases a to o (`scripts/cases.py`) | local run, no PayPal calls | 15 of 15 PASS (1 November) |
 | Cases k, l (a dispute near its deadline, ten at once) | real sandbox | Not run on the sandbox on their own: k needs a dispute close to its deadline. The batch above replaces l |
-| Console (`/console`), AG Grid dispute ledger and fee leak gauge | rehearsal locally; hosted at [RENDER_URL] | runs |
+| Console (`/console`), AG Grid dispute ledger and fee leak gauge | local run locally; hosted at [RENDER_URL] | runs |
 | Public site, https://clearwake-mu.vercel.app | static on Vercel, recorded sandbox run | verifies the real case m receipts in the browser |
 | Tests | offline | [TESTS_PY] Python and [TESTS_UI] UI tests pass |
 | Postman collection, 18 requests | checked offline; run against the sandbox by Sri | structure and scripts verified ([docs/POSTMAN.md](docs/POSTMAN.md)); sandbox run [POSTMAN_RUN] |
@@ -117,6 +131,7 @@ Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](
 * **Merchant agent: a local model through Ollama, [MODEL_NAME].** It reads each dispute and buyer message, proposes settle, fight or escalate, and writes the reply and the offer note. It runs in its own container inside the isolated network. The policy decides; code checks every amount and cited id. Each call is recorded in the signed receipts.
 * **Buyer agent.** Picks a product and handles the dispute inside the owner's mandate and dispute rule. Every step is receipted and linked to the mandate receipt.
 * **SAM 3** counts items in packing photos on the merchant's machine for the dispatch proof.
+* **Whisper small.en** (local, through faster-whisper) turns the merchant's spoken rules, questions and approvals into text on the laptop. The local model then turns rules text into a policy; code validates it.
 * **Scripted fallback.** Fixed rules, labelled "scripted, not AI" on screen and in every run file, used when no model is running.
 
 Models only propose. The limits live in [policy/merchant.yaml](policy/merchant.yaml), read by the server and never by a model: refunds up to USD 2.00 run alone, up to USD 5.00 need an approval, anything above is refused; offers to settle up to USD 3.00 run alone, up to USD 5.00 need an approval, and above that a partial offer of USD 5.00 goes to the owner; one customer is capped at USD 6.00 a day.
@@ -145,7 +160,7 @@ Planned, not built: shared context for teams of people and agents, continuous da
 ## Cases, one command each
 
 ```sh
-python scripts/cases.py                         # rehearsal, a to o, no network
+python scripts/cases.py                         # local run, a to o, no network
 python scripts/cases.py --sandbox               # real sandbox where PayPal allows it (keys in .env)
 python scripts/cases.py --sandbox --only i --dispute <dispute id>   # one real dispute, read by id
 python scripts/cases.py --sandbox --order <order id>                # case a after a sandbox buyer approval

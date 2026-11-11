@@ -1,6 +1,6 @@
 # Official API references reviewed
 
-Reviewed 28–29 October 2026 for the bounded adapter. No API action was taken by
+Reviewed 28 to 29 October 2026 for the bounded adapter. No API action was taken by
 reading these resources.
 
 - [OAuth authentication](https://developer.paypal.com/api/rest/authentication/):
@@ -24,5 +24,5 @@ correlation/capture evidence remains unverified rather than silently accepted.
 Event resources: [rules](https://paypalaihackathon.devpost.com/rules),
 [resources](https://paypalaihackathon.devpost.com/resources),
 [FAQs](https://paypalaihackathon.devpost.com/details/faqs).
-Live PayPal+AI use and the required public demo video are separate acceptance
+Live PayPal+AI use and the required public video are separate acceptance
 and submission gates; offline adapter tests do not establish eligibility.

@@ -52,7 +52,7 @@ class ConsoleHTTPTests(unittest.TestCase):
     def run_case(self, key):
         status, value = self.post("/console/api/case", {"case": key})
         self.assertEqual(status, 200, value)
-        self.assertEqual(value["label"], "rehearsal data")
+        self.assertEqual(value["label"], "local run data")
         return value["entries"]
 
     def test_mutations_need_the_console_csrf_token_and_same_origin(self):
@@ -338,6 +338,39 @@ class ConsoleRestartTests(unittest.TestCase):
             self.assertEqual([e["state"] for e in again.entries], ["awaiting approval"])
             entry = again.approve(again.entries[0]["approval_id"], "Sri (approver)")
             self.assertEqual(entry["state"], "VERIFIED")
+
+
+class ProductScopeTests(unittest.TestCase):
+    """The honest limit is the product default: item not received only, every other reason goes to the owner untouched."""
+
+    def test_the_console_swarm_is_limited_to_item_not_received_by_default(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+            console = Console(Path(folder))
+            self.assertTrue(console.swarm.only_item_not_received)
+            info = console._open_dispute("x", "r1", "CAP-X-r1", "UNAUTHORISED", "3.00", 72, "I did not buy this.", stage="INQUIRY")
+            result = console.swarm.handle_dispute(info["dispute_id"], info["capture_minor"], info["customer"], {"id": info["order"]})
+            record = console.gateway.dispute(info["dispute_id"])
+            self.assertEqual((result.state, result.action), ("awaiting approval", "escalate"))
+            self.assertEqual((len(record["messages"]), "offer" in record, "evidences" in record), (1, False, False))
+            lines = [json.loads(l) for l in Path(console.swarm.receipts.path).read_text(encoding="utf-8").splitlines()]
+            scoped = [l for l in lines if l["action_id"] == "clearwake.dispute.out_of_scope"]
+            self.assertEqual([l["params"]["sent_anything"] for l in scoped], [False])
+
+    def test_item_not_received_is_still_handled_and_recorded_cases_keep_their_behaviour(self):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as folder:
+            console = Console(Path(folder))
+            self.assertEqual([e["state"] for e in console.run_case("i")["entries"]], ["VERIFIED"])
+            self.assertEqual([e["state"] for e in console.run_case("n")["entries"]], ["VERIFIED"])   # recorded case outside the product scope
+            unauthorised = console.run_case("j")["entries"]
+            self.assertEqual(unauthorised[0]["action"], "provide_evidence")
+            self.assertTrue(console.swarm.only_item_not_received)   # the explicit parameter does not leak out of the recorded case
+            cases = {c["key"]: c["scope"] for c in console.state()["cases"]}
+            self.assertEqual({k: v for k, v in cases.items() if v == "outside"}, {"j": "outside", "l": "outside", "n": "outside"})
+
+    def test_the_case_runner_labels_the_recorded_cases_outside_the_product_scope(self):
+        source = (Path(__file__).resolve().parent.parent / "scripts" / "cases.py").read_text(encoding="utf-8")
+        self.assertGreaterEqual(source.count("(recorded case outside the product scope)"), 5)   # the label on the j, l and n titles
+        self.assertIn("product(MerchantSwarm(jg, work / \"j\", adapter), False)", source); self.assertIn("product(ds, False)", source); self.assertIn("product(MerchantSwarm(ng, work / \"n\", adapter), False)", source)
 
 
 if __name__ == "__main__":

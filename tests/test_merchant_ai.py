@@ -33,6 +33,9 @@ class MerchantAiTests(unittest.TestCase):
     def setUp(self):
         self.folder = tempfile.TemporaryDirectory(); self.root = Path(self.folder.name)
         self.gateway = RehearsalGateway(self.root / "provider.sqlite3")
+        from unittest import mock
+        patch = mock.patch("clearwake.swarm.MODEL_TEXT", True)   # these tests cover the model written message; the speed default sends the checked template
+        patch.start(); self.addCleanup(patch.stop)
 
     def tearDown(self):
         self.folder.cleanup()

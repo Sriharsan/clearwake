@@ -1,0 +1,87 @@
+/* Break it page. Tokens come from base.css. No inline styles: the site CSP is style-src 'self'. */
+html{scroll-behavior:smooth}
+.bar nav a{display:inline-flex;align-items:center;min-height:2.75rem}
+.theme{width:auto;min-width:2.75rem;min-height:2.75rem;padding:0 .6rem;font-size:.9rem}
+main{padding-bottom:2rem}
+.intro{padding-block:clamp(2.5rem,7vw,5rem) 1.5rem}
+.intro h1{font-size:clamp(2.4rem,6.2vw,5rem);font-weight:700;letter-spacing:-.04em;line-height:.98;max-width:19ch;margin-bottom:1.25rem}
+.intro .lede{max-width:42rem}
+.label{margin:0;font-size:.85rem;color:var(--mist);border-left:3px solid var(--teal);padding-left:.75rem;max-width:42rem}
+.eyebrow{font-weight:600}
+
+/* attack picker: four large choices, no boxes around the page */
+.picker{padding-block:1.5rem 1rem;border-top:1px solid var(--border)}
+.attacks{border:0;margin:0;padding:0;display:grid;gap:.5rem;grid-template-columns:1fr 1fr}
+@media (min-width:60rem){.attacks{grid-template-columns:repeat(4,1fr)}}
+.attack{display:block;cursor:pointer}
+.attack>span{display:grid;gap:.15rem;height:100%;padding:.8rem .9rem;min-height:3.5rem;border:1px solid var(--border);border-radius:var(--radius);color:var(--mist)}
+.attack b{color:var(--foreground);font-weight:600;font-size:1rem;line-height:1.25}
+.attack small{font-size:.8rem;line-height:1.35}
+.attack:hover>span{background:var(--surface)}
+.attack input:checked+span{border-color:var(--teal);box-shadow:inset 0 0 0 1px var(--teal);background:var(--surface)}
+.attack input:checked+span b{color:var(--teal)}
+.attack input:focus-visible+span{outline:2px solid var(--teal);outline-offset:3px}
+.go{display:flex;flex-wrap:wrap;align-items:center;gap:1rem 1.5rem;margin-top:1.1rem}
+.blurb{margin:0;color:var(--mist);flex:1 1 18rem;max-width:34rem}
+.run{min-width:12rem;min-height:3.25rem;font-size:1.05rem}
+
+/* result: two columns divided by a rule, big money numbers */
+.result{padding-top:.5rem}
+.result:empty{display:none}
+.rise{animation:rise .45s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(.8rem)}to{opacity:1;transform:none}}
+.episode{margin:1.25rem 0 .75rem;font-weight:600}
+.quote{margin:0 0 1rem;padding:.2rem 0 .2rem 1rem;border-left:3px solid var(--amber);color:var(--mist);max-width:44rem;font-style:normal}
+.sides{display:grid;gap:2rem 3rem;grid-template-columns:minmax(0,1fr)}
+@media (min-width:60rem){.sides{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.side+.side{border-left:1px solid var(--border);padding-left:3rem}}
+.side{border-top:4px solid var(--teal);padding-top:1rem;min-width:0}
+.side.bad{border-top-color:var(--coral)}
+.side-title{font-size:1.15rem;font-weight:700;letter-spacing:-.01em;line-height:1.2}
+.side-note{margin:.25rem 0 1rem;color:var(--mist);font-size:.88rem}
+.big{margin:0;font:700 clamp(3rem,8vw,5.2rem)/1 var(--font-display);letter-spacing:-.045em}
+.bad .big{color:var(--coral)}
+.guarded .big{color:var(--teal)}
+.big-cap{margin:.35rem 0 1rem;color:var(--mist);font-size:.9rem}
+.verdict{margin:0 0 1rem;font-size:1.15rem;font-weight:600;line-height:1.35}
+.stats{display:flex;flex-wrap:wrap;gap:.75rem 2rem;margin:0 0 1.25rem}
+.stat{min-width:0}
+.stat dt{font:600 .7rem/1.2 var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--mist)}
+.stat dd{margin:.15rem 0 0;font:700 1.35rem/1.2 var(--font-sans);font-variant-numeric:tabular-nums}
+.coral{color:var(--coral)}.teal{color:var(--teal)}
+.mini{margin:0 0 .35rem;font:600 .7rem/1.2 var(--font-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--mist)}
+.steps{margin:0;padding-left:1.2rem;color:var(--mist);font-size:.92rem}
+
+/* receipts and the injected sentence */
+.receipts,.inject{margin-top:2.5rem;padding-top:1rem;border-top:1px solid var(--border);max-width:52rem}
+.chain-list{margin:0 0 1rem;padding-left:1.4rem;font-size:.92rem}
+.chain-list li{margin-bottom:.35rem}
+.rname{display:block}
+.rid{display:block;font-size:.75rem;color:var(--mist);overflow-wrap:anywhere}
+.receipt-fact{margin:0 0 .75rem}
+.raw{margin:0 0 1rem}
+.raw summary{cursor:pointer;color:var(--teal);min-height:2.75rem;display:flex;align-items:center}
+.rawline{margin:.5rem 0 0;padding:1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);white-space:pre-wrap;overflow-wrap:anywhere;font:400 .78rem/1.5 var(--font-code)}
+.row{display:flex;flex-wrap:wrap;gap:.75rem}
+.verify-out{margin:.9rem 0 0;min-height:1.6rem;color:var(--mist)}
+.verify-out.pass{color:var(--teal);font-weight:600}
+.verify-out.fail{color:var(--coral);font-weight:600}
+.inj-text{display:block;width:100%;max-width:44rem;margin:0 0 .75rem;padding:.75rem;background:var(--surface);color:var(--foreground);border:1px solid var(--border);border-radius:var(--radius);font:400 1rem/1.5 var(--font-sans);resize:vertical}
+.inj-text:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.inj-read{margin-top:1rem}
+.inj-read p{margin:0 0 .5rem}
+.flag{color:var(--amber);font-weight:600}
+.noflag{color:var(--teal);font-weight:600}
+.mini-note{color:var(--mist);font-size:.9rem}
+
+/* totals and usage */
+.totals-sec,.use{margin-top:3.5rem;padding-top:2rem;border-top:1px solid var(--border)}
+.totals-sec h2,.use h2{font-size:clamp(1.6rem,3.5vw,2.4rem);margin-bottom:1.25rem}
+.totals{display:grid;gap:1.5rem 3rem;grid-template-columns:minmax(0,1fr);margin:0 0 1rem}
+@media (min-width:60rem){.totals{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.fig{display:flex;flex-direction:column-reverse;justify-content:flex-end;gap:.3rem;min-width:0}
+.fig dd{margin:0}
+.figure{font:700 clamp(2.4rem,5.5vw,3.8rem)/1 var(--font-display);letter-spacing:-.04em}
+.fig dt{font:400 .95rem/1.4 var(--font-sans);letter-spacing:0;text-transform:none;color:var(--mist);max-width:22rem}
+.use p{max-width:44rem}
+.note{max-width:44rem}
+.codeblock{max-width:44rem}

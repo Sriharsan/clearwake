@@ -8,20 +8,28 @@ Note on the field list: the Devpost page (https://paypalaihackathon.devpost.com/
 
 ## Placeholders to fill before pasting
 
+The real ten case batch is running on the PayPal sandbox. Its numbers come only from `data/runs/batch-sandbox-*.json`; the lead fills these when the file lands. Do not say a number that is still in brackets.
+
 | Placeholder | Where it comes from |
 | --- | --- |
+| `[BATCH_TOTAL]` | Item not received cases bought and opened by the buyer agent in `data/runs/batch-sandbox-*.json` (target 10) |
+| `[BATCH_SETTLED]` | Cases PayPal's record shows RESOLVED at INQUIRY with no fee |
+| `[BATCH_EVIDENCE]` | Cases answered with evidence |
+| `[BATCH_ESCALATED]` | Cases correctly handed to a person |
+| `[BATCH_REFUNDS]` | Refunds confirmed by PayPal's refund record |
+| `[BATCH_FEES]` | Dispute fees charged, read from the batch file |
+| `[BATCH_DOUBLE_REFUNDS]` | Double refunds, read from the batch file |
+| `[BATCH_SECONDS_PER_CASE]` | Seconds per negotiated case, or the median in minutes if the file reports that |
+| `[HERO_DISPUTE_ID]` | The dispute id of the single buyer agent to merchant agent case in the video |
+| `[OVERRULED_EXAMPLE]`, `[OVERRULED_CAPTION]` | The ledger row where the model proposed something wrong and the policy stopped it (from the model call receipts in the batch file) |
+| `[MODEL_NAME]`, `[MODEL_TAG]`, `[MODEL_CALLS]`, `[MODEL_MS_PER_CALL]` | docs/RESULTS.md "Model calls" (the final model and counts after the batch) |
+| `[TESTS_PY]`, `[TESTS_UI]` | The final `python -m unittest discover -s tests` and `node --test` counts |
 | `[RENDER_URL]` | The Render service URL after the deploy (docs/RENDER.md) |
 | `[VIDEO_URL]` | The public YouTube link |
-| `[APIMATIC_PORTAL_URL]` | The APIMatic portal link (docs/APIMATIC.md) |
-| `[APIMATIC_EXPERIENCE]` | Sri's own words, after using APIMatic (below) |
-| `[BATCH_TOTAL]`, `[BATCH_SETTLED]`, `[BATCH_EVIDENCE]`, `[BATCH_ESCALATED]`, `[BATCH_REFUNDS]`, `[BATCH_SECONDS_PER_CASE]` | The agent to agent batch, from docs/RESULTS.md (agent B) |
-| `[HERO_DISPUTE_ID]` | The dispute id of the single buyer agent to merchant agent case in the video |
-| `[MODEL_NAME]`, `[MODEL_TAG]`, `[MODEL_CALLS]`, `[MODEL_MS_PER_CALL]` | docs/RESULTS.md "Model calls" (agent A) |
-| `[OVERRULED_EXAMPLE]`, `[OVERRULED_CAPTION]` | The ledger row where the model proposed something wrong and the policy stopped it (VIDEO_SCRIPT.md); from agent A's run files |
-| `[TESTS_PY]`, `[TESTS_UI]` | The final `python -m unittest discover -s tests` and `node --test` counts |
+| `[APIMATIC_PORTAL_URL]`, `[APIMATIC_RESULT]`, `[APIMATIC_EXPERIENCE]` | Sri's own words, after using APIMatic (below) |
 | `[POSTMAN_RUN]` | The result of Sri's Newman or Postman CLI run (docs/POSTMAN.md) |
 
-The three numbers under the README headline are `[BATCH_SETTLED]` of `[BATCH_TOTAL]`, `[BATCH_SECONDS_PER_CASE]` with `[MODEL_CALLS]`, and the toolkit comparison (1 refund instead of 2, 5000.00 refused), which is already measured in `docs/TOOLKIT_FAILURE_CASES.md`. Read them from the files in `data/runs/`.
+Already measured and written in the text (do not change them by hand): the baseline of 200 episodes in `data/runs/baseline-20261110-172506.json` (an agent using PayPal's Agent Toolkit directly overpaid USD 2,633.25 with 61 double refunds and 160 wrongly accepted claims; Clearwake USD 0.00, 0 and 0; 200 of 200 episodes ended as the owner intended against 40 of 200), the 85 recorded model calls in docs/RESULTS.md, and the voice run `data/runs/voice-20261110-223540.json` (11 of 11 clips understood, mean word error 0.036).
 
 The elevator pitch and tagline do not use the words air gapped or network isolated: PayPal is a cloud API, and the network cut run is one proof case lower down.
 
@@ -29,39 +37,49 @@ The elevator pitch and tagline do not use the words air gapped or network isolat
 
 Clearwake
 
-## 2. Elevator pitch (195 characters, limit 200)
+## 2. Elevator pitch (182 characters, limit 200)
 
-When an AI agent buys, Clearwake settles what goes wrong: the buyer's agent and the merchant's agent negotiate inside PayPal's dispute conversation, within signed limits, before a claim or a fee.
+When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before a claim or a fee.
+
+Tagline: When an agent's order goes missing, agents fix it.
 
 ## 3. About the project (Markdown, paste as is)
 
 ```markdown
+When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.
+
+It is for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.
+
 ## Inspiration
 
-PayPal charges no Standard Dispute Fee (USD 15.00 in the US) when a case is resolved directly between seller and buyer and is not escalated to a claim. A seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays USD 30.00 on every dispute. Both rules are in PayPal's own fee pages (Merchant Fees, US, updated 1 October 2026, and Help Center article help350).
-
-Now that AI agents buy things for people, the dispute has two agents in it. The buyer's agent holds a mandate its owner signed. The merchant's agent works inside limits its owner signed. Today the complaint goes into an inbox and escalates, and the fee is charged. We wanted the two agents to settle it themselves, inside PayPal's own dispute conversation, while the case is still an inquiry, and to leave proof on both sides.
+Dispute desks for people already exist. What does not exist is what happens after an AI agent buys something and it goes wrong. The buyer's agent holds a mandate its owner signed. The merchant's agent works inside limits its owner signed. Today the complaint goes into an inbox, the case escalates to a claim, and the fee is charged: PayPal charges no Standard Dispute Fee (USD 15.00 in the US) when a case is resolved directly between seller and buyer and not escalated, and a seller with more than 100 sales in the previous 3 months and a dispute rate of 1.5% or more pays USD 30.00 on every dispute (PayPal Merchant Fees, US, updated 1 October 2026, and Help Center article help350). We wanted the two agents to settle it themselves, inside PayPal's own dispute conversation, while the case is still an inquiry, and to leave proof on both sides.
 
 ## What it does
 
-When an AI agent buys, Clearwake settles what goes wrong.
+One problem, item not received, end to end. Every part of Clearwake is a step in one loop.
 
-1. The buyer's agent buys a parcel inside a mandate its owner signed: budget, per item cap, store, categories. The mandate is a signed receipt linked to the PayPal order.
-2. One item is missing. The buyer's agent opens the dispute in PayPal's Resolution Center as the sandbox buyer, through a browser on the owner's own machine.
-3. The merchant's agent reads the dispute and the buyer's message. A local model proposes settle, fight or escalate. The policy file decides. Code checks every amount and every cited id. The agent checks its dispatch proof (SAM 3 counted the items at packing, the parcel was sealed, tracking shows it shipped) and offers a refund inside the owner's limit through PayPal's `send-message` and `make-offer`.
-4. The buyer's agent compares the offer with the dispute rule in its mandate (for example: accept any refund of 80 percent or more for a missing item) and accepts, counters or escalates.
-5. Clearwake says "settled, no fee" only when PayPal's own dispute record reads RESOLVED at the INQUIRY stage. A refund counts only when PayPal's refund record matches. Every step on both sides is a signed, hash chained receipt that anyone can verify offline, in Python or in a browser.
+0. **Rules, set once, in plain words.** The merchant says the rules out loud, for example "Refund anything under $30 that has not arrived in 10 days. Ask me above that. Never refund twice." Typing is the fallback. A local model turns the sentence into a policy, code checks every figure against what was said, the system reads the policy back in plain words, the merchant says yes, and it is signed. The buyer does the same for their agent: "You can claim for orders you placed, up to the order amount." The merchant can also ask by voice what happened today, answered from the receipts only, and approve by voice only when the signed policy allows it. After that the model can propose anything and can never go past the signed policy.
+1. **Prevention.** When the merchant ships, Clearwake adds the tracking to PayPal through the Add Tracking API, so the order is ready to defend before any dispute exists.
+2. **The buyer's agent watches.** When the tracking stalls past the expected date it opens the item not received dispute in PayPal's Resolution Center as the sandbox buyer, through a browser on the owner's own machine, inside its signed mandate. It can only claim for orders its mandate covers.
+3. **The merchant's agent reads** the dispute, the order, the tracking on PayPal and the signed dispatch record (SAM 3 counted the items at packing, where there is a photo).
+4. **The model drafts, the rules decide.** Delivered with proof: send the evidence. In transit: message the buyer's agent with the tracking and a date. Not shipped, lost or short shipped: offer a refund or a partial settlement inside the merchant's limits, sent alone through PayPal's `make-offer`. The buyer's agent accepts only what its mandate allows.
+5. **Both sides read PayPal's record until it says RESOLVED.** A lost response is never retried blindly. "Settled, no fee" appears only when PayPal's record reads RESOLVED at the INQUIRY stage.
+6. **Two signed receipts**, one from each side, both naming the same PayPal dispute id, verified offline in Python or in a browser.
 
-We also ran PayPal's own agent toolkit with no guard on the same injected faults (no network, 31 October 2026): a lost reply followed by a retry paid the customer twice (2 refunds, 3.00 for a 1.50 dispute), and a dispute message saying to ignore the limits got a 5000.00 claim accepted. Through Clearwake the same faults gave 1 refund and a refusal before any PayPal call.
+The honest limit: every other dispute reason is escalated to the owner untouched. The person and the merchant each set their rules once; agents act only inside them; anything outside goes to a person with the evidence ready.
 
-We ran a batch: [BATCH_TOTAL] sandbox orders bought by the buyer agent and disputed by it for mixed reasons (item not received, missing items with dispatch proof, not as described). Read back from PayPal: [BATCH_SETTLED] settled at INQUIRY with no fee, [BATCH_EVIDENCE] answered with evidence, [BATCH_ESCALATED] escalated to an owner, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_SECONDS_PER_CASE] seconds per case, [MODEL_CALLS] model calls.
+The merchant's control room has an AG Grid ledger of every dispute (stage, the model's proposal next to the policy's decision, PayPal's status, a deadline countdown) and a fee leak gauge that counts a fee as avoided only where PayPal's rule would have charged one.
 
-The merchant's control room has an AG Grid ledger of every dispute: stage, the model's proposal next to the policy's decision, PayPal's status, a deadline countdown, settled before escalation, and fee avoided. It counts a fee as avoided only where PayPal's rule would have charged one.
+## What we measured
+
+* The batch, on the real sandbox: [BATCH_TOTAL] agent bought item not received cases (delivered with proof, in transit, not shipped, lost in transit, 2 of 3 items arrived, an injected instruction in the buyer's message, a buyer agent claiming outside its mandate, a lost PayPal response). Read back from PayPal: [BATCH_SETTLED] settled by the two agents at INQUIRY with no fee, [BATCH_EVIDENCE] answered with evidence, [BATCH_ESCALATED] correctly handed to a person, [BATCH_REFUNDS] refunds confirmed by PayPal's record, [BATCH_FEES] fees, [BATCH_DOUBLE_REFUNDS] double refunds, [BATCH_SECONDS_PER_CASE] seconds per case.
+* The baseline: 200 episodes of the same cases under injected faults (lost responses, an injected instruction in a buyer's message, an over limit request), an agent using PayPal's Agent Toolkit directly against Clearwake, on the local PayPal layer. The unguarded agent overpaid USD 2,633.25, made 61 double refunds and accepted 160 claims it should not have. Clearwake overpaid USD 0.00, made 0 double refunds, accepted 0 wrong claims, and ended 200 of 200 episodes as the owner intended, against 40 of 200.
+* The model: 85 recorded calls on local models. The model proposed something wrong 21 times and the policy stopped it every time; the policy decided correctly on all 84 scored prompts.
 
 ## How we built it
 
 * Python standard library only. PayPal Orders v2, Payments v2 and Disputes v1 are called through one adapter that allows only the PayPal sandbox host and a list of reviewed routes.
-* The merchant agent uses a local open weights model, `[MODEL_NAME]`, through Ollama, inside a network isolated Docker network. One egress gateway is the only way out, reaches only `api-m.sandbox.paypal.com`, and signs a receipt for every request. We cut the network in the middle of a batch: money actions wait as "held, offline", and on reconnect PayPal is read first and nothing is sent twice.
+* The merchant agent uses a local open weights model, `[MODEL_NAME]`, through Ollama. Rules are turned into code checked fields; Whisper runs locally for speech to text. In the network cut run, one egress gateway is the only way out and signs a receipt for every request.
 * The buyer agent drives PayPal's Resolution Center with Playwright on the owner's machine, using a browser profile the owner logs into by hand. No credentials are in code or files. If the sandbox shows a CAPTCHA, the step stops and the owner does it; it is never bypassed.
 * Policy, approvals, per capture and per customer caps, outcome checks, receipts, the gateway and the held queue come from verdock-core, our own MIT library pinned as a submodule. The server and session layer come from Relayloom, also ours and MIT.
 * AG Grid Community 35.3.1 draws the dispute ledger under a strict Content Security Policy. Render hosts the live console. We wrote an OpenAPI 3.1 spec of the console API and a Postman collection of every PayPal call, with tests on PayPal's responses.
@@ -74,17 +92,17 @@ The merchant's control room has an AG Grid ledger of every dispute: stage, the m
 * Counting items in a photo with SAM 3 on a laptop without a GPU: 15 s to load and 56 s to count, through a 20 line CPU patch.
 * AG Grid 33 and later set styles at run time, which a strict Content Security Policy blocks. We pass a nonce and allow its 14 fixed load time style blocks by exact hash, with no unsafe-inline.
 
-## What we learned
+## What we found
 
 A model is useful as a proposer and unsafe as a decider, so the limits sit in a policy file that no message can edit and its hash is in every receipt. "Done" has to come from the provider's own record, not from the agent that sent the request. And the useful half of the Disputes API is the part that talks (`send-message`, `make-offer`), because that is where the fee is avoided.
 
 ## What is next
 
-The same boundary for every daily operation, not only the demo cases. Dispatch proof on photos of real packed parcels. Shared context for teams of people and agents. Receipts that payment platforms accept as proof.
+The same loop for the other dispute reasons, each with its own signed rules. Dispatch proof on photos of real packed parcels. Receipts that payment platforms accept as proof.
 
 ## What is real
 
-Everything ran in the PayPal sandbox with test money: no live PayPal, no real money, no customers. The public site shows a recorded sandbox run and verifies its receipts in the visitor's browser. The console on Render is hosted on Render, not network isolated; the network isolated run is the local proof.
+Everything ran in the PayPal sandbox with test money: no live PayPal, no real money, no customers. The baseline ran in a local run on the local provider. The public site shows a recorded sandbox run and verifies its receipts in the visitor's browser. The console on Render is hosted on Render, not network isolated. The network cut run (case m) is one proof case: the network was cut in the middle of a batch, money waited as "held, offline", and on reconnect PayPal was read first and nothing was sent twice.
 ```
 
 ## 4. Built with (up to 25 tags; Devpost takes them comma separated)
@@ -93,7 +111,7 @@ python, paypal, paypal-orders-api, paypal-payments-api, paypal-disputes-api, pay
 
 That is 21 tags with the model tag filled in. Four spare.
 
-## 5. "Try it out" links
+## 5. Links to open (the Devpost live links field)
 
 * Live console (hosted on Render, not network isolated): `[RENDER_URL]/console`
 * Public site, recorded sandbox run and in browser receipt verifier: https://clearwake-mu.vercel.app
@@ -122,7 +140,7 @@ To capture by hand, after the batch (all from the live or local console unless n
 
 Never include `.env`, the PayPal developer credentials page or a key.
 
-## 7. Video demo link
+## 7. Video link
 
 `[VIDEO_URL]` (public YouTube, under 3 minutes, no music, no logos you do not own). Script: `VIDEO_SCRIPT.md`.
 
@@ -190,7 +208,7 @@ AI tools used to write the code: Claude Code helped write code and documents; ev
 
 https://github.com/Sriharsan/clearwake (public, MIT licence shown in About)
 
-## 16. Demo URLs
+## 16. Live URLs
 
 * `[RENDER_URL]/console` (hosted on Render, not network isolated)
 * https://clearwake-mu.vercel.app (static, recorded sandbox run)
@@ -213,7 +231,7 @@ Three ways, fastest first. Everything is PayPal sandbox with test money. No acco
    git clone --recurse-submodules https://github.com/Sriharsan/clearwake.git
    cd clearwake
    python -m clearwake --port 8810        # open http://127.0.0.1:8810/console
-   python scripts/cases.py                # cases a to o in rehearsal, prints PASS or FAIL for each, no network
+   python scripts/cases.py                # cases a to o as a local run on the local provider, prints PASS or FAIL for each, no network
    python -m unittest discover -s tests   # offline tests
    python openapi/check_openapi.py --live # the OpenAPI spec checked against the running console
    python postman/check_collection.py     # the Postman collection, offline

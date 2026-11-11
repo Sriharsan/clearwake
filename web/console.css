@@ -255,7 +255,7 @@ input[type=file]{padding:9px}
   .node.unknown,.coin.held{animation:none;box-shadow:0 0 0 4px var(--cw-accent-soft)}
 }
 
-/* Long rehearsals scroll inside their card instead of stretching the page */
+/* Long local runs scroll inside their card instead of stretching the page */
 .case-list{max-height:860px;overflow:auto;padding-right:4px;overscroll-behavior:contain}
 .inbox-list,.dispute-list{max-height:560px;overflow:auto;padding-right:4px;overscroll-behavior:contain;margin-top:12px}
 @media(max-width:640px){.case-list{max-height:720px}.inbox-list,.dispute-list{max-height:520px}}

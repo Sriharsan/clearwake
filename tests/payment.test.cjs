@@ -32,7 +32,7 @@ function harness() {
 
 test('exact effect is visible and owner acknowledgement is needed before granting', async () => {
   const app = harness(); await app.settled(); app.emit('clearwake:session', { csrf: 'synthetic-csrf' }); app.emit('clearwake:state', fixture());
-  assert.match(app.get('payment-effect').textContent, /simulated refund of USD 1.00 for capture SYNTHETIC-CAPTURE, revision 1/);
+  assert.match(app.get('payment-effect').textContent, /local refund of USD 1.00 for capture SYNTHETIC-CAPTURE, revision 1/);
   assert.equal(app.get('payment-grant-button').disabled, true);
   app.get('payment-ack').checked = true; app.get('payment-ack').listeners.change();
   assert.equal(app.get('payment-grant-button').disabled, false);

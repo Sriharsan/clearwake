@@ -12,7 +12,7 @@ info:
     requests only from its own origin; a client outside the browser sets `Origin` to the server's own origin.
 
     Source of truth: `clearwake/server.py` (routes) and `clearwake/console.py` (bodies and shapes). The data in a local run is
-    rehearsal data (`label`); the PayPal sandbox calls that sit behind the merchant agent are listed in the Postman collection
+    local run data (`label`); the PayPal sandbox calls that sit behind the merchant agent are listed in the Postman collection
     `postman/clearwake-paypal.postman_collection.json`.
   license:
     name: MIT
@@ -61,7 +61,7 @@ paths:
                 $ref: '#/components/schemas/Session'
               example:
                 csrf: 4f1d0c2f9a7b6e8d3c5a1b0e9f8d7c6b5a4938271605f4e3d2c1b0a998877665
-                label: rehearsal data
+                label: local run data
         '404':
           $ref: '#/components/responses/NotFound'
         '429':
@@ -252,6 +252,79 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '429':
           $ref: '#/components/responses/RateLimited'
+  /console/api/negotiation:
+    get:
+      tags: [Merchant agent]
+      operationId: getNegotiation
+      summary: Steps of the running or last negotiation
+      description: The steps of the negotiation started by `negotiate`, read from the merchant's signed receipt log as it grows. Each step is a receipt that was really written.
+      responses:
+        '200':
+          description: Negotiation state and its steps so far.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Negotiation'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/totals:
+    get:
+      tags: [Ledger and receipts]
+      operationId: getTotals
+      summary: Measured numbers for the console header
+      description: The few measured numbers built from the run files in data/runs/, each with the file it came from. An empty list when site/data/totals.json is absent.
+      responses:
+        '200':
+          description: Measured numbers.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Total'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /console/api/negotiate:
+    post:
+      tags: [Merchant agent]
+      operationId: negotiate
+      summary: Start one negotiation in the background
+      description: Runs case n (offer, buyer accepts, PayPal shaped record read back) on the local provider in the background. Read progress with `getNegotiation`. Only one runs at a time.
+      security:
+        - consoleSession: []
+          csrfToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+            example: {}
+      responses:
+        '200':
+          description: The negotiation started.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [started, from]
+                properties:
+                  started:
+                    type: boolean
+                  from:
+                    type: integer
+                    description: Line count of the merchant receipt log when the negotiation began.
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
 components:
   securitySchemes:
     consoleSession:
@@ -302,6 +375,45 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
   schemas:
+    Negotiation:
+      type: object
+      required: [running, error, case, steps]
+      properties:
+        running:
+          type: boolean
+        error:
+          type: [string, 'null']
+        case:
+          type: [string, 'null']
+          description: Dispute id of the finished case, when there is one.
+        steps:
+          type: array
+          items:
+            type: object
+            required: [n, step, action, ok, at]
+            properties:
+              n:
+                type: integer
+              step:
+                type: string
+              action:
+                type: string
+              ok:
+                type: boolean
+              at:
+                type: string
+                description: UTC time of day, HH:MM:SS.
+    Total:
+      type: object
+      required: [value, label, source]
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        source:
+          type: string
+          description: The run file the number was built from.
     Error:
       type: object
       required: [error]
@@ -318,7 +430,7 @@ components:
           pattern: '^[0-9a-f]{64}$'
         label:
           type: string
-          description: How the data behind the console runs, for example `rehearsal data`.
+          description: How the data behind the console runs, for example `local run data`.
     Money:
       type: string
       pattern: '^(0|[1-9][0-9]{0,8})\.[0-9]{2}$'

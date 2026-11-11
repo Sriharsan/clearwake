@@ -26,7 +26,7 @@ The PayPal AI Hackathon submission period opened on 1 October 2026 (9:15 am Paci
 | 2026-10-31 11:44 | `e0fdf83` | Pin the shared verdock-core engine v0.1.0 as a submodule |
 | 2026-10-31 11:47 | `0f139d4` | Merchant swarm on verdock-core |
 | 2026-10-31 11:48 | `1c7fca1` | Signed mandate receipt from the buyer agent, linked to the PayPal order |
-| 2026-10-31 11:51 | `8753970` | PayPal dispute path in the merchant swarm, with rehearsal disputes |
+| 2026-10-31 11:51 | `8753970` | PayPal dispute path in the merchant swarm, with local run disputes |
 | 2026-10-31 11:54 | `d86176b` | Case runner for a to l and a capture preflight before every swarm refund |
 | 2026-10-31 15:35 | `44386c3` | Case i runs against a real open sandbox dispute when one exists, with tracking read from PayPal's order |
 | 2026-10-31 15:48 | `0910bc8` | Third party credits and the built versus planned vision |
@@ -34,12 +34,12 @@ The PayPal AI Hackathon submission period opened on 1 October 2026 (9:15 am Paci
 | 2026-10-31 16:01 | `5212635` | Results page from the recorded runs only |
 | 2026-10-31 16:01 | `5e1d271` | README: dispute positioning, honest status, AI tools, verdock-core and where this goes |
 | 2026-10-31 16:01 | `72d6c18` | Submission notes: APIs, observed limits, run labels, criteria and awards |
-| 2026-10-31 16:01 | `6f7d742` | Video script for the dispute story with sandbox and rehearsal captions |
+| 2026-10-31 16:01 | `6f7d742` | Video script for the dispute story with sandbox and local run captions |
 | 2026-10-31 16:01 | `a9b9ba2` | Refresh the submission period change log, with the verdock-core submodule |
 | 2026-10-31 16:02 | `582c222` | Answer disputes under review with supporting info PayPal offers, verified by read-back |
 | 2026-10-31 16:03 | `8dda0b3` | Drop an unused tau2-bench row from third-party notices |
 | 2026-10-31 16:06 | `379a2cb` | Results: case i passed on a real sandbox dispute; current test counts |
-| 2026-10-31 16:06 | `f71a2f7` | Console controller and /console API: buyer mandate, rehearsal cases c to l, approval inbox and reconcile behind a CSRF token |
+| 2026-10-31 16:06 | `f71a2f7` | Console controller and /console API: buyer mandate, local run cases c to l, approval inbox and reconcile behind a CSRF token |
 | 2026-10-31 16:06 | `7be2d9f` | Console screens: buyer agent, merchant control room and in-browser receipt verifier |
 | 2026-10-31 16:06 | `6fae634` | Console screenshots at 390 and 1440 wide |
 | 2026-10-31 16:08 | `b7035f0` | Record what PayPal's agent toolkit does on the lost response, split and injection cases |
@@ -55,7 +55,7 @@ The PayPal AI Hackathon submission period opened on 1 October 2026 (9:15 am Paci
 | 2026-10-31 23:03 | `6dd2f07` | Keep the local virtual environment out of the container image |
 | 2026-10-31 23:21 | `a4cde6d` | Public site URL in the README and submission notes |
 | 2026-11-01 10:38 | `1d087a2` | Console screenshots show the dispute ledger and the fee leak gauge |
-| 2026-11-01 10:58 | `7f52a0e` | Read only helpers for the demo: show a sandbox dispute, print a saved network cut run, and a boundary only check |
+| 2026-11-01 10:58 | `7f52a0e` | Read only helpers for the video: show a sandbox dispute, print a saved network cut run, and a boundary only check |
 | 2026-11-01 11:22 | `426a0f5` | Dispatch proof: signed packing record, strong or weak check against a buyer's claim, evidence with the photo, case o |
 | 2026-11-01 11:32 | `0f79321` | Dispatch proof: validate order ids before they touch the file system, widen the ledger column, record case o in the docs, refresh screenshots and the change log |
 

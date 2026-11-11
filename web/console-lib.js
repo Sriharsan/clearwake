@@ -34,7 +34,7 @@
   // One word per swarm state, used for node classes and plain labels. "Verified" is kept for PayPal records only.
   function outcome(state, rehearsal) {
     switch (state) {
-      case 'VERIFIED': return { cls: 'settled', label: rehearsal ? 'Matches rehearsal record' : 'Verified against PayPal' };
+      case 'VERIFIED': return { cls: 'settled', label: rehearsal ? 'Matches local record' : 'Verified against PayPal' };
       case 'UNKNOWN': return { cls: 'unknown', label: 'UNKNOWN, held' };
       case 'MISMATCH': return { cls: 'reversed', label: 'Record does not match' };
       case 'PENDING': return { cls: 'held', label: 'Pending at provider' };
@@ -124,7 +124,7 @@
   }
 
   // Ledger helpers shared by the grid columns. A dash means the record does not hold the value.
-  const DASH = '–';
+  const DASH = 'none';
   function stageOf(row) { return String((row && row.stage) || '').toUpperCase(); }
   function stagePasses(row, filter) { return !filter || filter === 'all' || stageOf(row) === filter; }
   function proposalOf(row) { return row && row.proposed && row.proposed !== 'no usable proposal' ? readable(row.proposed) : DASH; }

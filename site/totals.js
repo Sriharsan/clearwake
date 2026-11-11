@@ -8,7 +8,7 @@
     var list = (t && t.public) || [];
     if (!list.length) return;
     host.textContent = '';
-    list.slice(0, 3).forEach(function (n) {
+    list.slice(0, 4).forEach(function (n) {
       var d = document.createElement('div'), v = document.createElement('dd'), l = document.createElement('dt'), s = document.createElement('dd');
       v.className = 'num tnum'; v.textContent = String(n.value); l.textContent = String(n.label);
       s.className = 'src'; s.textContent = String(n.source || '');

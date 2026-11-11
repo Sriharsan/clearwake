@@ -11,7 +11,12 @@ spec = importlib.util.spec_from_file_location("build_site_data", ROOT / "scripts
 builder = importlib.util.module_from_spec(spec); spec.loader.exec_module(builder)
 
 
+RUNS = (ROOT / "data" / "runs").is_dir() and any((ROOT / "data" / "runs").glob("baseline-*.json"))
+needs_runs = unittest.skipUnless(RUNS, "the run files under data/runs are not committed: they exist on the machine that made the runs")
+
+
 class SiteDataTests(unittest.TestCase):
+    @needs_runs
     def test_ledger_rows_are_the_recorded_sandbox_cases_with_proposals_read_from_receipts(self):
         rows = builder.build()["rows"]
         self.assertEqual(sorted({r["case"] for r in rows}), ["c", "d", "e", "i", "m1", "m2", "m3", "n", "o"])
@@ -26,6 +31,7 @@ class SiteDataTests(unittest.TestCase):
         self.assertEqual(written, rows)  # run scripts/build_site_data.py after a change
         self.assertIn("ledger.json", json.loads((SITE / "data" / "manifest.json").read_text(encoding="utf-8"))["files"])
 
+    @needs_runs
     def test_totals_come_from_the_run_files_and_a_rehearsal_batch_stays_out_of_the_public_set(self):
         t = json.loads((SITE / "data" / "totals.json").read_text(encoding="utf-8"))
         self.assertTrue(t["public"]); self.assertLessEqual(len(t["public"]), 3)
