@@ -1,6 +1,6 @@
 # Clearwake video: dialogue script (2:55 maximum, Sri speaks, captions on)
 
-**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
+**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice.**
 
 **When an agent's order goes missing, agents fix it.**
 
@@ -10,7 +10,7 @@ Format: **SAY** is what Sri says, **[click]** is what to do on screen, **CAPTION
 
 Shape, taken from the winning videos: the real result is on screen in the first frame, no title card. The bad outcome comes first and the same action is stopped second. The key number is spoken while its proof is on screen. Every shot carries a tag that says how it ran: **Real PayPal sandbox run**, **Planted failure**, **Verified in your browser**, **Local run**. Hold each proof screen 4 to 5 seconds and cut at the end of a sentence. The outcomes are counted aloud.
 
-The one line, spoken at 0:12: "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice."
+The one line, spoken at 0:12: "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice."
 
 Every number comes from a run file: `data/runs/batch-sandbox-20261111-132948.json` (the batch), `data/runs/settle-times-20261111.json` (settle times), `data/runs/baseline-20261110-172506.json` (the 200 episodes). Do not say a number that is not in those files.
 
@@ -37,7 +37,7 @@ Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verif
 
 ## 0:12 to 0:25 The claim, then the bad outcome
 
-**SAY:** "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice. First, what happens without it."
+**SAY:** "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice. First, what happens without it."
 
 **[click]** Browser on `docs/BASELINE.md`, the total row: an agent using PayPal's Agent Toolkit directly, 200 episodes. Then `docs/TOOLKIT_FAILURE_CASES.md`, the lost response table.
 

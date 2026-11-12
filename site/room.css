@@ -265,3 +265,9 @@ body{font-size:1.125rem;line-height:1.65}
 .case,.cost,.sec,.batch,.hero{scroll-margin-top:7.5rem}
 .scroll-x{position:relative}
 .c-rule p,.c-buyer,.c-sum{overflow-wrap:anywhere}
+
+/* tighter vertical rhythm */
+.sec{padding-top:3rem}
+.endcard{margin-top:2.5rem;padding-top:1.5rem}
+.cost{margin-top:1.75rem;padding-top:1.1rem}
+@media (max-width:40rem){.sec{padding-top:2.25rem}}

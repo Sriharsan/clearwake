@@ -130,7 +130,7 @@
     set('line', `line ${d.merchant.offer_line}`);
     set('status', `${d.status} at ${d.stage}`);
     set('refund', `USD ${d.refund}`);
-    set('fee', `USD ${d.fee}`);
+    set('feeLine', d.fee_line);
     track(100);
   };
 

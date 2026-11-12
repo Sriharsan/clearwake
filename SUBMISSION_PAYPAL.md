@@ -1,10 +1,10 @@
 # Clearwake: PayPal AI Hackathon submission
 
-**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
+**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice.**
 
 **When an agent's order goes missing, agents fix it.**
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. PayPal's record shows a USD 0.77 settlement fee on each of the four, and no USD 15.00 dispute fee. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. PayPal's record shows a USD 0.77 settlement fee instead of the USD 15.00 dispute fee, on each of the four. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
 
 > **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage, before a claim** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps), **0 double refunds**, 0 evidence sent. 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
 

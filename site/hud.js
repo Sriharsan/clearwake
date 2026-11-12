@@ -35,7 +35,7 @@
           var usd = function (v) { return 'USD ' + Number(v).toFixed(2); };
           var pick = function (hash, line) { return hash ? 'sha256 ' + hash.slice(0, 16) + '…' : 'sig ' + JSON.parse(line).signature.slice(0, 16) + '…'; };
           return {
-            dispute: c.dispute, order: c.order, paid: usd(c.paid), ask: usd(c.ask), offer: usd(c.offer), limit: usd(c.limit_alone), fee: usd(c.fee), refund: usd(c.refund),
+            dispute: c.dispute, order: c.order, paid: usd(c.paid), ask: usd(c.ask), offer: usd(c.offer), limit: usd(c.limit_alone), fee: usd(c.fee), feeLine: c.fee_line, refund: usd(c.refund),
             status: c.status, stage: c.stage, outcome: c.outcome, proposed: c.proposed, model: c.model + ', ' + (c.model_ms / 1000).toFixed(1) + ' s',
             message: c.buyer_message, ruleBuyer: c.rule_buyer, ruleMerch: c.rule_merchant,
             policy8: c.policy_hash.slice(0, 8) + '…', h3: pick(h[0], lOffer), h5: pick(h[1], lClosed),

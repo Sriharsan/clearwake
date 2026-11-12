@@ -113,3 +113,8 @@ body{font-size:1.125rem;line-height:1.65}
 .endcard h2{font-size:clamp(1.6rem,3.5vw,2.4rem);margin-bottom:.5rem}
 .end-links{display:flex;flex-wrap:wrap;gap:.75rem;margin:0 0 1rem}
 .end-run{margin:0}
+
+/* tighter vertical rhythm */
+.receipts,.inject{margin-top:1.75rem}
+.totals-sec,.use{margin-top:2.25rem;padding-top:1.25rem}
+.endcard{margin-top:2.5rem;padding-top:1.5rem}

@@ -27,18 +27,20 @@ Clearwake
 
 ## 2. Elevator pitch (182 characters, limit 200)
 
-When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee.
+When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee.
 
 Tagline: When an agent's order goes missing, agents fix it.
 
 ## 3. About the project (Markdown, paste as is)
 
 ```markdown
-**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
+**When an agent's order never arrives, agents settle it inside PayPal.**
+
+When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice.
 
 **When an agent's order goes missing, agents fix it.**
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. PayPal's record shows a USD 0.77 settlement fee on each of the four, and no USD 15.00 dispute fee. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. PayPal's record shows a USD 0.77 settlement fee instead of the USD 15.00 dispute fee, on each of the four. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
 
 It is for two people: the person whose agent shops for them, and the small merchant on PayPal who sells to agents.
 

@@ -262,3 +262,7 @@ kbd{font:600 .72rem/1 var(--font-sans);border:1px solid var(--border);border-rad
 .tk td code{white-space:normal !important;overflow-wrap:anywhere}
 .tk td:nth-child(2),.tk th:nth-child(2){width:5rem}
 @media (max-width:560px){.tk table{min-width:30rem}}
+
+/* tighter vertical rhythm */
+.sec{padding:clamp(1.75rem,4vw,3rem) 0}
+.hero{padding-bottom:clamp(1.25rem,3vw,2.25rem)}

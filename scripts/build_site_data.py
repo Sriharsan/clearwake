@@ -240,7 +240,7 @@ def public_numbers(found):
                 if m.get("reason") == "DISPUTE_SETTLEMENT_FEE":
                     fees.append(Decimal(m["amount"]["value"]))
         if fees and len(set(fees)) == 1:
-            out.append({"value": f"USD {fees[0]:.2f}", "label": f"settlement fee PayPal's record shows on each of the {len(fees)} settled disputes (USD {sum(fees):.2f} in all); the record holds no USD 15.00 dispute fee",
+            out.append({"value": f"USD {fees[0]:.2f}", "label": f"settlement fee instead of the USD 15.00 dispute fee, on each of the {len(fees)} settled disputes (USD {sum(fees):.2f} in all)",
                         "source": f"data/runs/{rec_path.name}", "mode": "real PayPal sandbox"})
     path, ev = newest("ai-eval-*.json")
     if ev and ev.get("totals"):
@@ -291,6 +291,17 @@ def clean_sandbox_batch():
     return None, None
 
 
+def settlement_fee(case_n=3):
+    """The settlement fee PayPal's record shows for one settled case, from data/runs/case-records-*.json (never typed)."""
+    _, rec = newest("case-records-*.json")
+    for c in (rec or {}).get("cases", []):
+        if c.get("n") == case_n and c.get("paypal_record"):
+            for m in c["paypal_record"].get("money_movements", []) or []:
+                if m.get("reason") == "DISPUTE_SETTLEMENT_FEE":
+                    return m["amount"]["value"]
+    raise SystemExit("no DISPUTE_SETTLEMENT_FEE line in the case records for case %d" % case_n)
+
+
 def hud_case():
     """The one settled case the Home page scene plays, from the newest clean real sandbox batch. Copies its two signed logs into
     site/receipts, lists them in the receipts manifest, and writes site/data/hud-case.json. Every value is read, none typed."""
@@ -331,7 +342,7 @@ def hud_case():
         "proposed": mc["proposed"], "decided": mc["decided"], "model": mc["model"], "model_backend": mc["backend"], "model_ms": mc["latency_ms"],
         "overridden": mc["overridden"], "offer": usd(mc["offer_minor"]), "limit_alone": usd(mo.group(2)), "ceiling": usd(mo.group(1)),
         "policy_hash": mc["policy_hash"], "status": case["paypal_status"], "stage": case["paypal_stage"], "outcome": case["paypal_outcome"],
-        "refund": case["refund_confirmed"], "fee": "0.00", "settlement": case["outcome"],
+        "refund": case["refund_confirmed"], "fee": settlement_fee(), "fee_line": f"USD {settlement_fee()} settlement fee instead of the USD 15.00 dispute fee", "settlement": case["outcome"],
         "merchant": {"file": "receipts/batch-merchant.ndjson", "key": keys["merchant"], "offer_line": offer, "read_line": read, "call_line": call,
                      "decision_line": decision, "pending_line": pending, "wake_lines": [decision, call, offer, pending, read]},
         "buyer": {"file": "receipts/batch-buyer.ndjson", "key": keys["buyer"], "closed_line": closed},
@@ -594,6 +605,20 @@ def cases_data():
             "cost": model_costs(body, logs), "cases": out}
 
 
+def batch_counts():
+    """The counted outcomes of the real batch, read from the batch run file: site/data/counts.json. The home page reads this file, never the row wording."""
+    path, body = clean_sandbox_batch()
+    if not body:
+        return {}
+    rows = body.get("cases", [])
+    count = lambda test: sum(1 for r in rows if test(r))
+    return {"source": f"data/runs/{path.name}", "cases": len(rows),
+            "settled": count(lambda r: r.get("outcome") == "settled_inquiry_no_fee"),
+            "answered_with_proof": count(lambda r: r.get("outcome") == "pending" and r.get("merchant_state") == "VERIFIED"),
+            "waiting_for_owner": count(lambda r: r.get("outcome") == "escalated_to_merchant_owner"),
+            "refused": count(lambda r: r.get("outcome") == "handled_by_mandate")}
+
+
 def batch_tally(public):
     """web/batch-tally.json for the hosted console: the counted batch tally and the baseline line, read from the run files. Nothing is typed."""
     path, body = clean_sandbox_batch()
@@ -649,9 +674,10 @@ def main():
         (data / "cases.json").write_text(json.dumps(cd, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         print("cases.json written:", len(cd["cases"]), "cases")
     tot = totals(build()["rows"])
+    (data / "counts.json").write_text(json.dumps(batch_counts(), indent=1) + "\n", encoding="utf-8")
     (data / "totals.json").write_text(json.dumps(tot, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
     (ROOT / "web" / "batch-tally.json").write_text(json.dumps(batch_tally(tot["public"]), indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json", "hud-case.json", "room.json", "cases.json"))
+    files = sorted(p.name for p in data.glob("*.json") if p.name not in ("manifest.json", "totals.json", "break.json", "hud-case.json", "room.json", "counts.json", "cases.json", "why-now.json"))
     files.remove("ledger.json"); files.insert(0, "ledger.json")
     (data / "manifest.json").write_text(json.dumps({"files": files}, indent=1) + "\n", encoding="utf-8")
     print("site/data/manifest.json lists:", ", ".join(files))

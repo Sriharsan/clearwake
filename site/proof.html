@@ -151,7 +151,7 @@
           <header><svg class="anat-ico" viewBox="0 0 60 40" aria-hidden="true"><use href="#g6"/></svg><span class="anat-num">6</span><span class="anat-meta">Judge</span></header>
           <h3><button type="button" class="anat-pick" data-layer="6">PayPal's record</button></h3>
           <p class="anat-one">PayPal's record is the judge, and nothing counts until the receipts match it.</p>
-          <p class="anat-val"><b data-v="status">RESOLVED at INQUIRY</b> <span>Refund</span> <b data-v="refund">USD 5.00</b> <span>Fee</span> <b data-v="fee">USD 0.00</b></p>
+          <p class="anat-val"><b data-v="status">RESOLVED at INQUIRY</b> <span>Refund</span> <b data-v="refund">USD 5.00</b> <b data-v="feeLine">USD 0.77 settlement fee instead of the USD 15.00 dispute fee</b></p>
           <p class="anat-more">PayPal's record is the judge, and the money is what is counted.</p>
         </article>
       </div>
@@ -207,7 +207,7 @@
               <svg class="gbar" viewBox="0 0 300 16" focusable="false"><rect class="gb-track" x="0" y="5" width="300" height="6" rx="3"/><rect class="gb-fill" id="gb-fill" x="0" y="5" width="150" height="6" rx="3"/><path class="gb-mark" id="gb-mark" d="M150 0v16"/></svg>
             </div>
             <p class="it" id="m3"><span class="k">SENT</span>The offer, alone. <span class="hx">signed receipt</span></p>
-            <p class="it" id="m4"><span class="k">PAYPAL'S RECORD</span><b data-f="status"></b> at <b data-f="stage"></b>, fee <b data-f="fee"></b></p>
+            <p class="it" id="m4"><span class="k">PAYPAL'S RECORD</span><b data-f="status"></b> at <b data-f="stage"></b>, <b data-f="feeLine"></b></p>
           </section>
         </div>
         <div class="core" id="core">
@@ -241,7 +241,7 @@
           <li>The merchant agent asks its model, and the proposal is <span class="mono" data-f="proposed"></span> (<span data-f="model"></span>).</li>
           <li>The policy check passes: offer <span data-f="offer"></span> is inside the <span data-f="limit"></span> it may settle alone.</li>
           <li>The offer is sent alone. The merchant receipt is signed, hash <span class="mono" data-f="h3"></span>.</li>
-          <li>PayPal's record reads <span data-f="status"></span> at <span data-f="stage"></span>, refund <span data-f="refund"></span>, fee <span data-f="fee"></span>. The buyer agent reads the same record and signs its receipt, hash <span class="mono" data-f="h5"></span>. Both receipts name the same dispute id.</li>
+          <li>PayPal's record reads <span data-f="status"></span> at <span data-f="stage"></span>, refund <span data-f="refund"></span>, <span data-f="feeLine"></span>. The buyer agent reads the same record and signs its receipt, hash <span class="mono" data-f="h5"></span>. Both receipts name the same dispute id.</li>
           <li>Done. You were not asked.</li>
         </ol>
       </details>
@@ -273,7 +273,7 @@
       <li class="seq-step"><span class="seq-n" aria-hidden="true">2</span><div><h3>The buyer's agent watches</h3><p>When the tracking stalls past the expected date, it opens the item not received dispute in PayPal, inside its mandate. It can only claim for orders its mandate covers.</p></div></li>
       <li class="seq-step"><span class="seq-n" aria-hidden="true">3</span><div><h3>The merchant's agent reads</h3><p>The dispute, the order, the tracking on PayPal, and the signed dispatch record, with the photo count where there is one.</p></div></li>
       <li class="seq-step"><span class="seq-n" aria-hidden="true">4</span><div><h3>The model drafts, the rules decide</h3><p>Delivered with proof: send the evidence. In transit: message the buyer's agent with the tracking and a date. Not shipped, lost or short shipped: offer a refund or a partial settlement inside the merchant's limits, sent alone. The buyer's agent accepts only what its mandate allows.</p></div></li>
-      <li class="seq-step"><span class="seq-n" aria-hidden="true">5</span><div><h3>Both sides read PayPal's record</h3><p>Until it says RESOLVED. A lost response is never retried blindly, and nothing is ever paid twice.</p></div></li>
+      <li class="seq-step"><span class="seq-n" aria-hidden="true">5</span><div><h3>Both sides read PayPal's record</h3><p>Until it says RESOLVED. A lost response is never retried blindly, and nothing is paid twice.</p></div></li>
       <li class="seq-step"><span class="seq-n" aria-hidden="true">6</span><div><h3>Two signed receipts</h3><p>One from each side. Both name the same PayPal dispute id, and both verify offline.</p></div></li>
     </ol>
     <figure class="venn" id="venn">
@@ -385,7 +385,7 @@
         <li class="step" data-i="4">
           <p class="eyebrow">Receipt 5, dispute.settlement</p>
           <h3>Resolved, no claim, no fee.</h3>
-          <p>PayPal reads RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage. Refund USD 5.00, fee USD 0.00. The buyer agent signed its own closing receipt on its side.</p>
+          <p>PayPal reads RESOLVED (RESOLVED_BUYER_FAVOUR) at the INQUIRY stage. Refund USD 5.00, USD 0.77 settlement fee instead of the USD 15.00 dispute fee. The buyer agent signed its own closing receipt on its side.</p>
           <p class="rec mono"></p><button class="btn hit" type="button">Change one value here</button>
         </li>
       </ol>

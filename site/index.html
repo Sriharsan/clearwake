@@ -42,7 +42,8 @@
     </svg>
     <div class="hero-in wrap">
       <div class="hero-copy">
-        <h1 id="h1" class="line">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.</h1>
+        <h1 id="h1" class="line">When an agent's order never arrives, agents settle it inside PayPal.</h1>
+      <p class="line-full">When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice.</p>
         <p class="tagline">When an agent's order goes missing, agents fix it.</p>
         <div class="cta">
           <a class="btn primary" href="/break">Break it yourself</a>
@@ -58,7 +59,7 @@
       <div class="res res-real">
         <p class="res-tag">Real PayPal sandbox run, 11 November 2026</p>
         <p class="res-big"><span>10 real PayPal sandbox disputes.</span> <span>4 settled before a claim.</span> <span>0 double refunds.</span> <span>Every receipt verifies.</span></p>
-        <p class="res-fee">PayPal's record shows a USD 0.77 settlement fee on each of the four settled disputes and no USD 15.00 dispute fee.</p>
+        <p class="res-fee">PayPal's record shows a USD 0.77 settlement fee instead of the USD 15.00 dispute fee, on each of the four settled disputes.</p>
         <p class="res-src mono">data/runs/batch-sandbox-20261111-132948.json</p>
       </div>
       <div class="res res-local">
@@ -80,7 +81,7 @@
       <li><b class="who w-merch">Merchant agent</b><p>Reads the dispute. Its model proposes <span class="mono" data-f="proposed"></span>.</p></li>
       <li><b class="who w-gate">Policy gate</b><p>Offer <span data-f="offer"></span> is inside the <span data-f="limit"></span> the merchant agent may settle alone. It passes.</p></li>
       <li><b class="who w-merch">Merchant agent</b><p>Sends the offer, alone. Signed receipt <span class="mono" data-f="h3"></span>.</p></li>
-      <li><b class="who w-paypal">PayPal's record</b><p>Reads <span data-f="status"></span> at <span data-f="stage"></span>, refund <span data-f="refund"></span>, fee <span data-f="fee"></span>. The buyer agent signs its receipt <span class="mono" data-f="h5"></span>.</p></li>
+      <li><b class="who w-paypal">PayPal's record</b><p>Reads <span data-f="status"></span> at <span data-f="stage"></span>, refund <span data-f="refund"></span>, <span data-f="feeLine"></span>. The buyer agent signs its receipt <span class="mono" data-f="h5"></span>.</p></li>
       <li><b class="who w-owner">Owner</b><p>Done. You were not asked.</p></li>
     </ol>
   </section>
@@ -121,7 +122,7 @@
     <h2 id="verify-h">Check every signed log in your browser.</h2>
     <p class="lede">One button. Your browser checks each signature and each hash link in the recorded logs with WebCrypto. Nothing is uploaded.</p>
     <div class="cta"><button class="btn primary" type="button" id="verify-all">Verify the signed logs</button></div>
-    <p class="result-box" id="verify-result" aria-live="polite">Not run yet.</p>
+    <p class="result-box" id="verify-result" aria-live="polite">Checking every signed log in your browser.</p>
   </section>
 
   <section class="band wrap more" id="more" aria-labelledby="more-h">

@@ -26,16 +26,12 @@
     v.className = 'num tnum'; v.textContent = String(value); l.textContent = label;
     d.append(v, l); return d;
   }
-  get('data/batch-sandbox-20261111-132948.json').then(function (b) {
-    var rows = (b && b.rows) || [];
-    if (!rows.length) return;
-    var settled = rows.filter(function (r) { return r.result === 'settled'; }).length;
-    var waiting = rows.filter(function (r) { return /^escalated to merchant owner/.test(String(r.outcome)); }).length;
-    var proof = rows.filter(function (r) { return r.result === 'open' && /^pending/.test(String(r.outcome)); }).length;
+  get('data/counts.json').then(function (c) {
+    if (!c || !c.cases) return;
     var host = $('mp-nums');
-    host.append(tile(proof, 'answered with proof'), tile(settled, 'settled with the refund'), tile(waiting, 'waiting for the owner'));
+    host.append(tile(c.answered_with_proof, 'answered with proof'), tile(c.settled, 'settled with the refund'), tile(c.waiting_for_owner, 'waiting for the owner'));
     host.hidden = false;
-    var tag = doc.createElement('p'); tag.className = 'res-tag'; tag.textContent = 'Real PayPal sandbox run, ' + rows.length + ' cases';
+    var tag = doc.createElement('p'); tag.className = 'res-tag'; tag.textContent = 'Real PayPal sandbox run, ' + c.cases + ' cases';
     host.parentNode.insertBefore(tag, host);
   }).catch(function () { /* no counts rather than unsourced ones */ });
 

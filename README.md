@@ -1,10 +1,12 @@
-**When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal in minutes, with proof, before it becomes a claim or a fee, and nothing is ever paid twice.**
+**When an agent's order never arrives, agents settle it inside PayPal.**
+
+When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice.
 
 **When an agent's order goes missing, agents fix it.**
 
 [Live site](https://clearwake-mu.vercel.app) &nbsp;|&nbsp; [Live console](https://clearwake-console.onrender.com/console) &nbsp;|&nbsp; [Break it](https://clearwake-mu.vercel.app/break) &nbsp;|&nbsp; [Docs index](docs/INDEX.md) &nbsp;|&nbsp; Run it: `python -m clearwake`
 
-> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage, before a claim** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps). PayPal's record shows a USD 0.77 settlement fee on each of the four, and no USD 15.00 dispute fee. **0 double refunds**, 0 evidence sent. 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
+> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage, before a claim** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps). PayPal's record shows a USD 0.77 settlement fee instead of the USD 15.00 dispute fee, on each of the four. **0 double refunds**, 0 evidence sent. 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
 
 ![Two agents and PayPal's own record of dispute PP-R-ISN-10198775: offer of USD 5.00, two signed receipts 1c6bed15c803 and fc8f566c85ef, RESOLVED at INQUIRY](docs/img/hero-thread.svg)
 

@@ -352,7 +352,7 @@ if ($('wake-scene') || $('proof-check')) loadReceipts().catch(() => { if ($('cha
 (function verifyAll() {
   const btn = $('verify-all'), out = $('verify-result');
   if (!btn || !out) return;
-  btn.addEventListener('click', async () => {
+  const run = async () => {
     btn.disabled = true; out.classList.remove('ok', 'bad'); out.textContent = 'Checking every signed log in your browser.';
     try {
       const manifest = await (await fetch('receipts/manifest.json')).json();
@@ -370,6 +370,8 @@ if ($('wake-scene') || $('proof-check')) loadReceipts().catch(() => { if ($('cha
         : `Fail: ${pass} of ${manifest.logs.length} signed logs verify. First problem: ${failed[0]}`;
     } catch (error) {
       out.classList.add('bad'); out.textContent = `Could not verify: ${error.message}`;
-    } finally { btn.disabled = false; }
-  });
+    } finally { btn.disabled = false; btn.textContent = 'Verify again'; }
+  };
+  btn.addEventListener('click', run);
+  run();   // the check runs when the page loads and shows its result
 })();
