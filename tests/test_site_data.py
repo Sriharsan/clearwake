@@ -41,12 +41,12 @@ class SiteDataTests(unittest.TestCase):
         self.assertEqual(t, builder.totals(builder.build()["rows"]))  # run scripts/build_site_data.py after a new run file
 
     @needs_runs
-    def test_cases_json_has_one_card_per_case_in_the_four_result_words(self):
+    def test_cases_json_has_one_card_per_case_in_the_five_result_words(self):
         d = json.loads((SITE / "data" / "cases.json").read_text(encoding="utf-8"))
         self.assertEqual([c["n"] for c in d["cases"]], list(range(1, 11)))
-        self.assertEqual(set(c["result"] for c in d["cases"]), set(builder.VOCAB))
+        self.assertEqual(set(c["result"] for c in d["cases"]), set(builder.VOCAB) - {"waiting for owner"})  # cases 4 and 9 were decided by voice on 12 Nov: none waits now
         self.assertEqual(d["verified_means"], builder.VERIFIED_MEANS)
-        self.assertEqual(d["waiting"], [4, 9])
+        self.assertEqual(d["waiting"], [])
         self.assertEqual(d["cost"]["merchant_calls"] + d["cost"]["buyer_calls"], 24)
         self.assertEqual(d["cost"]["cost_per_call_usd"], "0.00")
         self.assertEqual(d, builder.cases_data())  # run scripts/build_site_data.py after a new run file

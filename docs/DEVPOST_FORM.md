@@ -54,7 +54,7 @@ Every item below is tagged: **Real PayPal sandbox run** (PayPal's test environme
 
 ## Every outcome of the 10 cases, counted
 
-**Real PayPal sandbox run.** 4 settled, 3 pending with PayPal, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate.
+**Real PayPal sandbox run.** 5 resolved inside PayPal (4 settled at INQUIRY, case 4 resolved at CHARGEBACK), 4 answered with proof under PayPal review, 0 waiting for the merchant owner, 1 refused by the buyer agent's mandate before it was filed with PayPal. Update, 12 November 2026, from PayPal's record: of the 10 claims by the buyer agent, 5 resolved inside PayPal (4 at INQUIRY, before a claim, and case 4 at CHARGEBACK after the owner said "Approve case 4" by voice, with the USD 0.77 settlement fee), 4 answered with proof under PayPal review (cases 1, 2, 5 and 9, case 9 after the owner said "Don't pay case 9, send the proof"), 0 waiting for the owner, and 1 refused by the buyer agent's mandate before it was filed with PayPal (case 7, no dispute exists). USD 25.00 refunded in all: USD 20.00 at INQUIRY and USD 5.00 on case 4, written once. Source: `data/runs/voice-decisions-20261112.json`.
 
 * **Settled at INQUIRY, before a claim, 4:** case 3 `PP-R-ISN-10198775` (not shipped), case 6 `PP-R-SVP-10198784` (injected instruction), case 8 `PP-R-HZO-10198791` (lost PayPal response), case 10 `PP-R-ZPH-10198796` (not shipped, second case). Each asked USD 5.00 and PayPal's record reads RESOLVED with a refund of USD 5.00.
 * **Pending with PayPal at CHARGEBACK, 3:** case 1 `PP-R-YYA-10198768` (delivered with proof), case 2 `PP-R-IRR-10198773` (in transit), case 5 `PP-R-PLD-10198778` (two of three items arrived). The merchant agent sent the supporting info PayPal offered and read it back VERIFIED. PayPal shows UNDER_REVIEW and no outcome yet.
@@ -164,7 +164,7 @@ Site https://clearwake-mu.vercel.app, Break it page https://clearwake-mu.vercel.
 1. The line and the proof sentence, on one slide.
 2. The bad outcome, then the same action stopped: USD 2,633.25 overpaid over 200 episodes on the Agent Toolkit alone, USD 0.00 with Clearwake (**Planted failure**).
 3. The anatomy: one dispute, six layers (rules, buyer agent, merchant agent, policy gate, signed receipts, PayPal's record), case 3 `PP-R-ISN-10198775`, USD 5.00.
-4. The ten case batch counted aloud (**Real PayPal sandbox run**): 4 settled at INQUIRY, before a claim, 3 answered with proof under PayPal review, 2 awaiting the merchant owner, 1 refused by the mandate. 4 moved by PayPal to CHARGEBACK once tracking was on the order. Settle times 24 to 62 minutes from filing to RESOLVED.
+4. The ten case batch counted aloud (**Real PayPal sandbox run**): 4 settled at INQUIRY, before a claim, 1 resolved at CHARGEBACK by the owner's voice, 4 answered with proof under PayPal review, 0 awaiting the owner, 1 refused by the mandate before it was filed with PayPal. 4 moved by PayPal to CHARGEBACK once tracking was on the order. Settle times 24 to 62 minutes from filing to RESOLVED.
 5. **Verified in your browser:** a signed receipt, a one character change, the chain breaks.
 6. Built during the hackathon, sponsor tools at their best use, links, and the run command.
 

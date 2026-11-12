@@ -123,7 +123,7 @@ class Proposed:
 
 
 # --- reading the sentence --------------------------------------------------------------------------------------------
-AMOUNT = re.compile(r"(?:\$\s?|usd\s?)(\d{1,6}(?:,\d{3})*)(?:\.(\d{1,2}))?|\b(\d{1,6})\s*(?:dollars?|usd|bucks)\b", re.I)
+AMOUNT = re.compile(r"(?:\$\s?|usd\s?)(\d{1,6}(?:,\d{3})*)(?:\.(\d{1,2}))?|\b(\d{1,6})\s*(?:(?:us\s+)?dollars?|usd|bucks)\b", re.I)
 DAYS = re.compile(r"\b(\d{1,3})\s*(?:business\s+|working\s+)?days?\b", re.I)
 FOREIGN = re.compile(r"[€£¥₹]|\b(?:eur|gbp|inr|cad|aud|euros?|pounds?|rupees?)\b", re.I)
 

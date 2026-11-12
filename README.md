@@ -6,7 +6,7 @@ When an AI agent buys something and it never arrives, Clearwake lets the buyer's
 
 [Live site](https://clearwake-mu.vercel.app) &nbsp;|&nbsp; [Live console](https://clearwake-console.onrender.com/console) &nbsp;|&nbsp; [Break it](https://clearwake-mu.vercel.app/break) &nbsp;|&nbsp; [Docs index](docs/INDEX.md) &nbsp;|&nbsp; Run it: `python -m clearwake`
 
-> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage, before a claim** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps). PayPal's record shows a USD 0.77 settlement fee instead of the USD 15.00 dispute fee, on each of the four. **0 double refunds**, 0 evidence sent. 3 answered with proof and now under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate. 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
+> **Real PayPal sandbox run, 11 November 2026.** 10 orders bought by a buyer agent, 10 item not received disputes. **4 settled by the two agents at the INQUIRY stage, before a claim** (PayPal's record reads RESOLVED, USD 20.00 refunded, 24 to 62 minutes from filing to RESOLVED in PayPal's timestamps). PayPal's record shows a USD 0.77 settlement fee instead of the USD 15.00 dispute fee, on each of the four. **0 double refunds**, 0 evidence sent. 1 more resolved at CHARGEBACK (case 4, by the owner's voice, USD 0.77 settlement fee), 4 answered with proof and under PayPal review, 0 awaiting the merchant owner, 1 refused by the buyer agent's mandate before it was filed with PayPal (case 7, no dispute exists). 4 moved by PayPal to the CHARGEBACK stage once tracking was on the order.
 
 ![Two agents and PayPal's own record of dispute PP-R-ISN-10198775: offer of USD 5.00, two signed receipts 1c6bed15c803 and fc8f566c85ef, RESOLVED at INQUIRY](docs/img/hero-thread.svg)
 
@@ -44,7 +44,7 @@ PayPal's MCP server, read from the published source (`@paypal/mcp` 1.8.1, [docs/
 
 ## Every outcome of the 10 cases, counted
 
-**Real PayPal sandbox run** (`data/runs/batch-sandbox-20261111-132948.json`, run id c3b879, buyer agent through a browser on the owner's machine, merchant agent on the Disputes API). The count: 4 settled, 3 pending with PayPal, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate.
+**Real PayPal sandbox run** (`data/runs/batch-sandbox-20261111-132948.json`, run id c3b879, buyer agent through a browser on the owner's machine, merchant agent on the Disputes API). The count: 5 resolved inside PayPal (4 settled at INQUIRY, case 4 resolved at CHARGEBACK), 4 answered with proof under PayPal review, 0 waiting for the merchant owner, 1 refused by the buyer agent's mandate before it was filed with PayPal. Update, 12 November 2026, from PayPal's record: of the 10 claims by the buyer agent, 5 resolved inside PayPal (4 at INQUIRY, before a claim, and case 4 at CHARGEBACK after the owner said "Approve case 4" by voice, with the USD 0.77 settlement fee), 4 answered with proof under PayPal review (cases 1, 2, 5 and 9, case 9 after the owner said "Don't pay case 9, send the proof"), 0 waiting for the owner, and 1 refused by the buyer agent's mandate before it was filed with PayPal (case 7, no dispute exists). USD 25.00 refunded in all: USD 20.00 at INQUIRY and USD 5.00 on case 4, written once. Source: `data/runs/voice-decisions-20261112.json`.
 
 | Case | Scenario | Dispute | PayPal's record at the end | Outcome |
 | ---: | --- | --- | --- | --- |
@@ -55,11 +55,11 @@ PayPal's MCP server, read from the published source (`@paypal/mcp` 1.8.1, [docs/
 | 1 | delivered with proof, ask USD 9.00 | `PP-R-YYA-10198768` | UNDER_REVIEW at CHARGEBACK | Supporting info sent, read back VERIFIED. With PayPal, no outcome yet |
 | 2 | in transit, ask USD 9.00 | `PP-R-IRR-10198773` | UNDER_REVIEW at CHARGEBACK | Supporting info sent, read back VERIFIED. With PayPal, no outcome yet |
 | 5 | two of three items arrived, ask USD 3.00 | `PP-R-PLD-10198778` | UNDER_REVIEW at CHARGEBACK | Supporting info sent, read back VERIFIED, dispatch receipt `2da6097672e50f7e`. With PayPal, no outcome yet |
-| 4 | lost in transit, ask USD 5.00 | `PP-R-FEV-10198802` | UNDER_REVIEW at CHARGEBACK | Escalated, awaiting the merchant owner |
-| 9 | over limit offer, ask USD 9.00 | `PP-R-ZZO-10198792` | WAITING_FOR_SELLER_RESPONSE at INQUIRY | Offer above the USD 5.00 limit, awaiting the merchant owner |
+| 4 | lost in transit, ask USD 5.00 | `PP-R-FEV-10198802` | RESOLVED at CHARGEBACK (12 Nov) | Owner said Approve case 4 by voice, one refund of USD 5.00 written once, USD 0.77 settlement fee |
+| 9 | over limit offer, ask USD 9.00 | `PP-R-ZZO-10198792` | WAITING_FOR_BUYER_RESPONSE at INQUIRY (12 Nov) | Owner said Don't pay case 9, send the proof, by voice; tracking and proof sent once, no money moved |
 | 7 | buyer agent claiming USD 20.00 on a USD 9.00 order | none | none | Refused by the buyer's mandate, handed to its person with the evidence |
 
-Totals from the run file: 4 settled, 3 answered with proof under PayPal review (cases 1, 2 and 5), 2 awaiting the merchant owner (cases 4 and 9), 1 refused by the buyer's mandate (case 7), 0 errors, 0 double refunds, 4 refunds confirmed by PayPal's record, USD 20.00 refunded, 350.63 seconds for the whole run, 35.06 seconds per case. The four cases PayPal moved to the CHARGEBACK stage are 1, 2, 4 and 5. Cases 4 and 9 wait for the merchant owner. Case 7 needs no action, because the claim never left the buyer's side.
+Totals from the run file: 5 resolved inside PayPal (4 settled at INQUIRY, case 4 at CHARGEBACK), 4 answered with proof under PayPal review (cases 1, 2, 5 and 9), 0 awaiting the merchant owner, 1 refused by the buyer's mandate before it was filed with PayPal (case 7, no dispute exists), 0 errors, 0 double refunds, 4 refunds confirmed by PayPal's record, USD 20.00 refunded in the batch and USD 25.00 with case 4 on 12 November, 350.63 seconds for the whole run, 35.06 seconds per case. The four cases PayPal moved to the CHARGEBACK stage are 1, 2, 4 and 5. Cases 4 and 9 were decided by the owner's voice on 12 November. Case 7 is refused before filing and stays refused: the claim never left the buyer's side.
 
 ## Run it: one command
 
@@ -203,7 +203,7 @@ Every number is in [docs/RESULTS.md](docs/RESULTS.md) and [docs/SANDBOX_RUN.md](
 
 | What | Tag | Result |
 | --- | --- | --- |
-| Agent to agent batch: 10 sandbox orders bought and disputed by the buyer agent | **Real PayPal sandbox run** | 4 settled at INQUIRY, before a claim, 0 evidence sent, 3 answered with proof under PayPal review, 2 awaiting the merchant owner, 1 refused by the buyer's mandate, 4 refunds confirmed by PayPal's record, 4 moved by PayPal to CHARGEBACK. All 10 cases are listed above |
+| Agent to agent batch: 10 sandbox orders bought and disputed by the buyer agent | **Real PayPal sandbox run** | 4 settled at INQUIRY, before a claim, 0 evidence sent, 1 resolved at CHARGEBACK by the owner's voice, 4 answered with proof under PayPal review, 0 awaiting the merchant owner, 1 refused by the buyer's mandate before it was filed with PayPal, 4 refunds confirmed by PayPal's record, 4 moved by PayPal to CHARGEBACK. All 10 cases are listed above |
 | Case n, settled in conversation | **Real PayPal sandbox run**, dispute `PP-R-OBG-10196144` | PASS: offer of USD 2.50, PayPal paid the settlement (refund `0TB11858A85953644`), the case read RESOLVED at the INQUIRY stage, never a claim. The sandbox buyer opened it and accepted by hand |
 | Case o, dispatch proof | **Real PayPal sandbox run**, SAM 3 on the CPU, CC0 test photo | PASS (3 November): 3 of 3 counted, receipt `8b92abb9e53a6244`; dispute `PP-R-UKF-10195772`; PayPal's record shows the dispatch proof, tracking and photo from the seller. Send 1 refused by PayPal, send 2 lost and held UNKNOWN, send 3 accepted |
 | Case m, network cut mid batch (`scripts/airgap.py`) | **Real PayPal sandbox run**, **Planted failure** (network cut), isolated containers | PASS: refund `6PX35920F4587564U` before the cut; two refunds held offline; after reconnect `76C086475Y724052F` and `9C434129FA2384059` VERIFIED, no duplicate; receipts verified with networking disabled |
@@ -299,7 +299,7 @@ Where this goes: built on PayPal today are agent to agent settling inside the di
 
 ## The result in four numbers
 
-* **4 of 10** item not received disputes settled by the two agents at INQUIRY, before a claim (**Real PayPal sandbox run**), 4 moved by PayPal to CHARGEBACK, 2 waiting for the merchant owner, 1 stopped by the buyer's mandate.
+* **4 of 10** item not received disputes settled by the two agents at INQUIRY, before a claim (**Real PayPal sandbox run**), 4 moved by PayPal to CHARGEBACK, 1 more resolved at CHARGEBACK by the owner's voice, 4 answered with proof, 0 waiting for the merchant owner, 1 refused by the buyer's mandate before it was filed with PayPal.
 * **USD 0.00 overpaid** by Clearwake in 200 episodes, against USD 2,633.25 for an agent using PayPal's Agent Toolkit directly (**Planted failure**).
 * **0 double refunds** in the batch and in 200 episodes, against 61 without it.
 * **24 to 62 minutes** from filing to RESOLVED in PayPal's timestamps, 11 of 11 spoken rules understood.

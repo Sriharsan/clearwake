@@ -324,10 +324,16 @@ class SandboxGateway:
         body = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"input\"\r\nContent-Type: application/json\r\n\r\n{part}\r\n--{boundary}--\r\n").encode()
         return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/provide-supporting-info", body, request_id, f"multipart/form-data; boundary={boundary}")
 
-    def accept_claim(self, dispute_id, note, refund_value, currency, request_id):
+    def accept_claim(self, dispute_id, note, refund_value, currency, request_id, claim_type=None, claim_reason=None):
+        """Accept the buyer's claim and refund. claim_type (REFUND) and claim_reason (for example LOST_IN_MAIL) are sent when given;
+        PayPal rejects a body it does not accept before any money moves."""
         amount(refund_value)
-        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/accept-claim",
-                          {"note": note[:2000], "refund_amount": {"currency_code": currency, "value": refund_value}}, request_id)
+        body = {"note": note[:2000], "refund_amount": {"currency_code": currency, "value": refund_value}}
+        if claim_type in ("REFUND", "PARTIAL_REFUND"):
+            body["accept_claim_type"] = claim_type
+        if claim_reason in ("DID_NOT_SHIP_ITEM", "TOO_TIME_CONSUMING", "LOST_IN_MAIL", "NOT_ENOUGH_ITEM", "REASON_NOT_SET"):
+            body["accept_claim_reason"] = claim_reason
+        return self._post(f"/v1/customer/disputes/{identifier(dispute_id)}/accept-claim", body, request_id)
 
     def send_message(self, dispute_id, message, request_id):
         """Talk to the buyer inside the dispute (INQUIRY stage only, when PayPal offers send_message)."""
@@ -422,20 +428,86 @@ class LocalGateway:
         with closing(self._disputes_db()) as db, db:
             return [json.loads(row[0]) for row in db.execute("SELECT body FROM disputes")]
 
-    def dispute(self, dispute_id):
+    def _read(self, dispute_id):
         with closing(self._disputes_db()) as db, db:
             row = db.execute("SELECT body FROM disputes WHERE id=?", (identifier(dispute_id),)).fetchone()
         if not row:
             raise GatewayError("This local dispute was not found.")
         return json.loads(row[0])
 
+    def dispute(self, dispute_id):
+        """One read of the dispute. A dispute seeded with a pending resolution closes after its set number of reads, the way
+        PayPal's record moves on by itself some time after the seller accepts."""
+        body = self._read(dispute_id)
+        pending = body.get("_pending")
+        if pending:
+            left = max(0, pending["reads_left"] - 1)
+            if left > 0:
+                body = self._update_dispute(dispute_id, _pending={**pending, "reads_left": left})
+            else:
+                body = self._update_dispute(dispute_id, _pending=None, **pending["final"])
+        return {key: value for key, value in body.items() if not key.startswith("_")}
+
+    # Records that carry the fields PayPal's own dispute and order records carry (allowed_response_options, fund_movements,
+    # refund_details, trackers). They hold the two states of the voice decisions in one local provider.
+    def seed_dispute(self, body):
+        dispute_id = identifier(body["dispute_id"])
+        with closing(self._disputes_db()) as db, db:
+            db.execute("INSERT OR REPLACE INTO disputes VALUES(?,?)", (dispute_id, json.dumps(body)))
+        return body
+
+    def seed_order(self, order_id, capture_id, value, trackers=()):
+        with closing(self._disputes_db()) as db, db:
+            db.execute("CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,body TEXT NOT NULL)")
+            body = {"id": identifier(order_id), "status": "COMPLETED", "purchase_units": [{
+                "amount": {"currency_code": "USD", "value": value},
+                "payments": {"captures": [{"id": identifier(capture_id), "status": "COMPLETED", "amount": {"currency_code": "USD", "value": value}}]},
+                "shipping": {"trackers": [{"id": f"{capture_id}-{number}", "status": "SHIPPED"} for number in trackers]}}]}
+            db.execute("INSERT OR REPLACE INTO orders VALUES(?,?)", (order_id, json.dumps(body)))
+        return body
+
+    def order(self, order_id):
+        with closing(self._disputes_db()) as db, db:
+            db.execute("CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,body TEXT NOT NULL)")
+            row = db.execute("SELECT body FROM orders WHERE id=?", (identifier(order_id),)).fetchone()
+        if not row:
+            raise GatewayError("This local order was not found.")
+        return json.loads(row[0])
+
+    def add_tracking(self, order_id, capture_id, tracking_number, carrier, request_id):
+        """Same checks as the sandbox call. The same tracking number on the same capture is added once."""
+        identifier(capture_id)
+        if not re.fullmatch(r"[A-Za-z0-9]{6,40}", tracking_number) or not re.fullmatch(r"[A-Z_]{2,40}", carrier):
+            raise ValueError("Invalid tracking number or carrier code.")
+        body = self.order(order_id)
+        unit = body["purchase_units"][0]
+        if capture_id not in [c["id"] for c in unit["payments"]["captures"]]:
+            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY INVALID_CAPTURE_ID).")
+        trackers = unit["shipping"]["trackers"]
+        if not any(t["id"] == f"{capture_id}-{tracking_number}" for t in trackers):
+            trackers.append({"id": f"{capture_id}-{tracking_number}", "status": "SHIPPED"})
+            with closing(self._disputes_db()) as db, db:
+                db.execute("UPDATE orders SET body=? WHERE id=?", (json.dumps(body), order_id))
+        if self.outcome == "lost-response":
+            raise GatewayError("The local provider recorded the tracking but the response was lost.")
+        return {"id": order_id}
+
     def _update_dispute(self, dispute_id, **changes):
-        body = {**self.dispute(dispute_id), **changes}
+        body = {**self._read(dispute_id), **changes}
         with closing(self._disputes_db()) as db, db:
             db.execute("UPDATE disputes SET body=? WHERE id=?", (json.dumps(body), dispute_id))
         return body
 
     def provide_evidence(self, dispute_id, evidences, request_id, files=()):
+        body = self._read(dispute_id)
+        if "allowed_response_options" in body:   # PayPal's own record keeps what it holds and adds the seller's evidence
+            if not any(e.get("request_id") == request_id for e in body.get("evidences", [])):
+                added = [{**e, "source": "SUBMITTED_BY_SELLER", "date": "2026-11-12T00:00:00.000Z", "request_id": request_id,
+                          "dispute_life_cycle_stage": body.get("dispute_life_cycle_stage")} for e in evidences]
+                self._update_dispute(dispute_id, status="UNDER_REVIEW", evidences=body.get("evidences", []) + added)
+            if self.outcome == "lost-response":
+                raise GatewayError("The local provider recorded the evidence but the response was lost.")
+            return {"links": []}
         self._update_dispute(dispute_id, status="UNDER_REVIEW", evidences=evidences,
                              evidence_files=[{"name": n, "sha256": hashlib.sha256(d).hexdigest(), "bytes": len(d)} for n, d, _ in files])
         if self.outcome == "lost-response":
@@ -443,14 +515,17 @@ class LocalGateway:
         return {"links": []}
 
     def provide_supporting_info(self, dispute_id, notes, request_id):
-        body = self.dispute(dispute_id)
+        body = self._read(dispute_id)
         self._update_dispute(dispute_id, supporting_info=body.get("supporting_info", []) + [{"notes": notes[:2000], "source": "SUBMITTED_BY_SELLER"}])
         if self.outcome == "lost-response":
             raise GatewayError("The local provider recorded the note but the response was lost.")
         return {"links": []}
 
-    def accept_claim(self, dispute_id, note, refund_value, currency, request_id):
-        capture_id = self.dispute(dispute_id)["disputed_transactions"][0]["seller_transaction_id"]
+    def accept_claim(self, dispute_id, note, refund_value, currency, request_id, claim_type=None, claim_reason=None):
+        body = self._read(dispute_id)
+        if "allowed_response_options" in body:
+            return self._accept_claim_as_recorded(body, refund_value, currency, request_id, claim_type)
+        capture_id = body["disputed_transactions"][0]["seller_transaction_id"]
         outcome, self.outcome = self.outcome, "completed"
         try:
             self.refund(capture_id, refund_value, currency, request_id)
@@ -458,6 +533,38 @@ class LocalGateway:
             self.outcome = outcome
         self._update_dispute(dispute_id, status="RESOLVED", dispute_outcome={"outcome_code": "RESOLVED_BUYER_FAVOUR",
                              "amount_refunded": {"currency_code": currency, "value": refund_value}})
+        if self.outcome == "lost-response":
+            raise GatewayError("The local provider accepted the claim but the response was lost.")
+        return {"links": []}
+
+    def _accept_claim_as_recorded(self, body, refund_value, currency, request_id, claim_type):
+        """PayPal's rule: only a response option the record lists is allowed. The case then stays under review for a few reads
+        and closes with the refund and the fund movements PayPal shows. The same request id replays the first answer."""
+        refused = "PayPal refused it (422 UNPROCESSABLE_ENTITY ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE)."
+        dispute_id = body["dispute_id"]
+        if body.get("_accepted_request_id") == request_id:
+            return {"links": []}
+        options = body["allowed_response_options"].get("accept_claim") or {}
+        if not options or (claim_type or "REFUND") not in options.get("accept_claim_types", []) or body.get("status") == "RESOLVED":
+            raise ProviderRefused(refused)
+        allowed = body.get("refund_details", {}).get("allowed_refund_amount", {}).get("value")
+        if allowed is not None and Decimal(refund_value) > Decimal(allowed):
+            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY REFUND_AMOUNT_ABOVE_ALLOWED).")
+        refund_id = "LOCAL" + request_id.replace("-", "")[:17].upper()
+        paid = {"currency_code": currency, "value": refund_value}
+        when = "2026-11-12T00:00:00.000Z"
+        final = {"status": "RESOLVED", "dispute_state": "RESOLVED", "dispute_outcome": {"outcome_code": "RESOLVED_BUYER_FAVOUR", "amount_refunded": paid},
+                 "fund_movements": [m for m in body.get("fund_movements", []) if m.get("reason") != "HOLD_PLACED"] + [
+                     {"party": "SELLER", "amount": paid, "initiated_time": when, "type": "DEBIT", "reason": "DISPUTE_SETTLEMENT"},
+                     {"party": "BUYER", "amount": paid, "initiated_time": when, "type": "CREDIT", "reason": "DISPUTE_SETTLEMENT"},
+                     *body.get("_fee_lines", [])],
+                 "refund_details": {**body.get("refund_details", {}), "transactions": [{"id": refund_id, "amount": paid, "status": "COMPLETED"}]},
+                 "allowed_response_options": {}}
+        with closing(sqlite3.connect(self.path)) as db, db:
+            db.execute("INSERT OR IGNORE INTO records VALUES(?,?,?)", (request_id, refund_id, json.dumps(
+                {"id": refund_id, "status": "COMPLETED", "amount": paid, "custom_id": request_id})))
+        self._update_dispute(dispute_id, _accepted_request_id=request_id, status="UNDER_REVIEW",
+                             _pending={"reads_left": body.get("_resolve_after_reads", 2), "final": final})
         if self.outcome == "lost-response":
             raise GatewayError("The local provider accepted the claim but the response was lost.")
         return {"links": []}
@@ -470,7 +577,7 @@ class LocalGateway:
             raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE).")
 
     def send_message(self, dispute_id, message, request_id):
-        body = self.dispute(dispute_id)
+        body = self._read(dispute_id)
         if any(m.get("request_id") == request_id for m in body.get("messages", [])):
             return {"links": []}   # the same request id replays the first answer
         self._seller_may_act(body)
@@ -478,7 +585,9 @@ class LocalGateway:
         return {"links": []}
 
     def make_offer(self, dispute_id, note, offer_value, currency, request_id):
-        body = self.dispute(dispute_id)
+        body = self._read(dispute_id)
+        if "allowed_response_options" in body and "make_offer" not in body["allowed_response_options"]:
+            raise ProviderRefused("PayPal refused it (422 UNPROCESSABLE_ENTITY ACTION_NOT_ALLOWED_IN_CURRENT_DISPUTE_STATE).")
         if (body.get("offer") or {}).get("request_id") != request_id:
             self._seller_may_act(body)
             self._update_dispute(dispute_id, status="WAITING_FOR_BUYER_RESPONSE", messages=body.get("messages", []) + [{"posted_by": "SELLER", "content": note[:2000], "request_id": request_id}], offer={"offer_type": "REFUND", "request_id": request_id,
@@ -490,7 +599,7 @@ class LocalGateway:
     # The buyer's side. In the real sandbox the sandbox buyer does this in PayPal's Resolution Center:
     # this app's token has no disputes/update-buyer scope, so Clearwake cannot act for the buyer.
     def buyer_accepts_offer(self, dispute_id):
-        body = self.dispute(dispute_id)
+        body = self._read(dispute_id)
         offered = body["offer"]["seller_offered_amount"]
         capture_id = body["disputed_transactions"][0]["seller_transaction_id"]
         outcome, self.outcome = self.outcome, "completed"

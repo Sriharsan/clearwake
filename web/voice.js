@@ -1,5 +1,6 @@
 // Clearwake voice page. Records on this device, sends the audio to this laptop's own server for local Whisper,
-// then shows and speaks the answer with the browser's own speech synthesis. No cloud speech service is used.
+// Speech to text order: Sarvam Saaras (when the server has the key), then local Whisper, then the browser's own speech (voice_hosted.js), and typing.
+// Replies are spoken by Sarvam Bulbul from audio the server caches; without it the browser's own speech synthesis reads them.
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
@@ -7,8 +8,12 @@
   var el = {
     mic: $("mic"), word: $("mic-word"), status: $("status"), level: $("level"), timer: $("timer"), notice: $("notice"),
     chip: $("heard-chip"), transcript: $("transcript"), readCard: $("readback-card"), readback: $("readback"), yes: $("yes"), no: $("no"),
-    answer: $("answer"), meta: $("meta"), speak: $("speak"), mute: $("mute"), typed: $("typed"), text: $("text"), send: $("send")
+    answer: $("answer"), meta: $("meta"), speak: $("speak"), mute: $("mute"), typed: $("typed"), text: $("text"), send: $("send"),
+    owner: $("owner"), ownerPlayer: $("owner-player"), ownerLabel: $("owner-label"), ownerAudio: $("owner-audio"),
+    replyPlayer: $("reply-player"), replyLabel: $("reply-label"), replyAudio: $("reply-audio"), budget: $("budget")
   };
+  var OWNER_LABEL = "Owner's voice: Sarvam Bulbul", REPLY_LABEL = "Clearwake's voice: Sarvam Bulbul";
+  var sarvamOn = false;
   var csrf = "", token = "", lastSpoken = "", muted = false;
   var state = "idle";                      // idle, recording, sending
   var stream = null, recorder = null, chunks = [], stopTimer = null, tick = null, startedAt = 0, pressAt = 0, tapMode = false;
@@ -21,10 +26,11 @@
   function session() {
     return fetch("/console/api/session", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (j) { csrf = j.csrf; });
   }
-  function post(path, body, raw, type) {
+  function post(path, body, raw, type, extra) {
     var headers = { "X-Clearwake-CSRF": csrf };
     if (!raw) headers["Content-Type"] = "application/json";
     else if (type) headers["Content-Type"] = type;
+    if (extra) for (var k in extra) headers[k] = extra[k];
     return fetch(path, { method: "POST", credentials: "same-origin", headers: headers, body: raw ? body : JSON.stringify(body) }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (j) {
         if (!r.ok) { var e = new Error(j.error || "The request failed."); e.status = r.status; throw e; }
@@ -55,6 +61,35 @@
     try { if (window.speechSynthesis && !primeSpeech.done) { primeSpeech.done = true; var u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } } catch (e) {}
   }
 
+  function paintBudget(u) {
+    if (!u) return;
+    el.budget.textContent = "Sarvam used so far: " + u.tts_chars + " of " + u.tts_chars_cap + " characters spoken, " + u.stt_seconds + " of " + u.stt_seconds_cap + " seconds heard, " + u.calls + " requests.";
+    el.budget.hidden = false;
+  }
+  function refreshBudget() {
+    if (!sarvamOn) return;
+    fetch("/console/api/voice/status", { credentials: "same-origin" }).then(function (r) { return r.json(); }).then(function (s) { paintBudget(s.sarvam); }).catch(function () {});
+  }
+
+  // ---- Sarvam audio: the label shows whenever that voice plays ----------------------------------------------------
+  function wirePlayer(audio, label, text) {
+    audio.addEventListener("play", function () { label.textContent = text; label.hidden = false; });
+  }
+  wirePlayer(el.ownerAudio, el.ownerLabel, OWNER_LABEL);
+  wirePlayer(el.replyAudio, el.replyLabel, REPLY_LABEL);
+  function playClip(audio, player, url, autoplay) {
+    return new Promise(function (resolve) {
+      audio.pause();
+      player.hidden = false;
+      audio.src = url;
+      var done = function () { audio.removeEventListener("ended", done); audio.removeEventListener("error", done); resolve(); };
+      audio.addEventListener("ended", done); audio.addEventListener("error", done);
+      if (!autoplay) { resolve(); return; }
+      var p = audio.play();
+      if (p && p.catch) p.catch(function () { resolve(); });      // blocked by the browser: the player and its button are on screen
+    });
+  }
+
   // ---- showing a turn ------------------------------------------------------------------------------------------
   function show(turn) {
     if (turn.transcript) el.transcript.textContent = turn.transcript;
@@ -62,6 +97,7 @@
     var bits = [];
     if (turn.intent && turn.intent !== "yes" && turn.intent !== "no") bits.push("Understood as: " + turn.intent.replace("_", " "));
     if (turn.source === "voice") bits.push("source: voice");
+    if (turn.source_record && turn.source_record.stt) bits.push("speech to text: " + turn.source_record.stt);
     if (turn.heard) bits.push("read as: " + turn.heard);
     if (turn.policy_hash) bits.push("policy " + turn.policy_hash.slice(0, 12));
     if (turn.transcript_sha256) bits.push("transcript " + turn.transcript_sha256.slice(0, 12));
@@ -69,12 +105,13 @@
     token = turn.needs_confirm ? turn.token : "";
     el.readCard.hidden = !turn.needs_confirm;
     if (turn.needs_confirm) { el.readback.textContent = turn.text; el.yes.disabled = el.no.disabled = false; el.yes.focus({ preventScroll: false }); }
-    speakText(turn.text);
+    if (turn.reply_audio) { lastSpoken = turn.text; if (!muted) playClip(el.replyAudio, el.replyPlayer, turn.reply_audio, true); else playClip(el.replyAudio, el.replyPlayer, turn.reply_audio, false); }
+    else { if (turn.voice_note) el.meta.textContent += (el.meta.textContent ? " | " : "") + turn.voice_note; speakText(turn.text); }
   }
   function turn(body) {
     state = "sending"; paint();
     say("Working on it.");
-    return post("/console/api/voice/turn", body).then(function (t) { show(t); say(t.refused ? "Not done. See the answer." : "Done."); })
+    return post("/console/api/voice/turn", body).then(function (t) { show(t); say(t.refused ? "Not done. See the answer." : "Done."); refreshBudget(); })
       .catch(function (e) { el.answer.textContent = e.message; say("That did not work."); })
       .then(function () { state = "idle"; paint(); });
   }
@@ -174,9 +211,11 @@
     state = "sending"; paint(); say("Reading your voice on this laptop.");
     el.chip.textContent = "Reading the recording";
     var began = Date.now();
-    post("/console/api/voice/transcribe", blob, true, blob.type).then(function (t) {
+    post("/console/api/voice/transcribe", blob, true, blob.type, { "X-Clearwake-Seconds": (ms / 1000).toFixed(2) }).then(function (t) {
       el.transcript.textContent = t.transcript || "(nothing heard)";
-      el.chip.textContent = "Heard in " + (t.ms / 1000).toFixed(1) + " s on this laptop, " + t.audio_seconds.toFixed(1) + " s of audio";
+      el.chip.textContent = t.stt === "sarvam saaras:v4"
+        ? "Heard by Sarvam Saaras v4 in " + (t.ms / 1000).toFixed(1) + " s, " + t.audio_seconds.toFixed(1) + " s of audio"
+        : "Heard in " + (t.ms / 1000).toFixed(1) + " s on this laptop, " + t.audio_seconds.toFixed(1) + " s of audio";
       if (!t.transcript) { state = "idle"; paint(); say("I heard nothing. Say it again, closer to the microphone."); return; }
       return turn({ transcript_id: t.transcript_id });
     }).catch(function (e) {
@@ -213,9 +252,31 @@
 
   el.yes.addEventListener("click", function () { answer("yes"); });
   el.no.addEventListener("click", function () { answer("no"); });
-  el.speak.addEventListener("click", function () { primeSpeech(); var t = lastSpoken || el.answer.textContent; var m = muted; muted = false; speakText(t); muted = m; });
+  function owner() {
+    if (state !== "idle") return;
+    var line = el.text.value.trim();
+    state = "sending"; paint(); el.owner.disabled = true; notice("");
+    say("The owner's voice is being made.");
+    el.chip.textContent = "Owner's voice";
+    post("/console/api/voice/owner", line ? { text: line } : {}).then(function (t) {
+      el.transcript.textContent = "";
+      say("The owner is speaking.");
+      return playClip(el.ownerAudio, el.ownerPlayer, t.owner_audio, true).then(function () {
+        el.transcript.textContent = t.transcript || "(nothing heard)";
+        el.chip.textContent = "Heard by Sarvam Saaras v4 in " + (t.ms / 1000).toFixed(1) + " s, " + t.audio_seconds.toFixed(1) + " s of audio";
+        if (!t.transcript) { say("Nothing was heard."); return; }
+        return turn({ transcript_id: t.transcript_id });
+      });
+    }).catch(function (e) { notice(e.message); say("No owner command."); el.typed.open = true; })
+      .then(function () { el.owner.disabled = false; if (state !== "idle") { state = "idle"; paint(); } });
+  }
+  el.owner.addEventListener("click", owner);
+  el.speak.addEventListener("click", function () {
+    if (el.replyPlayer.hidden === false && el.replyAudio.src) { el.replyAudio.currentTime = 0; var pr = el.replyAudio.play(); if (pr && pr.catch) pr.catch(function () {}); return; }
+    primeSpeech(); var t = lastSpoken || el.answer.textContent; var m = muted; muted = false; speakText(t); muted = m; });
   el.mute.addEventListener("click", function () {
     muted = !muted; el.mute.setAttribute("aria-pressed", muted ? "true" : "false"); el.mute.textContent = muted ? "Voice off" : "Voice on";
+    if (muted) { el.replyAudio.pause(); el.ownerAudio.pause(); }
     if (muted && window.speechSynthesis) speechSynthesis.cancel();
   });
   el.send.addEventListener("click", function () {
@@ -256,6 +317,12 @@
     say("Typing is ready.");
   }
   session().then(function () { return fetch("/console/api/voice/status", { credentials: "same-origin" }).then(function (r) { return r.json(); }); })
-    .then(function (s) { if (s && s.stt === false) { loadHostedSpeech(); } })
+    .then(function (s) {
+      if (s && s.sarvam && s.sarvam.active) {
+        sarvamOn = true; el.owner.hidden = false; $("label").textContent = s.label;
+        paintBudget(s.sarvam);
+      }
+      if (s && s.stt === false) { loadHostedSpeech(); }
+    })
     .catch(function () { notice("This page could not reach the console server."); });
 })();

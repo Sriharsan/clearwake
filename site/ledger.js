@@ -32,12 +32,13 @@
   var TITLES = { c: 'Refund under the limit', d: 'Refund above the approval line, approved', e: 'Lost reply, reconciled', m1: 'Refund before the network cut', m2: 'Refund held offline, then resumed', m3: 'Refund held offline, then resumed',
     i: 'Item not received, tracking sent', n: '3 Nov: offer paid, dispute resolved', o: '3 Nov: parcel count sent as evidence' };
   var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var KINDS = { settled: 'settled', review: 'answered with proof', owner: 'waiting for owner', mandate: 'refused' };
+  var KINDS = { settled: 'settled', chargeback: 'resolved at chargeback', review: 'answered with proof', owner: 'waiting for owner', mandate: 'refused' };
   function kindOf(r) {
     var o = String(r.outcome || '').toLowerCase();
     if (/^(refused|handled by mandate)/.test(o)) return 'mandate';
     if (r.state === 'awaiting approval' || /^(waiting for owner|escalated to merchant owner)/.test(o)) return 'owner';
     if (r.paypal_status === 'RESOLVED' && r.stage === 'INQUIRY') return 'settled';
+    if (r.paypal_status === 'RESOLVED' && r.stage === 'CHARGEBACK') return 'chargeback';
     return 'review';
   }
   function titleOf(c, r) { var b = /^b(\d+)$/.exec(c); return TITLES[c] || (b ? 'Case ' + b[1] + ' of 10' + (r ? ', ' + KINDS[kindOf(r)] : '') : String(c)); }

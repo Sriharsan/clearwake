@@ -159,6 +159,9 @@ class ClearwakeHandler(Handler):
         # Fonts come from this origin only; the base policy has no font-src, so default-src 'none' would block them.
         if keyword.lower() == "content-security-policy" and "font-src" not in value:
             value = value.replace("img-src 'self';", "img-src 'self'; font-src 'self';", 1)
+        # The voice page plays the cached Sarvam speech from this origin only.
+        if keyword.lower() == "content-security-policy" and self.path.startswith("/voice") and "media-src" not in value:
+            value = value.replace("img-src 'self';", "img-src 'self'; media-src 'self';", 1)
         # AG Grid 35.3.1 embeds its icon font as a data: URI; only the console page, which loads the grid, allows that.
         if keyword.lower() == "content-security-policy" and self.style_nonce:
             value = value.replace("font-src 'self'", "font-src 'self' data:", 1) if "font-src" in value else value
@@ -267,6 +270,16 @@ class ClearwakeHandler(Handler):
                     return self.console_reply(200, [])
             if path == "/console/api/receipts":
                 return self.console_reply(200, console.receipts())
+            if path.startswith("/console/api/voice/audio/"):   # a cached Sarvam WAV, found by an exact name match and never by a joined path
+                from . import voice
+                body = voice.audio_bytes(path[len("/console/api/voice/audio/"):])
+                self.send_response(200); self.headers_common()
+                self.send_header("Content-Type", "audio/wav"); self.send_header("Content-Length", str(len(body)))
+                self.send_header("Cache-Control", "private, max-age=3600"); self.end_headers(); self.wfile.write(body)
+                return
+            if path.startswith("/console/api/voice/"):
+                from . import voice
+                voice.bind(console, self.server)
             for handler in GET_EXTENSIONS:
                 answer = handler(console, path)
                 if answer is not None:
@@ -303,6 +316,9 @@ class ClearwakeHandler(Handler):
             if console is None:
                 raise Rejected("The console is not configured on this server.", 404)
             self.rate_limit("write")
+            if path == VOICE_TRANSCRIBE or path.startswith("/console/api/voice/"):
+                from . import voice
+                voice.bind(console, self.server)   # the voice reads server.decision_runner and speaks its replies from here
             if path == VOICE_TRANSCRIBE:   # audio bytes, not JSON: same origin, rate limit and CSRF checks as every console POST
                 console.check_csrf(self.console_sid(), self.headers.get("X-Clearwake-CSRF", ""))
                 from . import voice

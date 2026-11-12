@@ -29,9 +29,9 @@
   get('data/counts.json').then(function (c) {
     if (!c || !c.cases) return;
     var host = $('mp-nums');
-    host.append(tile(c.answered_with_proof, 'answered with proof'), tile(c.settled, 'settled with the refund'), tile(c.waiting_for_owner, 'waiting for the owner'));
+    host.append(tile(c.answered_with_proof, 'answered with proof'), tile(c.resolved === null || c.resolved === undefined ? c.settled : c.resolved, 'resolved inside PayPal'), tile(c.waiting_for_owner, 'waiting for the owner'));
     host.hidden = false;
-    var tag = doc.createElement('p'); tag.className = 'res-tag'; tag.textContent = 'Real PayPal sandbox run, ' + c.cases + ' cases';
+    var tag = doc.createElement('p'); tag.className = 'res-tag'; tag.textContent = 'Real PayPal sandbox run, ' + c.cases + ' claims';
     host.parentNode.insertBefore(tag, host);
   }).catch(function () { /* no counts rather than unsourced ones */ });
 

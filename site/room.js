@@ -108,8 +108,8 @@
   var host = $("#case-cards");
   if (!host) return;
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  var WORD = { "settled": "Settled", "answered with proof": "Answered with proof", "waiting for owner": "Waiting for owner", "refused": "Refused" };
-  var SLUG = { "settled": "settled", "answered with proof": "proof", "waiting for owner": "owner", "refused": "refused" };
+  var WORD = { "settled": "Settled", "resolved at chargeback": "Resolved at chargeback", "answered with proof": "Answered with proof", "waiting for owner": "Waiting for owner", "refused": "Refused" };
+  var SLUG = { "settled": "settled", "resolved at chargeback": "chargeback", "answered with proof": "proof", "waiting for owner": "owner", "refused": "refused" };
   var DATA = null, logs = {};
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined && txt !== null) e.textContent = txt; return e; }
   function when(iso) {
@@ -205,6 +205,13 @@
       mb.append(el("h4", null, "Why it was refused"), el("p", null, c.mandate.why), el("p", "note", "The buyer agent's rule: " + c.mandate.rule + " Mandate receipt " + c.mandate.receipt + "."));
       art.append(mb);
     }
+    if (c.voice) {
+      var vb = el("div", "c-rule");
+      vb.append(el("h4", null, "Decided by the owner's voice"),
+        el("p", null, "“" + c.voice.command + "”, heard by " + c.voice.speech_to_text + ", owner voice " + c.voice.owner_voice + ", replies in " + c.voice.reply_voice + ". " + c.voice.what_ran + ". Writes to PayPal: " + c.voice.writes + "."),
+        el("p", "note", "Signed policy " + c.voice.policy_hash.slice(0, 12) + (c.voice.approval ? ", approval " + c.voice.approval.slice(0, 8) : "") + ". Read back from PayPal's record on " + c.voice.recorded.slice(0, 10) + ", run file " + c.voice.file + "."));
+      art.append(vb);
+    }
     if (c.buyer_wrote) art.append(el("p", "c-buyer", "The buyer wrote: “" + c.buyer_wrote + "”"));
     var acts = el("div", "c-acts"), btn = el("button", "btn verify-card", "Verify " + c.steps.length + " receipt lines in your browser"), out = el("p", "verify-out");
     btn.type = "button"; out.setAttribute("aria-live", "polite");
@@ -237,7 +244,7 @@
 
   // The rest of the page that reads the same file: the tally, the waiting count and the deadline, the limits and the batch policy.
   function around(d) {
-    var ids = { "settled": "t-settled", "answered with proof": "t-review", "waiting for owner": "t-owner", "refused": "t-mandate" };
+    var ids = { "settled": "t-settled", "resolved at chargeback": "t-chargeback", "answered with proof": "t-review", "waiting for owner": "t-owner", "refused": "t-mandate" };
     Object.keys(ids).forEach(function (k) { var e = document.getElementById(ids[k]); if (e) e.textContent = d.counts[k]; });
     var wc = $("#w-count"), ws = $("#w-sub");
     if (wc) {

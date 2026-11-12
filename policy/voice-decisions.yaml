@@ -1,0 +1,34 @@
+# Policy for the two spoken decisions (clearwake/decisions.py). Read by the server, never by a model. Its hash is written into every receipt.
+# Amounts are in cents. The owner's spoken command is the approval for anything above approval_above_minor.
+version: 1
+operations:
+  # CASE 4 (chargeback): PayPal accepts only accept_claim REFUND. USD 5.00 is within the limit and above the approval line, so the owner approves.
+  accept_claim:
+    level: Execute within Limits
+    max_amount_minor: 500
+    approval_above_minor: 200
+    currency: USD
+    retry: never
+  # CASE 9 (inquiry, no money): tracking goes on the order and the proof goes to PayPal. Both are within limits and move no money.
+  add_tracking:
+    level: Execute within Limits
+    retry: never
+  provide_evidence:
+    level: Execute within Limits
+    retry: never
+  # Draft only: a spoken decision never makes an offer and never refunds outside accept_claim.
+  make_offer:
+    level: Draft
+    retry: never
+  refund:
+    level: Draft
+    retry: never
+  send_message:
+    level: Draft
+    retry: never
+caps:
+  per_customer_per_day_minor: 900
+# The only host the egress gateway lets agents reach.
+egress:
+  allow_hosts:
+    - api-m.sandbox.paypal.com

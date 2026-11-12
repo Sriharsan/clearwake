@@ -1,122 +1,100 @@
-# Clearwake video: dialogue script (2:55 maximum, Sri speaks, captions on)
+# Clearwake video: dialogue script (2:42, under the 2:45 limit, Sri speaks, captions on)
 
 **When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice.**
 
 **When an agent's order goes missing, agents fix it.**
 
-**Real PayPal sandbox run, 11 November 2026.** 10 orders bought by an agent, 10 item not received disputes. 4 settled by the two agents at INQUIRY, before a claim, USD 20.00 refunded. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
+**Real PayPal sandbox run, 11 and 12 November 2026.** 10 orders bought by an agent, 10 item not received claims. 5 resolved inside PayPal, 4 of them at INQUIRY with no fee. 4 answered with proof, under PayPal review. 1 refused by the buyer agent's mandate before it was filed with PayPal. USD 0.00 overpaid against USD 2,633.25 for an agent on the PayPal Agent Toolkit alone.
 
-Format: **SAY** is what Sri says, **[click]** is what to do on screen, **CAPTION** is the burned in caption, **TAG** is the small label top left of every shot. Record the browser and one terminal only. Upload publicly to YouTube, captions on, no music, no third party logos. Speak in your own words; the lines are 404 words over 2:55, which is 138 words a minute with one claim per sentence. Sri decides the final cut, the face or phone footage and every video choice; this file is a draft.
+This file matches the real footage. The nine clips are in `D:\paypal hackathon\video\`, one file per scene, screen only, no narration, product sounds and the two Sarvam Bulbul voices kept. `timing.json` there lists every clip with its slot and Sri's line. Sri speaks the narration over the clips in his own words; the lines below are a draft, and he decides the final cut, any face or phone footage and every video choice.
 
-Shape, taken from the winning videos: the real result is on screen in the first frame, no title card. The bad outcome comes first and the same action is stopped second. The key number is spoken while its proof is on screen. Every shot carries a tag that says how it ran: **Real PayPal sandbox run**, **Planted failure**, **Verified in your browser**, **Local run**. Hold each proof screen 4 to 5 seconds and cut at the end of a sentence. The outcomes are counted aloud.
+Shape, from the winning videos: the real result is on screen in the first frame, no title card. The bad outcome comes first, the same action stopped second, the key number spoken while its proof is on screen. Every shot carries a tag that says how it ran. Hold each proof screen and cut at the end of a sentence.
 
-The one line, spoken at 0:12: "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice."
+Every number comes from a run file: `data/runs/batch-sandbox-20261111-132948.json` (the batch), `data/runs/voice-decisions-20261112.json` (the two voice decisions), `data/runs/settle-times-20261111.json` (settle times), `data/runs/baseline-20261110-172506.json` (the 200 episodes). Do not say a number that is not in those files.
 
-Every number comes from a run file: `data/runs/batch-sandbox-20261111-132948.json` (the batch), `data/runs/settle-times-20261111.json` (settle times), `data/runs/baseline-20261110-172506.json` (the 200 episodes). Do not say a number that is not in those files.
+## Clips and slots (total 2:42)
 
-## Before recording
+| Scene | Slot | File | Length | Tag |
+| --- | --- | --- | --- | --- |
+| 01 | 0:00 to 0:12 | scene-01-real-result.mp4 | 12 s | Real PayPal sandbox run, case 3 |
+| 02 | 0:12 to 0:23 | scene-02-claim-and-bad-outcome.mp4 | 11 s | Planted failure, local run, PayPal Agent Toolkit |
+| 03 | 0:23 to 0:35 | scene-03-same-action-stopped.mp4 | 12 s | Planted failure, same faults, same layer |
+| 04 | 0:35 to 1:00 | scene-04-rules-by-voice.mp4 | 25 s | Rules said by the owner, Sarvam voice |
+| 05 | 1:00 to 1:22 | scene-05-anatomy.mp4 | 22 s | Real PayPal sandbox run, case 3 |
+| 06 | 1:22 to 1:58 | scene-06-two-agents-settle.mp4 | 36 s | Real PayPal sandbox run, two voice decisions |
+| 07 | 1:58 to 2:10 | scene-07-verify-it.mp4 | 12 s | Verified in your browser |
+| 08 | 2:10 to 2:30 | scene-08-ten-cases.mp4 | 20 s | Real PayPal sandbox run, read back from PayPal |
+| 09 | 2:30 to 2:42 | scene-09-end-card.mp4 | 11 s | Verified in your browser |
 
-```
-python -m clearwake --port 8810              # console: http://127.0.0.1:8810/console
-python -m clearwake --phone                  # only for the voice shot; wait for "Speech model ready"
-python scripts\cases.py --only e,g           # both must print PASS
-python scripts\verify_pair.py data\runs\batch-sandbox-20261111-132948.json
-```
+## 0:00 to 0:12 The real result, first frame
 
-Tabs ready: the console (1 Buyer agent, 2 Merchant control room, 3 Receipt verifier, 4 Voice); PayPal's sandbox Resolution Center logged in as the sandbox buyer (log in by hand before recording, never show the login or email); `docs/BASELINE.md` and `docs/TOOLKIT_FAILURE_CASES.md` open; the Render link `https://clearwake-console.onrender.com/console`; a terminal with `python scripts\show_dispute.py PP-R-ISN-10198775` typed. Never show `.env` or the PayPal developer credentials page.
-
-## 0:00 to 0:12 The real result, first frame (line spoken, number on screen)
-
-**[click]** PayPal's record of dispute `PP-R-ISN-10198775` on screen from the first frame: status RESOLVED, stage INQUIRY, refund USD 5.00.
-
-**TAG:** Real PayPal sandbox run, case 3
+PayPal's record of case 3 on screen from the first frame: RESOLVED at INQUIRY, USD 5.00.
 
 **SAY:** "An AI agent bought something. It never arrived. Five dollars. PayPal's own record reads resolved, at the inquiry stage."
 
 **CAPTION:** PayPal's record: RESOLVED at INQUIRY
 
-## 0:12 to 0:25 The claim, then the bad outcome
+## 0:12 to 0:23 The claim, then the bad outcome
 
-**SAY:** "When an AI agent buys something and it never arrives, Clearwake lets the buyer's agent and the seller's agent settle it inside PayPal within an hour, with proof, before it becomes a claim or a fee, and nothing is paid twice. First, what happens without it."
+The Break it page, the lost response attack on the unguarded agent: the response is lost, the agent retries, the customer is paid twice.
 
-**[click]** Browser on `docs/BASELINE.md`, the total row: an agent using PayPal's Agent Toolkit directly, 200 episodes. Then `docs/TOOLKIT_FAILURE_CASES.md`, the lost response table.
-
-**TAG:** Planted failure, local run, PayPal Agent Toolkit 1.11.0
-
-**SAY:** "A response is lost, the agent retries, and the customer is paid twice. A message says ignore your limits, and a claim is accepted. Over two hundred episodes: twenty six hundred and thirty three dollars overpaid, sixty one double refunds."
+**SAY:** "When an agent buys and it never arrives, a lost response makes the agent retry, and the customer is paid twice. Over two hundred episodes on the Agent Toolkit alone: twenty six hundred and thirty three dollars overpaid, sixty one double refunds."
 
 **CAPTION:** 200 episodes: USD 2,633.25 overpaid, 61 double refunds
 
-## 0:25 to 0:40 The same action, stopped
+## 0:23 to 0:35 The same action, stopped
 
-**[click]** Console, tab 2, **Run case**: e, then g. Point at e (one refund, UNKNOWN then VERIFIED) and g ("Policy refused: above limit"). Cut to the baseline row for Clearwake.
-
-**TAG:** Planted failure, same faults, same layer
+Break it again, an over limit request through the guard: zero paid, held for a person, the signed receipts below.
 
 **SAY:** "Same faults through Clearwake. Zero dollars overpaid. Zero double refunds. The injected message is refused before any PayPal call."
 
 **CAPTION:** Clearwake: USD 0.00 overpaid, 0 double refunds, 200 of 200 as the owner intended
 
-## 0:40 to 1:00 Rules said once, in Sri's own voice (face or phone slot, then the screen)
+## 0:35 to 1:00 Rules said once, by voice
 
-**0:40 to 0:45, face or phone slot.** **[click]** Sri on camera, or his phone in his hand, saying the rule aloud. One take of real footage in his real voice, 5 seconds, nothing staged around it. Sri decides face or phone and records it himself.
+The voice page: the owner's voice (label "Owner's voice: Sarvam Bulbul") says "Refund anything under 5 US dollars that has not arrived in 10 days. Ask me above that. Never refund twice." Sarvam Saaras hears it, the words show on screen, Clearwake reads the rules back in plain words, the owner presses Yes, and Clearwake's reply plays in its own voice (label "Clearwake's voice: Sarvam Bulbul"). The page shows source: voice and the policy hash.
 
-**TAG:** Real PayPal sandbox run, rules said by the owner
+If Sri wants his own voice here, he records the first 5 seconds on his phone and cuts it in over the opening of this clip.
 
-**SAY:** "Settle an item that has not arrived on its own, up to five dollars. Ask me up to nine. Never more."
+**SAY:** "I say the rule once, out loud. The system reads it back in plain words. I say yes, and it is signed. The model can propose anything now. It can never go past this."
 
-**0:45 to 1:00, the screen.** **[click]** Tab 4, **Voice** (or the phone): the plain words readback, say yes, show the signed policy hash.
+**CAPTION:** Under USD 5.00, settle. Above that, ask me. Never refund twice.
 
-**SAY:** "The system reads it back in plain words. I say yes, and it is signed. The model can propose anything now. It can never go past this."
+## 1:00 to 1:22 Anatomy: one dispute, six layers
 
-**CAPTION:** Settle up to USD 5.00. Ask up to USD 9.00. Never more.
+The Proof page, the exploded view: one dispute, case 3, through the six layers, then the layer switch to the receipts and to PayPal's record.
 
-## 1:00 to 1:30 Anatomy: one dispute, six layers (30 seconds)
+**SAY:** "One dispute, six layers. The owner's rule, said once and signed. The buyer's agent files the claim and cannot pay itself. The merchant's agent answers with proof. The policy gate checks every action before money moves. Signed receipts chain each step to the one before. And PayPal's record is the judge."
 
-Source: `ANATOMY_DIAGRAM_SPEC.md`, the exploded view. One dispute runs through every layer: case 3, `PP-R-ISN-10198775`, USD 5.00, shown as one bead on a thread. The stack is on screen at the first frame of the segment, no fade in. Top left tag for the whole segment: **Real PayPal sandbox run, case 3**; any step shown from a recorded run carries **Replay of a recorded run** instead.
+**CAPTION:** Settled inside PayPal. Paid once. USD 5.00.
 
-| Time | On screen | SAY | CAPTION |
-| --- | --- | --- | --- |
-| 1:00 to 1:03 | The assembled unit: six sheets stacked on one axis, the thread through them, the bead parked at the top | "One dispute. Six layers." | One dispute. Six layers. |
-| 1:03 to 1:08 | Sheets separate top first; the skeleton lights (layer 1, owner's spoken rules: waveform, rule text, Read back, Signed). The bead drops onto it | "The skeleton is the owner's rule, said once and signed." | The owner says the rule once. It is signed. |
-| 1:08 to 1:15 | The muscles: layer 2, the buyer agent's claim card (Item not received, PP-R-ISN-10198775, USD 5.00), then layer 3, the merchant agent's reply card with the proof attached | "The muscles are two agents. The buyer's files the claim and cannot pay itself. The merchant's answers with proof." | Buyer agent files. Merchant agent answers with proof. |
-| 1:15 to 1:20 | The skin and the seal: layer 4, the policy gate, chip Proposed: refund USD 5.00 turns to Allowed; layer 5, four receipt blocks chain in, each stamps Signed | "The skin is the policy gate, which checks every action before money moves. The seal is the signed receipts." | Checked before money moves. Each receipt checks the one before. |
-| 1:20 to 1:27 | The heart and the blood: layer 6, PayPal's record for the same case id opens, a match line draws from the last receipt, chip Matches PayPal's record; the USD 5.00 line pulses once as the bead lands | "The heart is PayPal's record. The blood is the five dollars, and it moves once." | PayPal's record is the judge. It matches. |
-| 1:27 to 1:30 | Sheets close back into the assembled stack, bottom first; the bead glows; end line over the stack | "Case 3. Settled inside PayPal. Paid once." | Settled inside PayPal. Paid once. USD 5.00. |
+## 1:22 to 1:58 Two real decisions by voice
 
-Hold each layer long enough to read it muted; one thing moves at a time except the 0.25 second stagger of the separation. Never show a token, an account id or private data on any sheet; `PP-R-ISN-10198775` is the only identifier. The two layer names the spec calls Rules and Policy gate keep those labels on the sheets; skeleton, muscles, skin, seal, heart and blood are the spoken anchors.
+Real PayPal sandbox, run once on 12 November 2026, three parts in one clip.
 
-## 1:30 to 1:48 The two agents settle it, live
+* **1:22 to 1:30.** The owner's voice says "Approve case 4". Case 4 is a chargeback under review, so PayPal allows only accept claim with a refund; no offer is possible and none is sent. The decision runs through the signed policy and the approval record.
+* **1:30 to 1:38.** PayPal's record read back: RESOLVED at CHARGEBACK, one refund of USD 5.00, written once, with a USD 0.77 settlement fee. PayPal still showed UNDER_REVIEW for the first 9 reads over 56 seconds; the agent did not resend, it read the record again. That wait is cut from the clip and is in the raw take.
+* **1:38 to 1:58.** The owner's voice says "Don't pay case 9, send the proof". No money moves. A sandbox test tracking number goes on the order, the proof goes to the dispute once, and PayPal's record reads UNDER_REVIEW at INQUIRY.
 
-**[click]** Tab 1, **Buyer agent**: the order inside its signed mandate. PayPal's Resolution Center: the dispute opened. Tab 2, AG Grid ledger: the new row, stage INQUIRY, the **Proposed** and **Policy decision** columns. Then the ledger row where the two columns differ, case 1, `PP-R-YYA-10198768`.
+**SAY:** "Two commands by voice, through the signed policy and an approval record. Approve case 4: one refund of five dollars, written once, PayPal's record reads resolved. Don't pay case 9, send the proof: no money moves, the proof is in, PayPal has it under review. Every receipt says the command came by voice, and which voice."
 
-**TAG:** Real PayPal sandbox run, buyer agent through a local browser
+**CAPTION:** Case 4 RESOLVED, USD 5.00, written once. Case 9 proof sent, no money moved.
 
-**SAY:** "The model drafts. The rules decide. The offer goes alone, through PayPal's own offer call. Here the model proposed the wrong move once, and the owner's rule stopped it."
+## 1:58 to 2:10 Do not trust us. Check it.
 
-**CAPTION:** Model proposed counter. The owner's rule decided wait.
+Home page: the Verify button runs on load and checks every signed log in the browser. Hold on the result.
 
-## 1:48 to 2:03 Do not trust us. Check it.
+**SAY:** "Signed receipts, one from each side, the same dispute id. Verified here, in this browser. Change one line and the chain breaks."
 
-**[click]** Terminal: `python scripts\show_dispute.py PP-R-ISN-10198775`, then tab 3, **Receipt verifier**: the two receipts, same dispute id, Verify. Then edit one character of a log and verify again: it fails.
+**CAPTION:** Verified in your browser. Change one line, the chain breaks.
 
-**TAG:** Verified in your browser
+## 2:10 to 2:30 All ten cases, counted aloud
 
-**SAY:** "Two signed receipts, one from each side, the same dispute id. Verify them offline. Change one line and the chain breaks."
+The Control Room: the counted tally, the ten case cards, the dispute ledger with its stage filter.
 
-**CAPTION:** Two receipts, one dispute id. Change one line, the chain breaks.
+**SAY:** "Ten orders on the real sandbox, ten claims. Five resolved inside PayPal, four of them at inquiry with no fee. Four answered with proof and under PayPal review. None waiting for the owner. One was refused by the buyer's mandate before it was filed: twenty dollars claimed on a nine dollar order. Zero double refunds."
 
-## 2:03 to 2:33 All ten cases, counted aloud
-
-**[click]** Tab 2, ledger after the batch: stage filter, deadline countdown, CSV export. For the last 10 seconds overlay the table below (from `docs/RESULTS.md`).
-
-**TAG:** Real PayPal sandbox run, batch of 10, read back from PayPal
-
-**SAY:** "Ten cases on the real sandbox. Four settled at inquiry, before a claim, in twenty four to sixty two minutes in PayPal's timestamps. Three answered with proof and are under PayPal review. Two are waiting for the merchant owner. One was refused by the buyer's mandate: twenty dollars claimed on a nine dollar order. PayPal moved four cases to chargeback once tracking was on the order. Zero double refunds."
-
-**CAPTION:** 4 settled, 3 under PayPal review, 2 awaiting the owner, 1 refused by the mandate
-
-Overlay table:
+**CAPTION:** 5 of 10 resolved, 4 answered with proof, 1 refused by the mandate
 
 | | Agent using PayPal's Agent Toolkit directly | Clearwake |
 | --- | --- | --- |
@@ -124,21 +102,18 @@ Overlay table:
 | Double refunds | 61 | 0 |
 | Wrongly accepted claims | 160 | 0 |
 | Episodes ended as the owner intended | 40 of 200 | 200 of 200 |
-| Real sandbox batch of 10 | not run | 4 settled at INQUIRY, 0 double refunds |
 
-## 2:33 to 2:55 End card: numbers, one command, links
+## 2:30 to 2:42 End card
 
-**[click]** Console in the browser at the Render link, then the GitHub page, then a terminal showing the one clone command. End card: three numbers and the command.
+Three numbers, one command, the links.
 
-**TAG:** Verified in your browser
+**SAY:** "Zero dollars overpaid against twenty six hundred. Zero double refunds against sixty one. One command runs it, or open the live console. MIT, sandbox only, no real money."
 
-**SAY:** "Four of ten settled before a claim. Zero dollars overpaid against twenty six hundred. Zero double refunds against sixty one. One command runs it, or open the live console on Render. MIT, sandbox only, no real money."
-
-**CAPTION:** 4 of 10 settled. USD 0.00 against USD 2,633.25. 0 against 61 double refunds. clearwake-console.onrender.com  github.com/Sriharsan/clearwake
+**CAPTION:** USD 0.00 against USD 2,633.25. 0 against 61 double refunds. clearwake-console.onrender.com  github.com/Sriharsan/clearwake
 
 ## Notes
 
-* Do not stage a step. If the sandbox shows a CAPTCHA or blocks the buyer's browser, record the owner doing that step by hand, say so in one sentence, and caption it "Real sandbox, buyer step done by hand". Never get past a CAPTCHA.
-* The unguarded agent segment is a recorded comparison on the local PayPal layer; keep it under 20 seconds.
-* The network cut (case m) and the broken receipt chain are extras if the cut leaves seconds to spare. Caption the cut "Real PayPal sandbox run, network isolated containers" and the chain "Verified in your browser".
-* Keep to plain speech and the public text rules in the build brief.
+* Sarvam Bulbul speaks both voices inside the product (owner Kabir, Clearwake Advait); Sarvam Saaras v4 hears the owner. The on screen label "Owner's voice: Sarvam Bulbul" shows whenever the owner voice plays. Browser speech stays as the fallback.
+* Case 7 stays a refusal: the buyer agent claimed USD 20.00 on a USD 9.00 order and its mandate stopped it before it was filed with PayPal, so PayPal has no record of it. It is counted in the ten as refused, never as resolved.
+* No sign in, email or key is on any clip. Never show `.env`.
+* Scenes 01 to 05 and 07 to 09 are trimmed from the end of their recordings; the untrimmed takes are in `video\_work\full`.

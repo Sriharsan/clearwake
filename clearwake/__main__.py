@@ -30,6 +30,8 @@ def main():
     parser.add_argument("--enable-paypal-sandbox", action="store_true", help="Explicitly enable sandbox-only network requests; never production")
     parser.add_argument("--enable-meta-test-data", action="store_true", help="Separate opt-in for the upstream fixed test AI fixture; may consume provider credits")
     parser.add_argument("--enable-local-ai", action="store_true", help="Explicitly use the reviewed local model for the fixed test fixture")
+    parser.add_argument("--voice-decisions", choices=("off", "local", "sandbox"), default="off",
+                        help="Attach the voice decision runner (Approve case 4, Don't pay case 9, send the proof): on the local provider, or on the real PayPal sandbox")
     parser.add_argument("--console-model", choices=("scripted", "ollama"), default="scripted",
                         help="Agents in the /console local: scripted rules (default, no model calls) or a local Ollama model on loopback")
     parser.add_argument("--local-outcome", choices=("completed", "pending", "lost-response"), default="completed")
@@ -65,7 +67,16 @@ def main():
         console = Console(args.database.resolve().parent / "console", args.console_model)
     except (ValueError, OSError) as error:
         parser.error(str(error))
+    if args.voice_decisions != "off" and not hosted:
+        from .decisions import VoiceDecisionRunner, mirror_local
+        from . import envfile
+        envfile.load(Path(__file__).resolve().parent.parent / ".env")
+        decision_gateway = SandboxGateway.from_environment() if args.voice_decisions == "sandbox" else mirror_local(LocalGateway(args.database.resolve().with_name("voice-local-provider.sqlite3"), "completed"))
+        decision_runner = VoiceDecisionRunner(decision_gateway, args.database.resolve().parent / "voice-decisions" / args.voice_decisions)
     server = ClearwakeServer((args.host, args.port), controller, console, hosted=hosted)
+    if args.voice_decisions != "off" and not hosted:
+        server.decision_runner = decision_runner
+        print(f"Voice decisions: {args.voice_decisions}")
     print(f"Clearwake: http://127.0.0.1:{args.port}")
     print(f"Console:   http://127.0.0.1:{args.port}/console (local run on the local provider; agents: {console.adapter.label()})")
     print(f"Payments: {gateway.mode}. Specialists: {controller.mode}. No calls occur just by opening the page.")

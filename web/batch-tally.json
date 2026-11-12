@@ -5,23 +5,27 @@
     "items": [
       {
         "value": "10 of 10",
-        "label": "disputes handled, 0 errors, 0 double refunds"
+        "label": "claims handled, 0 errors, 0 double refunds"
       },
       {
         "value": "4",
         "label": "settled at INQUIRY, before a claim, USD 20.00 refunded"
       },
       {
-        "value": "3",
+        "value": "1",
+        "label": "resolved at CHARGEBACK, decided by the owner's voice, USD 0.77 settlement fee"
+      },
+      {
+        "value": "4",
         "label": "answered with proof, under PayPal review"
       },
       {
-        "value": "2",
+        "value": "0",
         "label": "awaiting the merchant owner"
       },
       {
         "value": "1",
-        "label": "refused by the mandate"
+        "label": "refused by the mandate before it was filed with PayPal"
       }
     ]
   },

@@ -32,12 +32,17 @@
       <meter id="level" min="0" max="1" value="0" aria-label="Microphone level"></meter>
       <span class="timer" id="timer" aria-hidden="true">0:00</span>
     </div>
+    <button class="owner" id="owner" type="button" hidden>Play owner command</button>
   </section>
 
   <section class="card" aria-labelledby="h-said">
     <h2 id="h-said">You said</h2>
     <p class="chip" id="heard-chip">No recording yet</p>
     <p class="big" id="transcript" aria-live="polite">Your words appear here.</p>
+    <div class="player" id="owner-player" hidden>
+      <p class="voice-label" id="owner-label" hidden></p>
+      <audio id="owner-audio" controls preload="none"></audio>
+    </div>
   </section>
 
   <section class="card" id="readback-card" aria-labelledby="h-read" hidden>
@@ -53,6 +58,10 @@
   <section class="card" aria-labelledby="h-answer">
     <h2 id="h-answer">Answer</h2>
     <p class="big" id="answer" aria-live="polite">The spoken answer appears here, word for word.</p>
+    <div class="player" id="reply-player" hidden>
+      <p class="voice-label" id="reply-label" hidden></p>
+      <audio id="reply-audio" controls preload="none"></audio>
+    </div>
     <p class="small" id="meta"></p>
     <div class="row">
       <button class="plain" id="speak" type="button">Speak again</button>
@@ -75,6 +84,7 @@
       <li>Approve: Approve the sixty four dollar one.</li>
     </ul>
     <p class="small">A voice command never moves money by itself. Rules and approvals wait for your yes.</p>
+    <p class="small" id="budget" hidden></p>
   </section>
 </main>
 </body>

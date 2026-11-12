@@ -34,18 +34,19 @@
 <main>
   <section id="batch" class="wrap batch" aria-labelledby="h-batch">
     <p class="eyebrow">Control Room, batch ledger</p>
-    <h1 id="h-batch">10 real sandbox disputes. 4 settled at INQUIRY.</h1>
+    <h1 id="h-batch">10 claims by the buyer agent. 5 resolved inside PayPal.</h1>
     <p class="tags" aria-label="Tags used on this page"><span class="tag">Real PayPal sandbox run</span><span class="tag amber">Planted failure</span><span class="tag ink">Verified in your browser</span></p>
     <dl class="lead-numbers" id="lead-numbers" data-numbers-src="data/room.json" aria-label="Measured numbers from the recorded batch">
       <div data-tail><dd class="num tnum" id="v-num">Checking</dd><dt id="v-label">signed logs published with this page, checked by your browser now</dt><dd class="src" id="v-src">Verified in your browser · receipts/manifest.json</dd></div>
     </dl>
     <p class="lede">The batch of 11 Nov 2026 ran against <code>api-m.sandbox.paypal.com</code>. The counts and the cards below are computed in your browser from <a href="data/cases.json">data/cases.json</a>, built from the batch file <a href="data/batch-sandbox-20261111-132948.json">data/batch-sandbox-20261111-132948.json</a>, the dispute records PayPal returned, and the two signed batch logs.</p>
-    <p class="tally-head">The counted tally of the 10 disputes</p>
+    <p class="tally-head">The counted tally of the 10 claims. 9 became PayPal disputes. Case 7 was refused by the mandate before it was filed.</p>
     <dl class="tally" id="tally">
-      <div><dd class="tnum" id="t-settled">4</dd><dt>of 10 settled</dt></div>
-      <div><dd class="tnum" id="t-review">3</dd><dt>of 10 answered with proof</dt></div>
-      <div><dd class="tnum" id="t-owner">2</dd><dt>of 10 waiting for owner</dt></div>
-      <div><dd class="tnum" id="t-mandate">1</dd><dt>of 10 refused</dt></div>
+      <div><dd class="tnum" id="t-settled">4</dd><dt>of 10 settled at INQUIRY, no fee</dt></div>
+      <div><dd class="tnum" id="t-chargeback">1</dd><dt>of 10 resolved at CHARGEBACK</dt></div>
+      <div><dd class="tnum" id="t-review">4</dd><dt>of 10 answered with proof, under PayPal review</dt></div>
+      <div><dd class="tnum" id="t-owner">0</dd><dt>of 10 waiting for owner</dt></div>
+      <div><dd class="tnum" id="t-mandate">1</dd><dt>of 10 refused before filing, case 7, no dispute exists</dt></div>
     </dl>
     <p class="note verified-def">VERIFIED means PayPal's record was read back and matches.</p>
     <p class="note" id="batch-hash">SHA-256 of the batch file is computed in your browser when this page loads.</p>
@@ -55,7 +56,7 @@
   <section id="cases" class="wrap sec" aria-labelledby="h-cases">
     <p class="eyebrow">Cases, one card each</p>
     <h2 id="h-cases">What the agent sent. What PayPal recorded.</h2>
-    <p class="lede">Every card has the merchant agent's steps, PayPal's own record read back from the sandbox, and the signed receipt line for each step. A result is one of four words: settled, answered with proof, waiting for owner, refused.</p>
+    <p class="lede">Every card has the merchant agent's steps, PayPal's own record read back from the sandbox, and the signed receipt line for each step. A result is one of five words: settled, resolved at chargeback, answered with proof, waiting for owner, refused.</p>
     <div id="case-cards" class="cards" aria-live="polite"><p class="note">Loading the ten cards.</p></div>
     <div id="cost" class="cost" aria-labelledby="h-cost">
       <h3 id="h-cost">Cost per case</h3>
@@ -82,7 +83,7 @@
         <button type="button" class="toggle" id="hv" aria-pressed="false"><kbd>H</kbd> High volume what-if</button>
       </div>
       <dl class="today">
-        <div><dt>Waiting for owner</dt><dd class="tnum amber-t" id="w-count">2</dd><dd class="sub" id="w-sub">Cases 4 and 9 wait for the owner. Their cards say why.</dd></div>
+        <div><dt>Waiting for owner</dt><dd class="tnum amber-t" id="w-count">0</dd><dd class="sub" id="w-sub">No case waits for the owner.</dd></div>
         <div><dt>Deadline</dt><dd class="word" id="w-due">Case 9</dd><dd class="sub" id="w-due-sub">PayPal's record carries one seller response due date, on case 9.</dd></div>
       </dl>
     </div>

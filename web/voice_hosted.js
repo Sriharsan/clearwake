@@ -19,7 +19,7 @@
       rec.onend = function () {
         live = false;
         if (!heard.trim()) { if (api.getState() === "recording") { api.setState("idle"); api.paint(); api.say("I heard nothing. Say it again, closer to the microphone."); } return; }
-        el.chip.textContent = "Heard"; api.turn({ text: heard.trim() });
+        el.chip.textContent = "Heard"; api.turn({ text: heard.trim(), via: "browser speech" });
       };
       try { rec.start(); } catch (e) { live = false; api.setState("idle"); api.paint(); }
     }, true);

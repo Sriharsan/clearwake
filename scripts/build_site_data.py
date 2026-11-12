@@ -222,7 +222,7 @@ def public_numbers(found):
         n, errors = sm.get("cases", 0), sm.get("error", 0)
         doubles = (sm.get("result") or {}).get("double_refunds", 0)
         src = f"data/runs/{path.name}"
-        out.append({"value": f"{n - errors} of {n}", "label": f"disputes handled with {errors} errors and {doubles} double refunds",
+        out.append({"value": f"{n - errors} of {n}", "label": f"claims handled with {errors} errors and {doubles} double refunds",
                     "source": src, "mode": "real PayPal sandbox"})
         rows = body.get("cases", [])
         inside = [r for r in rows if r.get("paypal_stage") == "INQUIRY" and r.get("outcome") not in ("escalated_to_merchant_owner", "handled_by_mandate")]
@@ -262,7 +262,7 @@ def room_numbers():
     n, errors = sm.get("cases", 0), sm.get("error", 0)
     doubles = (sm.get("result") or {}).get("double_refunds", 0)
     mode = "Real PayPal sandbox run"
-    out["public"].append({"value": f"{n - errors} of {n}", "label": f"disputes handled with {errors} errors and {doubles} double refunds", "source": src, "mode": mode})
+    out["public"].append({"value": f"{n - errors} of {n}", "label": f"claims handled with {errors} errors and {doubles} double refunds", "source": src, "mode": mode})
     if sm.get("refunds_confirmed_by_paypal") is not None and sm.get("refunds_confirmed_total") is not None:
         out["public"].append({"value": f"USD {sm['refunds_confirmed_total']}", "label": f"refunded in {sm['refunds_confirmed_by_paypal']} refunds, each confirmed by PayPal's record, across {sm.get('settled_inquiry_no_fee', 0)} of {n} disputes settled at INQUIRY", "source": src, "mode": mode})
     times = sorted(ROOT.glob("data/runs/settle-times-*.json"))
@@ -273,6 +273,15 @@ def room_numbers():
     chargeback = [c for c in body.get("cases", []) if str(c.get("paypal_stage", "")).upper() == "CHARGEBACK"]
     if chargeback:
         out["public"].append({"value": f"{len(chargeback)} of {n}", "label": f"moved by PayPal to the CHARGEBACK stage, cases {', '.join(str(c['n']) for c in chargeback[:-1])} and {chargeback[-1]['n']}" if len(chargeback) > 1 else "moved by PayPal to the CHARGEBACK stage", "source": src, "mode": mode})
+    voice = voice_decisions()
+    c4 = (voice or {}).get("cases", {}).get(4)
+    if c4 and c4["paypal"]["status"] == "RESOLVED" and c4["paypal"].get("fees"):
+        counts, vsrc = batch_counts(), voice["file"]
+        fee = c4["paypal"]["fees"][0]["amount"]
+        out["public"].append({"value": f"{counts['resolved']} of {n}", "label": f"claims resolved inside PayPal: {counts['settled']} at INQUIRY with no fee, case 4 at CHARGEBACK with the USD {fee} settlement fee", "source": f"{vsrc} and {src}", "mode": mode})
+        if sm.get("refunds_confirmed_total") is not None:
+            total = Decimal(str(sm["refunds_confirmed_total"])) + Decimal(c4["paypal"]["amount_refunded"])
+            out["public"].append({"value": f"USD {total:.2f}", "label": f"refunded in all, each refund on PayPal's record: USD {sm['refunds_confirmed_total']} at INQUIRY and USD {c4['paypal']['amount_refunded']} on case 4", "source": f"{vsrc} and {src}", "mode": mode})
     return out
 
 
@@ -361,7 +370,7 @@ def hud_case():
 
 # ---------------------------------------------------------------------------------------------------------------- Control Room cases
 
-VOCAB = ("settled", "answered with proof", "waiting for owner", "refused")
+VOCAB = ("settled", "resolved at chargeback", "answered with proof", "waiting for owner", "refused")
 VERIFIED_MEANS = "VERIFIED means PayPal's record was read back and matches."
 BATCH_POLICY = ROOT / "data" / "buyer" / "manual-batch" / "merchant-batch-policy.yaml"
 
@@ -527,6 +536,60 @@ def model_costs(body, logs):
             "note": "Both agents run a local model on this machine through Ollama, so no per call price applies."}
 
 
+def voice_decisions():
+    """The newest voice-decisions run file (the two spoken decisions of 12 Nov 2026), or None. Case number -> its block."""
+    files = sorted((ROOT / "data" / "runs").glob("voice-decisions-*.json"))
+    if not files:
+        return None
+    body = json.loads(files[-1].read_text(encoding="utf-8"))
+    if body.get("kind") != "voice decisions" or body.get("source_batch") != f"data/runs/{clean_sandbox_batch()[0].name}":
+        return None
+    return {"file": f"data/runs/{files[-1].name}", "recorded": body["recorded"], "cases": {int(c["case"]): c for c in body["cases"]}, "body": body}
+
+
+def apply_voice_to_rows(converted):
+    """The ledger rows of the two disputes decided by voice take PayPal's record from the voice decisions run file. The batch file itself stays as it was on 11 Nov."""
+    voice = voice_decisions()
+    if not voice or not converted:
+        return converted
+    for row in converted["rows"]:
+        c = next((v for v in voice["cases"].values() if v["dispute"] == row["dispute"]), None)
+        if not c:
+            continue
+        pp = c["paypal"]
+        row.update({"stage": pp["stage"], "paypal_status": pp["status"], "state": "VERIFIED", "decided": "owner's voice: " + c["command"],
+                    "record": {**row.get("record", {}), "paypal_status": pp["status"], "paypal_stage": pp["stage"]}})
+        if c["case"] == 4:
+            row.update({"outcome": f"resolved at chargeback, refund USD {pp['amount_refunded']} confirmed by PayPal, USD {pp['fees'][0]['amount']} settlement fee, decided by the owner's voice",
+                        "result": "settled", "refunded": True})
+            row["record"]["refund_confirmed"] = pp["amount_refunded"]
+        else:
+            row.update({"outcome": "answered with proof by the owner's voice, no money moved, PayPal reads " + pp["status"].replace("_", " ").lower(), "result": "evidence"})
+    return converted
+
+
+def voice_facts(c):
+    """PayPal's record of a case decided by voice, as label and value pairs, from the run file. Nothing is added."""
+    pp = c["paypal"]
+    facts = [("Dispute", c["dispute"]), ("Status", pp["status"]), ("Dispute state", pp["dispute_state"]), ("Stage", pp["stage"])]
+    if pp.get("outcome_code"):
+        facts.append(("Outcome", f"{pp['outcome_code']}, {pp['outcome_reason']}, refunded USD {pp['amount_refunded']}"))
+    if pp.get("refund_id"):
+        facts.append(("Refund", f"{pp['refund_id']}, USD {pp['refund_amount']}"))
+    for f in pp.get("fees") or []:
+        facts.append(("Fee", f"{f['reason']}, USD {f['amount']}, {f['party']} {f['type']}"))
+    if pp.get("seller_proof_on_record") is not None:
+        facts.append(("Seller proof on the record", f"{pp['seller_proof_on_record']} entry, PROOF_OF_FULFILLMENT"))
+    return [[k, str(v)] for k, v in facts if v not in (None, "")]
+
+
+def voice_block(c, run):
+    src = c["source"]
+    return {"command": c["command"], "channel": src["channel"], "speech_to_text": src["stt"], "owner_voice": "Sarvam Bulbul " + src["owner_voice"],
+            "reply_voice": "Sarvam Bulbul " + src["reply_voice"], "policy_hash": c["policy_hash"], "approval": c.get("approval_id"), "what_ran": c["what_ran"],
+            "writes": c.get("accept_claim_writes", c.get("provide_evidence_writes")), "recorded": run["recorded"], "file": run["file"]}
+
+
 def cases_data():
     """site/data/cases.json: one card per case of the newest clean real sandbox batch, from the case-records run file, the two signed batch logs and the policy file.
     Nothing is typed here except the four result words and the one sentence that defines VERIFIED."""
@@ -594,6 +657,28 @@ def cases_data():
         else:
             raise ValueError(f"case {n}: outcome {outcome!r} has no card layout")
         out.append(card)
+    voice = voice_decisions()
+    for card in out:
+        vc = (voice or {}).get("cases", {}).get(card["n"])
+        if not vc:
+            continue
+        pp = vc["paypal"]
+        card["paypal"], card["paypal_status"], card["paypal_stage"] = voice_facts(vc), pp["status"], pp["stage"]
+        card["voice"] = voice_block(vc, voice)
+        card["raw_label"], card["raw"] = "PayPal's record as read back on " + voice["recorded"][:10] + ", the fields this page uses", pp
+        card.pop("rule", None); card.pop("due", None)
+        if card["n"] == 4:
+            card["result"] = "resolved at chargeback"
+            card["refund"] = {"id": pp["refund_id"], "amount": pp["refund_amount"], "created": None,
+                              "movements": [f"SELLER {f['type']} USD {f['amount']} {f['reason']}" for f in pp["fees"]] or ["no fee line on the record"]}
+            card["summary"] = (f"Approved by the owner's voice. PayPal's record reads RESOLVED at {pp['stage']}, {pp['outcome_reason']}. Refund {pp['refund_id']} of USD {pp['refund_amount']} "
+                               f"was written once. PayPal charged the USD {pp['fees'][0]['amount']} settlement fee." if pp["fees"] else "")
+        elif card["n"] == 9:
+            card["result"] = "answered with proof"
+            card["tracking"] = {"number": vc["tracking"]["number"], "carrier": vc["tracking"]["carrier"], "carrier_status": "sandbox test value",
+                                "paypal_tracker_status": vc["tracking"]["paypal_tracker_status"], "how": vc["tracking"]["label"], "confirmed_in_paypal": True}
+            card["summary"] = (f"Decided by the owner's voice: no payment, tracking and proof sent once. PayPal's record reads {pp['status'].replace('_', ' ')} at {pp['stage']}, "
+                               "and no money moved.")
     policy_lines = [line for line in pol_text.splitlines() if line.strip() and not line.lstrip().startswith("#")]
     return {"source": f"data/runs/{records[-1].name}", "batch": f"data/runs/{path.name}", "read_at": rec.get("read_at"), "mode": "Real PayPal sandbox run",
             "vocab": list(VOCAB), "verified_means": VERIFIED_MEANS, "counts": {w: sum(1 for k in out if k["result"] == w) for w in VOCAB},
@@ -606,17 +691,31 @@ def cases_data():
 
 
 def batch_counts():
-    """The counted outcomes of the real batch, read from the batch run file: site/data/counts.json. The home page reads this file, never the row wording."""
+    """The counted outcomes of the 10 claims, read from the batch run file and the voice decisions run file: site/data/counts.json. The home page reads this file."""
     path, body = clean_sandbox_batch()
     if not body:
         return {}
     rows = body.get("cases", [])
     count = lambda test: sum(1 for r in rows if test(r))
-    return {"source": f"data/runs/{path.name}", "cases": len(rows),
-            "settled": count(lambda r: r.get("outcome") == "settled_inquiry_no_fee"),
-            "answered_with_proof": count(lambda r: r.get("outcome") == "pending" and r.get("merchant_state") == "VERIFIED"),
-            "waiting_for_owner": count(lambda r: r.get("outcome") == "escalated_to_merchant_owner"),
-            "refused": count(lambda r: r.get("outcome") == "handled_by_mandate")}
+    out = {"source": f"data/runs/{path.name}", "cases": len(rows),
+           "settled": count(lambda r: r.get("outcome") == "settled_inquiry_no_fee"),
+           "answered_with_proof": count(lambda r: r.get("outcome") == "pending" and r.get("merchant_state") == "VERIFIED"),
+           "waiting_for_owner": count(lambda r: r.get("outcome") == "escalated_to_merchant_owner"),
+           "refused": count(lambda r: r.get("outcome") == "handled_by_mandate"), "resolved_at_chargeback": 0, "resolved": None}
+    voice = voice_decisions()
+    if voice:
+        v = voice["cases"]
+        by = {int(r["n"]): r for r in rows}
+        # case 4 and case 9 were waiting for the owner in the batch; each is now counted from PayPal's record in the voice run file
+        if 4 in v and v[4]["paypal"]["status"] == "RESOLVED" and by[4].get("outcome") == "escalated_to_merchant_owner":
+            out["waiting_for_owner"] -= 1
+            out["resolved_at_chargeback"] += 1
+        if 9 in v and v[9]["paypal"]["seller_proof_on_record"] and by[9].get("outcome") == "escalated_to_merchant_owner":
+            out["waiting_for_owner"] -= 1
+            out["answered_with_proof"] += 1
+        out["voice_source"] = voice["file"]
+    out["resolved"] = out["settled"] + out["resolved_at_chargeback"]
+    return out
 
 
 def batch_tally(public):
@@ -627,16 +726,16 @@ def batch_tally(public):
         rows, sm = body.get("cases", []), body.get("summary", {})
         n, errors = sm.get("cases", len(rows)), sm.get("error", 0)
         doubles = (sm.get("result") or {}).get("double_refunds", 0)
-        settled = sum(1 for r in rows if r.get("outcome") == "settled_inquiry_no_fee")
-        proof = sum(1 for r in rows if r.get("outcome") == "pending" and r.get("merchant_state") == "VERIFIED")
-        owner = sum(1 for r in rows if r.get("outcome") == "escalated_to_merchant_owner")
-        mandate = sum(1 for r in rows if r.get("outcome") == "handled_by_mandate")
+        counts = batch_counts()
+        settled, proof, owner, mandate = counts["settled"], counts["answered_with_proof"], counts["waiting_for_owner"], counts["refused"]
         out["batch"] = {"tag": "Real PayPal sandbox run", "source": f"data/runs/{path.name}", "items": [
-            {"value": f"{n - errors} of {n}", "label": f"disputes handled, {errors} errors, {doubles} double refunds"},
+            {"value": f"{n - errors} of {n}", "label": f"claims handled, {errors} errors, {doubles} double refunds"},
             {"value": str(settled), "label": f"settled at INQUIRY, before a claim, USD {sm.get('refunds_confirmed_total', '0.00')} refunded"},
             {"value": str(proof), "label": "answered with proof, under PayPal review"},
             {"value": str(owner), "label": "awaiting the merchant owner"},
-            {"value": str(mandate), "label": "refused by the mandate"}]}
+            {"value": str(mandate), "label": "refused by the mandate before it was filed with PayPal"}]}
+        if counts.get("resolved_at_chargeback"):
+            out["batch"]["items"].insert(2, {"value": str(counts["resolved_at_chargeback"]), "label": "resolved at CHARGEBACK, decided by the owner's voice, USD 0.77 settlement fee"})
     base = [x for x in public if "/baseline-" in x["source"]][:1]
     if base:
         out["baseline"] = {"tag": "Local run on the local provider", "source": base[0]["source"],
@@ -656,7 +755,7 @@ def main():
         except ValueError:
             body = None
         if isinstance(body, dict) and body.get("kind") == "buyer-seller batch":
-            converted = from_batch(body, source.stem)
+            converted = apply_voice_to_rows(from_batch(body, source.stem))
             if converted is None:
                 print("not published", source.name, "(a local batch: its records are not PayPal's)")
             else:

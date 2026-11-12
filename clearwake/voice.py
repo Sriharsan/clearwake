@@ -27,7 +27,7 @@ import time
 from relayloom.controller import Rejected
 from verdock_core.policy import decide
 
-from . import rules_nl
+from . import rules_nl, sarvam
 from .console import ConsoleError
 from .swarm import money
 
@@ -40,6 +40,54 @@ INTENTS = ("set_rules", "ask", "approve", "yes", "no", "unclear")
 VOICE_SOURCE = "voice"
 LABEL = "speech to text: Whisper small.en on this machine (int8, CPU), no cloud service"
 TRANSCRIBE_PATH = "/console/api/voice/transcribe"
+# Voice by Sarvam. Speech to text order: Sarvam, then local Whisper, then the browser's own speech, and typing always works.
+STT_SARVAM, STT_LOCAL, STT_BROWSER, STT_TYPED = "sarvam saaras:v4", "local whisper", "browser speech", "typed"
+OWNER_VOICE, REPLY_VOICE = "kabir", "advait"     # kabir: male, deeper (the owner). advait: male, lighter (Clearwake's replies).
+OWNER_LABEL, REPLY_LABEL = "Owner's voice: Sarvam Bulbul", "Clearwake's voice: Sarvam Bulbul"
+AUDIO_PREFIX = "/console/api/voice/audio/"
+AUDIO_NAME = re.compile(r"(?:advait|kabir)-[0-9a-f]{24}\.wav")
+OWNER_LINE = "Refund anything under $30 that has not arrived in 10 days. Ask me above that. Never refund twice."
+SARVAM_LABEL = ("Speech to text: Sarvam Saaras v4. Spoken replies: Sarvam Bulbul. Your audio goes to Sarvam for those two steps. "
+                "The decision, the read back and the signing stay on this laptop.")
+KINDS = {"audio/webm": "webm", "video/webm": "webm", "audio/mp4": "mp4", "video/mp4": "mp4", "audio/ogg": "ogg", "audio/mpeg": "mp3",
+         "audio/wav": "wav", "audio/x-wav": "wav", "audio/wave": "wav"}
+
+
+def cloud_voice():
+    """Sarvam is used when its key is set and CLEARWAKE_VOICE is not 'local'."""
+    return sarvam.available() and os.environ.get("CLEARWAKE_VOICE", "").strip().lower() != "local"
+
+
+def clip_seconds(audio, hint=None):
+    """Length of a clip in seconds: read from a WAV header, else the page's own figure, else a cautious estimate. Over 30 is refused."""
+    seconds = None
+    if audio[:4] == b"RIFF":
+        try:
+            import io
+            import wave
+            with wave.open(io.BytesIO(audio), "rb") as w:
+                seconds = w.getnframes() / float(w.getframerate())
+        except Exception:  # noqa: BLE001
+            seconds = None
+    if seconds is None:
+        try:
+            seconds = float(hint)
+        except (TypeError, ValueError):
+            seconds = max(1.0, len(audio) / 6000.0)
+    seconds = max(0.5, seconds)
+    if seconds > MAX_AUDIO_SECONDS + 0.5:
+        raise ConsoleError("That recording is longer than 30 seconds. Say it in a shorter sentence.", 413)
+    return round(min(seconds, 30.0), 2)
+
+
+def first_sentences(text, limit=sarvam.MAX_TTS_CHARS):
+    """The leading whole sentences of a reply that fit one spoken line."""
+    text = " ".join(str(text).split())
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    end = max(cut.rfind(". "), cut.rfind("? "), cut.rfind("! "))
+    return cut[:end + 1] if end > 40 else cut[:cut.rfind(" ")].rstrip(",;:") + "."
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Audio in: sniff the container, convert with ffmpeg to 16 kHz mono wav, transcribe.
@@ -509,9 +557,11 @@ class Voice:
     TRANSCRIPT_TTL = 900
     PENDING_TTL = 300
 
-    def __init__(self, console, transcriber=None):
+    def __init__(self, console, transcriber=None, cloud=False):
         self.console = console
         self.transcriber = transcriber or Transcriber()
+        self.cloud = cloud       # True only for the Voice the routes create: a Voice built by hand never reaches Sarvam
+        self.server = None       # bound by the console server: gives the decision_runner hook and switches reply audio on
         self.transcripts = {}
         self.pending = None
         self._lock = threading.Lock()
@@ -520,30 +570,118 @@ class Voice:
     def receipt(self, name, params, ok=True):
         return self.console.swarm.receipt(f"voice:{name}:{secrets.token_hex(3)}", f"clearwake.voice.{name}", params, ok)
 
+    def active(self):
+        return self.cloud and cloud_voice()
+
+    def reply_voice_on(self):
+        return self.active() and self.server is not None
+
     def status(self):
         s = self.transcriber.status()
-        return {**s, "tts": "the browser's own speech synthesis on your device", "typing": True, "intents": list(INTENTS[:3])}
+        live = self.active()
+        used = sarvam.spent()
+        engine = STT_SARVAM if live else STT_LOCAL if s["stt"] else STT_BROWSER
+        return {**s, "stt": bool(live or s["stt"]), "stt_engine": engine, "label": SARVAM_LABEL if live else s["label"],
+                "tts": "Sarvam Bulbul" if self.reply_voice_on() else "the browser's own speech synthesis on your device",
+                "typing": True, "intents": list(INTENTS[:3]),
+                "sarvam": {"key_set": sarvam.available(), "active": live, "owner_voice": OWNER_VOICE if live else None,
+                           "reply_voice": REPLY_VOICE if self.reply_voice_on() else None,
+                           "tts_chars": int(used.get("tts_chars", 0)), "stt_seconds": round(float(used.get("stt_seconds", 0)), 1),
+                           "calls": int(used.get("calls", 0)), "tts_chars_cap": sarvam.TTS_CHARS_CAP, "stt_seconds_cap": sarvam.STT_SECONDS_CAP},
+                "labels": {"owner": OWNER_LABEL, "reply": REPLY_LABEL}}
 
-    # -- audio -> transcript
-    def transcribe(self, audio):
-        out = self.transcriber.transcribe(audio)
+    # -- audio -> transcript. Order: Sarvam, then local Whisper. (The page tries the browser's own speech after that; typing always works.)
+    def hear(self, audio, seconds=None, kind=""):
+        if self.active():
+            clip = clip_seconds(audio, seconds)
+            started = time.perf_counter()
+            try:
+                text = sarvam.transcribe(audio, filename="owner." + KINDS.get((kind or "").lower(), "wav"), seconds=clip)
+                return {"transcript": clean_transcript(text), "ms": round((time.perf_counter() - started) * 1000), "audio_sha256": sha(audio),
+                        "audio_seconds": clip, "stt": STT_SARVAM, "label": "speech to text: Sarvam Saaras v4"}
+            except sarvam.SarvamError as error:
+                if not self.transcriber.available():
+                    raise ConsoleError(f"Sarvam could not read that recording ({error}). Type instead.", 503) from None
+        out = dict(self.transcriber.transcribe(audio))
+        out["stt"] = out.get("stt") or STT_LOCAL
+        out["label"] = out.get("label") or LABEL
+        return out
+
+    def transcribe(self, audio, seconds=None, kind="", owner_voice=None):
+        out = self.hear(audio, seconds, kind)
         text = out["transcript"]
         tid = secrets.token_hex(8)
         with self._lock:
             now = time.monotonic()
             self.transcripts = {k: v for k, v in self.transcripts.items() if now - v["at"] < self.TRANSCRIPT_TTL}
-            self.transcripts[tid] = {"text": text, "sha": sha(text), "audio_sha": out["audio_sha256"], "at": now}
+            self.transcripts[tid] = {"text": text, "sha": sha(text), "audio_sha": out["audio_sha256"], "at": now, "stt": out["stt"],
+                                     "owner_voice": owner_voice}
+        model = out["stt"] if out["stt"] == STT_SARVAM else f"whisper {self.transcriber.model_dir.name} int8 cpu"
         self.receipt("transcribed", {"audio_sha256": out["audio_sha256"], "transcript_sha256": sha(text), "ms": out["ms"],
-                                     "audio_ms": int(round(out["audio_seconds"] * 1000)), "model": f"whisper {self.transcriber.model_dir.name} int8 cpu",
-                                     "source": VOICE_SOURCE, "audio_stored": False}, bool(text))
-        return {**out, "transcript_id": tid, "transcript_sha256": sha(text), "model": self.transcriber.model_dir.name, "label": LABEL}
+                                     "audio_ms": int(round(out["audio_seconds"] * 1000)), "model": model,
+                                     "source": VOICE_SOURCE, "audio_stored": False, "stt": out["stt"], "owner_voice": owner_voice}, bool(text))
+        return {**out, "transcript_id": tid, "transcript_sha256": sha(text),
+                "model": "saaras:v4" if out["stt"] == STT_SARVAM else self.transcriber.model_dir.name}
+
+    # -- the owner's voice: the command line is spoken by Bulbul (kabir) and that audio goes through speech to text like a live microphone
+    def owner_play(self, text):
+        if not self.active():
+            raise ConsoleError("The owner voice needs the Sarvam key in .env. Speak into the microphone or type instead.", 503)
+        said = clean_transcript(text) if isinstance(text, str) and text.strip() else OWNER_LINE
+        try:
+            path = sarvam.speak(said, OWNER_VOICE)
+            audio = path.read_bytes()
+        except (sarvam.SarvamError, OSError) as error:
+            raise ConsoleError(f"The owner voice could not be made ({error}). Type instead.", 503) from None
+        out = self.transcribe(audio, kind="audio/wav", owner_voice=OWNER_VOICE)
+        return {**out, "owner_audio": AUDIO_PREFIX + path.name, "owner_voice": OWNER_VOICE, "voice_label": OWNER_LABEL, "spoken_text": said}
 
     # -- one turn: a transcript (or typed text) in, one answer out. The text shown is the text spoken.
-    def turn(self, transcript_id=None, text=None):
+    def source_record(self, stt, owner_voice=None):
+        return {"channel": "voice", "stt": stt, "owner_voice": owner_voice,
+                "reply_voice": REPLY_VOICE if self.reply_voice_on() else None, "provider": "sarvam"}
+
+    def turn(self, transcript_id=None, text=None, via=None):
         with self._lock:
             known = self.transcripts.get(transcript_id) if transcript_id else None
         if transcript_id and known is None:
             raise ConsoleError("That recording is no longer held. Record again or type instead.", 404)
+        if known:
+            record = self.source_record(known.get("stt", STT_LOCAL), known.get("owner_voice"))
+        else:
+            record = self.source_record(STT_BROWSER if via == STT_BROWSER else STT_TYPED)
+        return self.speak_reply(self.run_turn(text, known, record), record)
+
+    def speak_reply(self, reply, record):
+        """Add the Clearwake voice (Sarvam Bulbul, advait) to a reply: whole sentences of the same text that is on screen."""
+        reply["source_record"] = record
+        if not self.reply_voice_on() or not reply.get("text"):
+            return reply
+        spoken = first_sentences(reply["text"])
+        try:
+            path = sarvam.speak(spoken, REPLY_VOICE)
+        except sarvam.SarvamError as error:
+            reply["voice_note"] = f"The spoken reply is not available: {error}"
+            return reply
+        reply.update({"reply_audio": AUDIO_PREFIX + path.name, "reply_voice": REPLY_VOICE, "voice_label": REPLY_LABEL, "spoken_text": spoken})
+        return reply
+
+    def decide(self, said, record, source, digest, how):
+        """The decision layer hook: server.decision_runner.run(command_text, source) -> dict. None when absent or when it gives no reply text."""
+        runner = getattr(self.server, "decision_runner", None)
+        if runner is None:
+            return None
+        try:
+            result = runner.run(said, record)
+        except Exception:  # noqa: BLE001  the rules flow still answers
+            return None
+        if not isinstance(result, dict) or not str(result.get("text") or "").strip():
+            return None
+        text = str(result["text"])
+        return {"intent": "decided", "needs_confirm": False, "token": None, "speak": text, **result,
+                "source": source, "transcript": said, "transcript_sha256": digest, "how": how, "text": text}
+
+    def run_turn(self, text, known, record):
         if known:
             source, said, digest = VOICE_SOURCE, known["text"], known["sha"]
         else:
@@ -555,6 +693,9 @@ class Voice:
         pending = self.live_pending()
         if intent in ("yes", "no"):
             return self.answer_pending(intent, source, digest)
+        decided = self.decide(said, record, source, digest, how)
+        if decided is not None:
+            return decided
         if pending and intent != "unclear":
             self.drop_pending("replaced")    # a new request replaces an unanswered question
         if intent == "set_rules":
@@ -722,14 +863,16 @@ class Voice:
         """The Yes or No button: the same effect as saying it, for the one question on screen."""
         if answer not in ("yes", "no"):
             raise ConsoleError("Answer yes or no.")
-        return self.answer_pending(answer, "tap", sha("tap:" + answer), token)
+        return self.speak_reply(self.answer_pending(answer, "tap", sha("tap:" + answer), token), self.source_record(STT_TYPED))
 
 
 def service(console):
     """One Voice per Console (and per console data folder it opens), created on first use."""
     voice = getattr(console, "voice", None)
     if voice is None:
-        voice = Voice(console)
+        from . import envfile
+        envfile.load(ROOT / ".env")     # the Sarvam key, if the owner set one; values already in the environment win and nothing is printed
+        voice = Voice(console, cloud=True)
         console.voice = voice
     return voice
 
@@ -768,7 +911,7 @@ def handle_transcribe(handler, console):
     kind = (handler.headers.get("Content-Type") or "").split(";", 1)[0].strip().lower()
     if kind and not (kind.startswith("audio/") or kind in ("video/webm", "video/mp4", "application/octet-stream")):
         raise Rejected("Send the audio as it was recorded.", 415)
-    return service(console).transcribe(audio)
+    return service(console).transcribe(audio, handler.headers.get("X-Clearwake-Seconds"), kind)
 
 
 def post_extension(console, action, body):
@@ -778,7 +921,10 @@ def post_extension(console, action, body):
     voice = service(console)
     if action == "voice/turn":
         return voice.turn(body.get("transcript_id") if isinstance(body.get("transcript_id"), str) else None,
-                          body.get("text") if isinstance(body.get("text"), str) else None)
+                          body.get("text") if isinstance(body.get("text"), str) else None,
+                          STT_BROWSER if body.get("via") == STT_BROWSER else None)
+    if action == "voice/owner":
+        return voice.owner_play(body.get("text"))
     if action == "voice/answer":
         return voice.tap(body.get("token") if isinstance(body.get("token"), str) else "", body.get("answer"))
     raise Rejected("Unknown voice action.", 404)
@@ -788,3 +934,22 @@ def get_extension(console, path):
     if path == "/console/api/voice/status":
         return service(console).status()
     return None
+
+
+def audio_bytes(name):
+    """The cached WAV with this exact name. The name must match a strict pattern and is compared with the folder's own listing:
+    no part of it is ever joined into a path."""
+    if not isinstance(name, str) or not AUDIO_NAME.fullmatch(name):
+        raise Rejected("This audio was not found.", 404)
+    try:
+        for entry in sarvam.CACHE.iterdir():
+            if entry.name == name and entry.is_file():
+                return entry.read_bytes()
+    except OSError:
+        pass
+    raise Rejected("This audio was not found.", 404)
+
+
+def bind(console, server):
+    """Called by the console server: lets the voice use server.decision_runner and switches the spoken replies on."""
+    service(console).server = server
